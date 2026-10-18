@@ -29,9 +29,14 @@ When the developer's billing changes, for example a refund or a lapsed subscript
 
 ### Billing system of record
 
-Substratal Apps is not a payment processor or marketplace billing engine for any Application, ever, including after the marketplace phase ships. Each Application's developer owns the billing relationship with their own end users (their own Stripe or equivalent), entirely outside this API, and calls [Entitlements](../../api-reference/entitlements/) to reflect the outcome. `Order`/`order_id` is reference metadata the developer supplies for their own reconciliation. It is never a record that a Substratal-run billing system pushes webhooks about. When the marketplace ships, it makes Applications discoverable, each with its developer's own pricing and billing. It is not a checkout that Substratal runs.
+Each Application's developer owns the billing relationship with that Application's end users, and calls [Entitlements](../../api-reference/entitlements/) to reflect the outcome. `Order`/`order_id` is reference metadata the developer supplies for their own reconciliation, never a record that a Substratal-run billing system pushes webhooks about.
 
-The **only** payment flow that runs through Substratal Apps itself is its own platform subscription: what an Application owner pays Substratal for Starter/Team/Enterprise. See [Pricing → How the subscription is charged](../../pricing/#how-the-subscription-is-charged).
+Today Substratal is the developer of every Application in the catalog, so it bills those Applications' users itself, through one subscription for the whole catalog: **Free** and **Standard**. See [Pricing](../../pricing/). That's the only payment flow that runs through Substratal Apps.
+
+Substratal Apps is not a payment processor or marketplace billing engine for anyone else's Application, including after the marketplace phase ships. When the marketplace ships, it makes third-party Applications discoverable, each with its developer's own pricing and billing, entirely outside this API. It is not a checkout that Substratal runs.
+
+{: .decision }
+**API changes awaiting review** ([DECISIONS.md #39](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#39-subscriber-billing-api)). How a Standard subscription is reflected into Entitlements, and the `tenant.plan_changed` audit action below, change under that proposal.
 
 ---
 

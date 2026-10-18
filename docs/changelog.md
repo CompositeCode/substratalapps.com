@@ -12,6 +12,20 @@ What's changed in this specification over time. Questions still awaiting a decis
 
 ---
 
+## 2026-10-17 — Free and Standard pricing; OpenAPI Specification section
+
+**Pricing** ([DECISIONS.md #38](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#resolved)). Pricing now has two tiers, paid by the people who use Substratal's apps rather than by the Application owner:
+
+- **Free** gives every User the Applications, features, and services Substratal designates as free. No card is required.
+- **Standard** is **$6 per user per month** for access to every Application and service. A User subscribes for themselves, or an Organization subscribes for the members it covers.
+- **Business and Enterprise** pricing, tailored to an Organization's needs, tenancy, and data location, comes later. Until then, `isolated` and `dedicated_region` tenancy are reserved for it.
+
+The previous Starter / Team / Enterprise plans, their per-Tenant limits, and Tenant restricted mode are retired from [Pricing](../pricing/). [Billing system of record](../domain-model/orders-and-audit/#billing-system-of-record), the [Glossary](../glossary/), the [Roadmap](../roadmap/), and [NFR → Audit log lifecycle](../non-functional-requirements/#audit-log-lifecycle) are updated to match. [DECISIONS.md #31](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#31-published-prices-and-billing-options) now covers only annual plans and a Standard trial, and #35 is withdrawn.
+
+The API changes that implement the new model aren't applied yet. They're proposed in [DECISIONS.md #39](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#39-subscriber-billing-api), and every affected page (Billing, Tenancy, Entitlements, Applications, Organizations, Webhooks, Conventions, Access Control, Database Schema, Workflows) carries an "Awaiting decision" callout until then. `openapi.yaml` is unchanged.
+
+**OpenAPI Specification.** A new top-level section for developers building against the API: [OpenAPI Specification](../openapi/) explains how to read, download, validate, and generate clients from `openapi.yaml`. The [Interactive Reference](../openapi/reference/) renders the document with Swagger UI, including "Try it out" against a local devserver.
+
 ## 2026-10-06 — Implementation-driven `openapi.yaml` fixes
 
 The first implementation's contract tests validate every response against `openapi.yaml`, and found places where the YAML disagreed with the prose (which is authoritative). Each is now fixed in the YAML; no behavior described on any page changed:

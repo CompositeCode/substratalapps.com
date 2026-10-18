@@ -256,4 +256,4 @@ The live introspection check described throughout [Trust Model](../../trust-mode
 | `seed_role_immutable` | 403 | `PATCH`/`DELETE` on a seed Role. |
 | `role_in_use` | 409 | `DELETE` on a Role with assignments. |
 | `member_role_required` | 409 | Removing a user's `member` platform Role. |
-| `plan_limit_reached` | 409 | Exceeding the AppRoles cap — see [Pricing → Enforcement](../../pricing/#enforcement). |
+| `plan_limit_reached` | 409 | Exceeding the AppRoles cap — see [Pricing → Enforcement](../../pricing/#the-tiers). |

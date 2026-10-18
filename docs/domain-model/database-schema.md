@@ -157,6 +157,9 @@ organization_memberships (
 
 Every access query (org-wide grants, `org_admin` checks, seat counts) filters on `status = 'active'`; a `pending` row only means "invited, hasn't accepted". **Index:** `(organization_id)` for member-listing queries — the inverse of the primary key's natural lookup direction (by user). This is what makes a User's membership many-to-many: no `organization_id` column on `users` to collide with.
 
+{: .decision }
+**API changes awaiting review** ([DECISIONS.md #39](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#39-subscriber-billing-api)). #39 proposes moving the billing columns off `tenants` onto a new `subscriptions` table keyed to a User or an Organization, and adding `applications.access_tier`.
+
 ## tenants
 
 | Column | Type | Constraint |
@@ -178,7 +181,7 @@ Every access query (org-wide grants, `org_admin` checks, seat counts) filters on
 | `created_at`, `updated_at` | `timestamptz` | |
 | `status` | `text` | not null, default `'active'`, `check (status in ('active','migrating','suspended'))` |
 
-**Constraint:** `check (owner_user_id is null or owner_organization_id is null)` and `check (owner_user_id is not null or owner_organization_id is not null)` — exactly one owner, same pattern as `applications.owner_*` below. `check (plan = 'enterprise' or tier = 'shared')` — enforces [Pricing](../../pricing/#enterprise-tenancy-tier-options)'s rule that `isolated`/`dedicated_region` are Enterprise-only at the database level, not just in application code. `check (plan != 'starter' or owner_type = 'user')` — enforces [Pricing → Enforcement](../../pricing/#enforcement)'s rule that a Starter Tenant is always User-owned; auto-provisioning (see [Tenancy](../tenancy/#what-it-represents)) sets `plan: 'team'`, not the column's own `'starter'` default, the moment `owner_type: 'organization'` is resolved, so this constraint is enforced by the provisioning path, not hit as a runtime rejection. **Indexes:** `unique (owner_user_id) where owner_user_id is not null`, `unique (owner_organization_id) where owner_organization_id is not null` — one Tenant per owner, not a list. See [Tenancy](../tenancy/).
+**Constraint:** `check (owner_user_id is null or owner_organization_id is null)` and `check (owner_user_id is not null or owner_organization_id is not null)` — exactly one owner, same pattern as `applications.owner_*` below. `check (plan = 'enterprise' or tier = 'shared')` — enforces [Pricing](../../pricing/#business-and-enterprise)'s rule that `isolated`/`dedicated_region` are Enterprise-only at the database level, not just in application code. `check (plan != 'starter' or owner_type = 'user')` — enforces [Pricing → Enforcement](../../pricing/#the-tiers)'s rule that a Starter Tenant is always User-owned; auto-provisioning (see [Tenancy](../tenancy/#what-it-represents)) sets `plan: 'team'`, not the column's own `'starter'` default, the moment `owner_type: 'organization'` is resolved, so this constraint is enforced by the provisioning path, not hit as a runtime rejection. **Indexes:** `unique (owner_user_id) where owner_user_id is not null`, `unique (owner_organization_id) where owner_organization_id is not null` — one Tenant per owner, not a list. See [Tenancy](../tenancy/).
 
 ## applications
 

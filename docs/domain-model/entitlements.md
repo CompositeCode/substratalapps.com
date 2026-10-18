@@ -50,6 +50,9 @@ The join between a User (or Organization) and an Application: does this party ow
 | `admin_grant` | Support/sales gave access directly — comped account, early access, internal testing. Usually no `order_id`. |
 | `org_seat` | Granted to an Organization as a whole. Members get access through it because they belong to that Organization, which *holds a grant* to the app. It doesn't have to own the app. `user_id` is null — the grant is modeled at the org level and resolved per-member at read time, per [member_scope](#org-wide-entitlements-scoping-members-in-or-out) below. |
 
+{: .decision }
+**API changes awaiting review** ([DECISIONS.md #39](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#39-subscriber-billing-api)). #39 proposes a `subscription` source for Entitlements granted by a Standard subscription, and retiring `member_decision: seat_limit` along with the Starter seat cap.
+
 ## Org-wide entitlements: scoping members in or out
 
 An org-wide (`source: org_seat`) Entitlement's default is that *every current and future member* of the Organization gets the app — no per-member row to create or maintain. `member_scope` narrows that default, giving an org admin ([`OrganizationMembership.role: org_admin`](../users-and-organizations/#organizationmembership)) a whitelist/exclusion list rather than all-or-nothing:
@@ -85,7 +88,7 @@ Reading a member's own entitlements (`GET /v1/users/{id}/entitlements`) surfaces
 
 `granted_via` is computed per member at read time (it's not stored — `member_scope` + `member_overrides` on the org-wide row is the source of truth) and only appears when the caller is asking about a specific member's resolved standing, e.g. via `GET /v1/users/{id}/entitlements`, rather than the raw org-wide grant itself.
 
-`member_decision` is `included`, `excluded` (left out by `member_scope`/`member_overrides`), or `seat_limit` (included by scope, but the Application's Starter Tenant is at its seat cap; see [Pricing → Enforcement](../../pricing/#enforcement)). Rows with `excluded` or `seat_limit` **are** listed, so a member can see why they don't have access, but they're never an access path. Note that `status` above is the org-wide grant's own status (`active`), not this member's access; their resolved access comes from [effective-permissions](../../api-reference/roles-and-permissions/#get-v1usersidappsappideffective-permissions).
+`member_decision` is `included`, `excluded` (left out by `member_scope`/`member_overrides`), or `seat_limit` (included by scope, but the Application's Starter Tenant is at its seat cap; see [Pricing → Enforcement](../../pricing/#the-tiers)). Rows with `excluded` or `seat_limit` **are** listed, so a member can see why they don't have access, but they're never an access path. Note that `status` above is the org-wide grant's own status (`active`), not this member's access; their resolved access comes from [effective-permissions](../../api-reference/roles-and-permissions/#get-v1usersidappsappideffective-permissions).
 
 ### Worked example: who gets access through one org grant
 

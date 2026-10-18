@@ -18,7 +18,7 @@ Read once, applies to every page in this section.
 
 ## Machine-readable
 
-Everything on this and the following pages is also available as a single [OpenAPI 3.1 document](../../openapi.yaml) — generate a client, import into an API tool, or diff it against an implementation to check drift. The prose here is authoritative when the two disagree; the YAML is kept in sync by hand, not generated from this site.
+Everything on this and the following pages is also available as a single [OpenAPI 3.1 document](../../openapi.yaml), browsable in the [Interactive Reference](../../openapi/reference/) and explained in [OpenAPI Specification](../../openapi/) — generate a client, import into an API tool, or diff it against an implementation to check drift. The prose here is authoritative when the two disagree; the YAML is kept in sync by hand, not generated from this site.
 
 ## Base URL
 
@@ -205,12 +205,12 @@ A single resource is returned as a bare JSON object — no envelope:
 | `forbidden` | 403 | Authenticated, but the caller lacks the required permission. `details.required_permission` names it. |
 | `tenant_suspended` | 403 | The Tenant that owns the data being written (or the Application an app token is requested for) is `suspended` by the platform. See [Tenancy](../../domain-model/tenancy/#fields). |
 | `destructive_operation_restricted` | 403 | A `restrict_destructive` API Key attempted a destructive operation — see [API Keys](../api-keys/#agent-keys--restrict_destructive). |
-| `subscription_required` | 402 | The owning Tenant is `restricted` after a lapsed subscription, and this write would add usage — see [Pricing → Subscription lapse](../../pricing/#subscription-lapse--downgrades). |
+| `subscription_required` | 402 | The owning Tenant is `restricted` after a lapsed subscription, and this write would add usage — see [Pricing → Subscription lapse](../../pricing/#when-a-subscription-lapses). |
 | `not_found` | 404 | Generic not-found for a path that matches no route. Resource pages define their own `<resource>_not_found` codes. |
 | `version_conflict` | 409 | `If-Match` didn't match the current `ETag`. |
 | `idempotency_key_reused` | 409 | Same `Idempotency-Key`, different request body. |
 | `idempotency_key_in_flight` | 409 | The first request with this `Idempotency-Key` is still being processed. Retry after a second. |
-| `plan_limit_reached` | 409 | The owning Tenant is at a plan limit — see [Plan limit errors](#plan-limit-errors) below and [Pricing → Enforcement](../../pricing/#enforcement). |
+| `plan_limit_reached` | 409 | The owning Tenant is at a plan limit — see [Plan limit errors](#plan-limit-errors) below and [Pricing → Enforcement](../../pricing/#the-tiers). |
 | `payload_too_large` | 413 | Body over 1 MB. |
 | `validation_failed` | 422 | One or more fields fail validation. Uses `details.fields` — see below. |
 | `read_only_field` | 422 | A `PATCH` body included a read-only field. |
@@ -258,6 +258,9 @@ Each entry's `code` is one of a small fixed set: `required`, `invalid_format`, `
 
 ### Plan limit errors
 
+{: .decision }
+**API changes awaiting review** ([DECISIONS.md #39](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#39-subscriber-billing-api)). With developer plans retired, #39 proposes removing the Applications, AppRoles, webhooks, and seat caps that produce `plan_limit_reached`, and reserving the code for business and enterprise limits.
+
 `409 plan_limit_reached` always carries the same `details`, so a client can render one "upgrade to continue" screen for every limit:
 
 ```json
@@ -276,7 +279,7 @@ Each entry's `code` is one of a small fixed set: `required`, `invalid_format`, `
 }
 ```
 
-`resource` is one of `applications`, `app_roles`, `webhooks`, or `seats`. These are the same keys [`GET /v1/tenants/{id}/usage`](../billing/#get-v1tenantsidusage) reports under `limits`, so the error and the usage screen always agree on names. See [Pricing → Enforcement](../../pricing/#enforcement) for what each one counts.
+`resource` is one of `applications`, `app_roles`, `webhooks`, or `seats`. These are the same keys [`GET /v1/tenants/{id}/usage`](../billing/#get-v1tenantsidusage) reports under `limits`, so the error and the usage screen always agree on names. See [Pricing → Enforcement](../../pricing/#the-tiers) for what each one counts.
 
 ## Idempotency
 

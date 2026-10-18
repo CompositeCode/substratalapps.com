@@ -181,8 +181,11 @@ The Roles `role_invoicer_admin` and `role_invoicer_member` now exist with no per
 - `slug`, `name`, `launch_url`, and exactly one of `owner_user_id`/`owner_organization_id` are required. Everything else is optional.
 - Resolves the owner's [Tenant](../tenancy/), creating one if needed. A new Tenant gets `tier: shared`, and `plan: starter` for a User owner or `plan: team` for an Organization owner.
 - **Seeds the app's Roles.** For each name in `available_app_roles`, a Role `role_<slug>_<name>` is created with no permissions, and the owner then fills them in with `PATCH /v1/roles/{id}`. Because every app-scoped Role must use a name from `available_app_roles`, the plan's **AppRoles limit** (Starter 3, Team and Enterprise unlimited) is simply a cap on the length of `available_app_roles`. Exceeding it on `POST` or `PATCH` returns `409 plan_limit_reached` (`resource: "app_roles"`; see [Conventions → Plan limit errors](../conventions/#plan-limit-errors)).
-- Rejected with `409 plan_limit_reached` if the owner's Tenant is already at its plan's Applications cap (1/5/unlimited). Rejected with `402 subscription_required` if the Tenant is `restricted`. Both are independent of the caller's own permission. See [Pricing → Enforcement](../../pricing/#enforcement).
+- Rejected with `409 plan_limit_reached` if the owner's Tenant is already at its plan's Applications cap (1/5/unlimited). Rejected with `402 subscription_required` if the Tenant is `restricted`. Both are independent of the caller's own permission. See [Pricing → Enforcement](../../pricing/#the-tiers).
 - Writes `application.created`.
+
+{: .decision }
+**API changes awaiting review** ([DECISIONS.md #39](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#39-subscriber-billing-api)). #39 proposes an `access_tier` field (`free` | `standard`) on every Application, and removing the per-plan Applications and AppRoles caps and the `402 subscription_required` check above.
 
 ## `PATCH /v1/applications/{id}`
 
@@ -287,6 +290,9 @@ A reserved slug is `{ "field": "slug", "code": "unknown_value", "allowed": "anyt
 ## Owner onboarding, end to end
 
 What a paying customer does after staff have created their Application (concierge onboarding), all with their own User token and no platform permission:
+
+{: .decision }
+**API changes awaiting review** ([DECISIONS.md #39](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#39-subscriber-billing-api)). Step 6 still refers to developer plans. Under #39, owners aren't billed for their Applications.
 
 1. **Find your Tenant:** `GET /v1/tenants` returns the one Tenant you own, with its `plan` and `tier`. `GET /v1/applications?owned=true` lists your Applications.
 2. **Configure the app:** `PATCH /v1/applications/app_invoicer` with your `redirect_uris`, `settings_schema`, `permissions`, and `available_app_roles`. Then give each seeded Role its permissions with `PATCH /v1/roles/role_invoicer_admin` `{"permissions": ["app.invoicer.view", "app.invoicer.send"]}`.

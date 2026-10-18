@@ -154,7 +154,10 @@ The question "does this user have access to app X right now?" is answered by [ef
 - Requires an `Idempotency-Key` header. A developer reflecting a purchase should key it on their own order or event id, so a retried billing webhook on their side never double-grants. See [Conventions → Idempotency](../conventions/#idempotency).
 - **One live personal row per (user, app):** if the user already has an `active` or `disabled` personal Entitlement to this Application, the call returns `409 entitlement_already_exists` with `details.existing_entitlement_id` and `details.status`. Re-enable the existing one with `PATCH` instead. An `expired` or `revoked` row doesn't block a new grant.
 - The user must exist and not be `deleted`. Granting to an `invited` user is allowed: access starts when they activate.
-- **Plan checks on the Application's Tenant** (independent of the caller's permission): a grant that would add a new seat beyond Starter's 1,000 returns `409 plan_limit_reached` (`resource: "seats"`). On a `restricted` Tenant, a grant that would add a new seat returns `402 subscription_required`. See [Pricing → Enforcement](../../pricing/#enforcement).
+{: .decision }
+**API changes awaiting review** ([DECISIONS.md #39](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#39-subscriber-billing-api)). #39 proposes removing the Starter seat cap below, and adding subscription-sourced Entitlements that the platform manages for Standard subscribers.
+
+- **Plan checks on the Application's Tenant** (independent of the caller's permission): a grant that would add a new seat beyond Starter's 1,000 returns `409 plan_limit_reached` (`resource: "seats"`). On a `restricted` Tenant, a grant that would add a new seat returns `402 subscription_required`. See [Pricing → Enforcement](../../pricing/#the-tiers).
 - Effects, in one transaction: writes Audit Event `entitlement.granted`, emits the `entitlement.granted` webhook, and emits `access.granted` if this flips the user's resolved access to the app on.
 
 ## `GET /v1/entitlements`

@@ -21,7 +21,7 @@ This site specifies that **API**: who a user is, what they're allowed to touch w
 
 Think of it as the user/organization/tenancy layer that an app developer would otherwise have to build themselves — comparable in shape to Auth0, Clerk, or WorkOS, but scoped around the full set of things a multi-tenant app needs from day one, not just login: accounts, per-app and per-org settings, team/tenancy structure, and a place to store the app's own per-user data, all behind one API.
 
-An **Application** in this spec is one developer's app, built on top of Substratal Apps for that layer. Today, every Application is built by Substratal itself; a marketplace where outside developers register and manage their own Applications is an explicit later phase — see [App developer/publisher model](domain-model/applications/#the-review-lifecycle). The **Entitlement** that gates a user's access to an app, and the billing relationship behind it, belongs to that app's own developer — Substratal Apps tracks entitlement state, it doesn't run payments; see [Billing system of record](domain-model/orders-and-audit/#billing-system-of-record).
+An **Application** in this spec is one developer's app, built on top of Substratal Apps for that layer. Today, every Application is built by Substratal itself; a marketplace where outside developers register and manage their own Applications is an explicit later phase — see [App developer/publisher model](domain-model/applications/#the-review-lifecycle). The **Entitlement** that gates a user's access to an app, and the billing relationship behind it, belongs to that app's own developer. For Substratal's own catalog that's Substratal, through the Free/Standard subscription on [Pricing](pricing/); a future third-party developer bills their own users outside this API. See [Billing system of record](domain-model/orders-and-audit/#billing-system-of-record).
 
 ## What this site is
 
@@ -37,14 +37,15 @@ It's written to be read by people building the API **and** by AI coding tools as
 | [Quickstart](quickstart/) | A runnable curl walkthrough — create a user, grant an app, check access, turn it off. |
 | [Domain Model](domain-model/) | What are the core entities, and how do they relate? |
 | [Access Control](access-control/) | Given a user and an app, what decides if a request is allowed? |
-| [API Reference](api-reference/) | What are the actual resources, endpoints, and payloads? Includes [Auth](api-reference/auth/) (signup, login, app tokens) and [Billing](api-reference/billing/) (the developer's own Substratal subscription). |
+| [API Reference](api-reference/) | What are the actual resources, endpoints, and payloads? Includes [Auth](api-reference/auth/) (signup, login, app tokens) and [Billing](api-reference/billing/) (the Free/Standard subscription). The [OpenAPI Specification](openapi/) section renders the whole contract as interactive Swagger UI. |
+| [OpenAPI Specification](openapi/) | The full contract as OpenAPI 3.1: interactive Swagger UI, download, client generation, and how to read it. |
 | [Workflows](workflows/) | How do the pieces move together for real scenarios — a purchase, an admin revoking access, a role change? |
 | [Trust Model](trust-model/) | How does a separately-hosted app verify a user's access without maintaining its own user table? |
 | [MCP Server](mcp-server/) | How does an AI agent call this API directly, as a tool-using client rather than writing HTTP calls by hand? |
 | [Non-Functional Requirements](non-functional-requirements/) | Security, multi-tenancy, audit, rate limits, versioning. |
 | [Compliance & Data Protection](compliance/) | Which of SOC 2, HIPAA, GDPR, and CCPA apply, and when to act on each. |
 | [Roadmap](roadmap/) | What ships in the MVP vs. later phases. |
-| [Pricing](pricing/) | Starter, Team, and Enterprise — what Substratal itself charges the developer. |
+| [Pricing](pricing/) | Free and Standard ($6 per user per month) — what people using Substratal's apps pay, individually or through an Organization. |
 | [Changelog](changelog/) | What's changed in this spec over time. |
 | [Glossary](glossary/) | Precise definitions for every term used here. |
 

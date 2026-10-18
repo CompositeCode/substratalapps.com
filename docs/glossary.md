@@ -61,7 +61,7 @@ The join record between a User and an Organization, carrying that User's standin
 An atomic, checkable capability, written as a dotted key (`billing.manage`, `app.timetrack.export`). Never assigned directly to a user — always granted through a [Role](#role).
 
 #### Plan
-The commercial subscription on a [Tenant](#tenant): `starter`, `team`, or `enterprise`. Independent of [Tier](#tier). See [Pricing](../pricing/).
+The subscription tier covering a User: `free` or `standard`. A User is on Standard through their own subscription or an Organization's. Business and Enterprise plans come later. Independent of [Tier](#tier). See [Pricing](../pricing/).
 
 #### PlatformRole
 A [Role](#role) that applies across the whole hub rather than one Application — `superadmin`, `support`, `billing_admin`, `member`.
@@ -69,14 +69,11 @@ A [Role](#role) that applies across the whole hub rather than one Application �
 #### Profile
 Global, cross-app identity and contact data for a User — name, avatar, email, locale. Distinct from [AppProfile](#appprofile).
 
-#### Restricted
-The state of a [Tenant](#tenant) whose subscription lapsed while its usage exceeded what it could drop to. Existing access keeps working; new usage returns `402`. See [Pricing → Subscription lapse](../pricing/#subscription-lapse--downgrades).
-
 #### Role
 A named bundle of [Permissions](#permission). Either a [PlatformRole](#platformrole) or an [AppRole](#approle).
 
 #### Seat
-A distinct User with active resolved access to at least one Application a [Tenant](#tenant) owns. The unit Team and Enterprise are billed on. See [Pricing](../pricing/#what-seat-means-here).
+A covered member of an Organization with a Standard subscription: a distinct, active, non-test-mode member included by the subscription's member selection. The unit an Organization is billed on, $6 each per month. See [Pricing](../pricing/#what-a-user-means-for-an-organization).
 
 #### Session
 One successful login (`ses_…`). Every refresh token and app token minted from it carries its id as `sid`, and revoking it ends them all. See [Auth → Sessions](../api-reference/auth/#sessions).
@@ -88,7 +85,7 @@ Global, cross-app configuration for a User — locale, timezone, notification pr
 The infrastructure-placement and data-isolation boundary for one of Substratal's own paying customers — the owner of an Application's catalog entry. `shared` (default), `isolated`, or `dedicated_region`. Not the same thing as [Organization](#organization) — see [Tenant vs. Organization](../domain-model/tenancy/#tenant-vs-organization). See [Domain Model → Tenancy](../domain-model/tenancy/).
 
 #### Tier
-Where a [Tenant](#tenant)'s data physically lives: `shared`, `isolated`, or `dedicated_region`. Independent of [Plan](#plan), except that the non-`shared` tiers require Enterprise.
+Where a [Tenant](#tenant)'s data physically lives: `shared`, `isolated`, or `dedicated_region`. Independent of [Plan](#plan). The non-`shared` tiers are reserved for business and enterprise pricing, which isn't offered yet.
 
 #### User
 A person with an account on Substratal. One identity, used everywhere in the hub and, via the [Trust Model](../trust-model/), in every app they launch from it.

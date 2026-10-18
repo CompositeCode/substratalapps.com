@@ -8,7 +8,7 @@ has_children: true
 # API Reference
 {: .no_toc }
 
-Resource-oriented REST, JSON, versioned at `/v1`. Read [Conventions](conventions/) first — every other page here assumes it.
+Resource-oriented REST, JSON, versioned at `/v1`. Read [Conventions](conventions/) first — every other page here assumes it. The same contract is available as OpenAPI 3.1 in [OpenAPI Specification](../openapi/), with an interactive Swagger UI reference.
 {: .fs-6 .fw-300 }
 
 | Group | Covers |
@@ -23,7 +23,7 @@ Resource-oriented REST, JSON, versioned at `/v1`. Read [Conventions](conventions
 | [Roles & Permissions](roles-and-permissions/) | Assign/remove roles; resolve effective permissions. |
 | [Organizations](organizations/) | Team/seat management. |
 | [Tenancy](tenancy/) | Where a Tenant's data lives, and the (support-only) process to change it. |
-| [Billing](billing/) | The Application owner's own Substratal subscription: plan, usage, Stripe Checkout and Portal. |
+| [Billing](billing/) | The Free/Standard subscription: Stripe Checkout and Portal. Being reworked for subscriber billing ([DECISIONS.md #39](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#39-subscriber-billing-api)). |
 | [Audit](audit/) | Query the audit log. |
 | [Webhooks](webhooks/) | Subscribe to access-change events, including the required `access.revoked`. |
 | [API Keys](api-keys/) | Service-to-service credentials — how billing or an app's own backend authenticates. |

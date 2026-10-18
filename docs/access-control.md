@@ -21,6 +21,9 @@ Every access decision in this system factors into two independent questions, che
 
 These are independent on purpose. A support agent can hold a platform Role that lets them *view* every user's entitlements without holding a single entitlement themselves — the ability to administer access is not the same axis as the ability to use an app. Conversely, a user can own an app (active entitlement) but hold no special role inside it beyond the implicit default member role — most users, most of the time.
 
+{: .decision }
+**API changes awaiting review** ([DECISIONS.md #39](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#39-subscriber-billing-api)). `seat_limited` below exists only for the retired Starter seat cap. #39 proposes removing it. The algorithm itself doesn't change: Standard access arrives as Entitlements.
+
 ## The algorithm
 
 ```

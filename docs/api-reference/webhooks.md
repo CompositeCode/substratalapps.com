@@ -44,6 +44,9 @@ The request's `scope` field picks it. An app-scoped key may omit `scope` (it def
 
 A subscription is managed by its scope's owners (the app's own keys, the app's owner) and by `webhooks.manage`. Anyone else gets `404`. `POST` is rejected with `409 plan_limit_reached` if the Application's Tenant is at its plan's cap (1/10/unlimited on Starter/Team/Enterprise, counted per Tenant across all its Applications), and with `402 subscription_required` if the Tenant is restricted. Test-mode keys create test-mode subscriptions, which only ever receive test-mode events; live subscriptions never receive test traffic.
 
+{: .decision }
+**API changes awaiting review** ([DECISIONS.md #39](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#39-subscriber-billing-api)). #39 proposes removing the per-plan webhook-subscription cap.
+
 ## `POST /v1/webhooks`
 
 ```json
