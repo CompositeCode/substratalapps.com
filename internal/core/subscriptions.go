@@ -941,6 +941,13 @@ func (s *Server) ApplyStripeSubscription(ctx context.Context, sub StripeSubscrip
 	if err != nil {
 		return "", errf("stripe sync: no subscription for %s (%s): %w", sub.ID, sub.SubscriptionID, err)
 	}
+	// After a resubscribe the row tracks the new Stripe subscription. A late
+	// or re-fetched event about the old one must not end coverage the new
+	// one provides, so a non-covering state from a subscription the row no
+	// longer tracks is ignored.
+	if row.StripeSubscriptionID != nil && *row.StripeSubscriptionID != sub.ID && !covering(sub.Status) {
+		return row.ID, nil
+	}
 	err = s.system(ctx, row.TestMode, db.Settings{}, func(c *Call) error {
 		if _, err := c.q.Exec(ctx, `update subscriptions set status = :st, stripe_subscription_id = :sub,
 				current_period_start = :ps::timestamptz, current_period_end = :pe::timestamptz, cancel_at_period_end = :cap

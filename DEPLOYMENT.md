@@ -223,7 +223,7 @@ Not under `/v1`, the same reasoning as the MCP server's `/mcp` route: it isn't a
 | `invoice.payment_failed` | Sync, which sets `past_due`. Coverage continues while Stripe Smart Retries (about 3 weeks) runs; only a later `unpaid` or `canceled` ends it. |
 | `invoice.paid` | Sync, which clears `past_due`. |
 
-The sync runs in the subscription's own mode (looked up across both first), so a test-mode subscription's audit events and Entitlements are test-mode too. `stripe_events.subscription_id` records which row an event was applied to.
+After a resubscribe the row tracks the new Stripe subscription, so a non-covering state reported for the old one (a late or re-fetched event) is ignored rather than ending the new coverage. The sync runs in the subscription's own mode (looked up across both first), so a test-mode subscription's audit events and Entitlements are test-mode too. `stripe_events.subscription_id` records which row an event was applied to.
 
 ### Quantity sync
 

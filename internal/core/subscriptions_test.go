@@ -161,11 +161,19 @@ func TestFreeAndStandardAccess(t *testing.T) {
 	if e.Get("/v1/users/me", other.Token).Str("plan") != "free" {
 		t.Fatal("plan after lapse")
 	}
-	// Resubscribing revives the same row.
+	// Resubscribing (a new Stripe subscription) revives the same row.
 	e.PostIdem("/v1/users/me/billing/checkout-sessions", other.Token, testenv.Unique(), checkoutBody).Expect(201)
-	activate(t, e, osid, "active")
+	if _, err := e.Core.ApplyStripeSubscription(context.Background(), core.StripeSubscription{
+		ID: "sub_new_" + osid, SubscriptionID: osid, Status: "active"}); err != nil {
+		t.Fatal(err)
+	}
 	if !allowed(e, other.ID, standard) {
 		t.Fatal("resubscribing restores Standard")
+	}
+	// A late event about the old, canceled Stripe subscription changes nothing.
+	activate(t, e, osid, "canceled")
+	if !allowed(e, other.ID, standard) {
+		t.Fatal("a stale event from the replaced subscription must not end coverage")
 	}
 	live := e.Get("/v1/users/"+other.ID+"/entitlements?application_id="+standard+"&source=subscription", e.Admin).JSON()["data"].([]any)
 	if len(live) != 1 {
