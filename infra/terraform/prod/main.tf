@@ -422,7 +422,7 @@ locals {
     "webhook-dispatch"     = "rate(1 minute)"
     "erasure-cascade"      = "rate(1 hour)"
     "webhook-health"       = "rate(1 hour)"
-    "stripe-customers"     = "rate(1 hour)"
+    "subscription-access"  = "rate(1 hour)"
     "stripe-events"        = "rate(10 minutes)"
     "seat-sync"            = "cron(15 0 * * ? *)"
     "cleanup"              = "cron(0 3 * * ? *)"

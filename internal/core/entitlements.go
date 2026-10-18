@@ -28,6 +28,7 @@ type entitlement struct {
 	Status              string      `json:"status"`
 	Source              string      `json:"source"`
 	OrderID             *string     `json:"order_id"`
+	SubscriptionID      *string     `json:"subscription_id"`
 	StartsAt            time.Time   `json:"starts_at"`
 	EndsAt              *time.Time  `json:"ends_at"`
 	DisabledReason      *string     `json:"disabled_reason"`
@@ -161,17 +162,14 @@ func (s *Server) EntitlementsGrant(w http.ResponseWriter, r *http.Request, id ge
 		if err := tenantWritable(t); err != nil {
 			return err
 		}
-		live, err := c.queryEnts(`e.user_id = :u and e.application_id = :a and e.status in ('active','disabled')`,
-			db.Args{"u": uid, "a": a.ID})
+		live, err := c.queryEnts(`e.user_id = :u and e.application_id = :a and e.status in ('active','disabled')
+			and e.source not in ('free','subscription')`, db.Args{"u": uid, "a": a.ID})
 		if err != nil {
 			return err
 		}
 		if len(live) > 0 {
 			return httpx.Conflict("entitlement_already_exists", "This user already has a live Entitlement to this Application.").
 				With("existing_entitlement_id", live[0].ID).With("status", live[0].Status)
-		}
-		if err := c.checkNewSeat(t, uid); err != nil {
-			return err
 		}
 		watch, err := c.watchAccess([]pair{{uid, a.ID}})
 		if err != nil {
@@ -222,6 +220,8 @@ func validateTerm(source string, starts time.Time, ends *time.Time, orderID *str
 	case "purchase", "trial", "admin_grant":
 	case "org_seat":
 		return httpx.E(422, "invalid_source", "org_seat grants are created through POST /v1/organizations/{id}/entitlements.")
+	case "free", "subscription":
+		return httpx.E(422, "invalid_source", source+" Entitlements are managed by the platform, not granted through the API.")
 	default:
 		f.Enum("source", "purchase", "trial", "admin_grant")
 	}
@@ -238,32 +238,6 @@ func validateTerm(source string, starts time.Time, ends *time.Time, orderID *str
 		f.Max("order_id", "too_long", 255)
 	}
 	return f.Err()
-}
-
-// checkNewSeat enforces the Starter seat cap and restricted mode for a
-// write that would make userID a new seat (Pricing → Enforcement). Test
-// mode never consumes seats.
-func (c *Call) checkNewSeat(t tenantRow, userID string) error {
-	if c.testMode() {
-		return nil
-	}
-	if !t.Restricted && plans[t.Plan].Seats == nil {
-		return nil
-	}
-	ss, err := c.seats(t.ID)
-	if err != nil {
-		return err
-	}
-	if ss.isSeat(userID) {
-		return nil
-	}
-	if t.Restricted {
-		return subscriptionRequired(t)
-	}
-	if l := plans[t.Plan].Seats; l != nil && ss.count() >= *l {
-		return planLimitErr("seats", *l, ss.count(), t)
-	}
-	return nil
 }
 
 // entitlementEffects writes the audit event and resource webhook for one
@@ -559,6 +533,22 @@ func (s *Server) EntitlementsUpdate(w http.ResponseWriter, r *http.Request, id s
 			"created_at", "updated_at", "included_member_count", "granted_via"); err != nil {
 			return err
 		}
+		if platformManaged(e.Source) {
+			// Platform-managed rows: an admin may disable or re-enable one;
+			// the platform owns everything else about it.
+			if !ea.manage {
+				return httpx.Forbidden("entitlements.manage")
+			}
+			for k := range p {
+				if k != "status" && k != "disabled_reason" {
+					return errPlatformManaged()
+				}
+			}
+			var st string
+			if p.Has("status") && json.Unmarshal(p["status"], &st) == nil && st != "active" && st != "disabled" {
+				return errPlatformManaged()
+			}
+		}
 		if !ea.manage {
 			// An org admin may change only status (active ⇄ disabled) and
 			// member scope, on their own Organization's org_seat row.
@@ -677,24 +667,15 @@ func (s *Server) EntitlementsUpdate(w http.ResponseWriter, r *http.Request, id s
 		if err := tenantWritable(t); err != nil {
 			return err
 		}
-		if statusChanged && next.Status == "active" {
-			if e.UserID != nil {
-				if err := c.checkNewSeat(t, *e.UserID); err != nil {
-					return err
-				}
-				if e.Status == "expired" {
-					live, err := c.queryEnts(`e.user_id = :u and e.application_id = :a and e.status in ('active','disabled') and e.id <> :id`,
-						db.Args{"u": *e.UserID, "a": e.ApplicationID, "id": e.ID})
-					if err != nil {
-						return err
-					}
-					if len(live) > 0 {
-						return httpx.Conflict("entitlement_already_exists", "A newer live Entitlement exists; change that one instead.").
-							With("existing_entitlement_id", live[0].ID)
-					}
-				}
-			} else if t.Restricted && !c.testMode() {
-				return subscriptionRequired(t)
+		if statusChanged && next.Status == "active" && e.UserID != nil && e.Status == "expired" {
+			live, err := c.queryEnts(`e.user_id = :u and e.application_id = :a and e.status in ('active','disabled') and e.id <> :id
+				and e.source not in ('free','subscription')`, db.Args{"u": *e.UserID, "a": e.ApplicationID, "id": e.ID})
+			if err != nil {
+				return err
+			}
+			if len(live) > 0 {
+				return httpx.Conflict("entitlement_already_exists", "A newer live Entitlement exists; change that one instead.").
+					With("existing_entitlement_id", live[0].ID)
 			}
 		}
 		pairs, err := c.affectedPairs(e)
@@ -880,6 +861,9 @@ func (s *Server) EntitlementsDelete(w http.ResponseWriter, r *http.Request, id s
 		}
 		if err := httpx.CheckIfMatch(c.r, e.version); err != nil {
 			return err
+		}
+		if platformManaged(e.Source) {
+			return errPlatformManaged()
 		}
 		if e.OrderID != nil {
 			return httpx.Conflict("entitlement_order_linked", "An order-linked Entitlement is a financial record; revoke it instead.")

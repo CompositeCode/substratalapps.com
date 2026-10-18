@@ -19,8 +19,8 @@ The entity pages describe *what* each field means to an API caller. This page is
 ## Conventions used below
 
 - Every table's primary key is the entity's own prefixed id (`usr_…`, `ent_…`, …) stored as `text`, not a surrogate `bigint` — the prefix convention in [Conventions → IDs](../../api-reference/conventions/#ids) *is* the primary key, not a display layer on top of one.
-- Every end-user-scoped table carries `organization_id text null references organizations(id)`, per [Non-Functional Requirements → Multi-tenancy](../../non-functional-requirements/#multi-tenancy), with a Row-Level Security policy — not repeated per-table below. This is **team/seat grouping**, not infrastructure placement.
-- Every table scoped to one Application also carries `tenant_id text not null references tenants(id)`, denormalized from `applications.tenant_id` at write time — a **second, independent** RLS dimension used to route a row to the right physical cluster (see [Tenancy](../tenancy/) and [Deployment Architecture → Tenancy tiers](https://github.com/CompositeCode/substratalapps.com/blob/main/DEPLOYMENT.md)). Don't conflate this with `organization_id` above — a row can carry both, either, or neither.
+- Every end-user-scoped table carries `organization_id text null references organizations(id)`, per [Non-Functional Requirements → Multi-tenancy](../../non-functional-requirements/#multi-tenancy), scoped in the data-access layer (see [Non-Functional Requirements → Multi-tenancy](../../non-functional-requirements/#multi-tenancy)) — not repeated per-table below. This is **team grouping**, not infrastructure placement.
+- Every table scoped to one Application also carries `tenant_id text not null references tenants(id)`, denormalized from `applications.tenant_id` at write time — a **second, independent** scoping dimension, enforced in the data-access layer and used to route a row to the right physical cluster (see [Tenancy](../tenancy/) and [Deployment Architecture → Tenancy tiers](https://github.com/CompositeCode/substratalapps.com/blob/main/DEPLOYMENT.md)). Don't conflate this with `organization_id` above — a row can carry both, either, or neither.
 - Every table carries `created_at timestamptz not null default now()` (the two pure join tables name it for what it means: `organization_memberships.invited_at` and `user_role_assignments.assigned_at`); tables with mutable fields also carry `updated_at timestamptz not null default now()`, maintained by a trigger, not application code (so it's correct even for a direct `UPDATE` run by a migration or a support script).
 - Soft-deletable tables carry `deleted_at timestamptz null` rather than a boolean — `null` means active, a timestamp means both *that* it's deleted and *when*, which a boolean throws away.
 - Every table with a `PATCH` endpoint carries `version integer not null default 1`, incremented by the same `updated_at` trigger. It's the source of the `ETag` (`W/"<version>"`) and the `If-Match` comparison. See [Conventions → Concurrency](../../api-reference/conventions/#concurrency-etag--if-match).
@@ -37,6 +37,7 @@ The entity pages describe *what* each field means to an API caller. This page is
 | `status` | `text` | not null, `check (status in ('active','invited','suspended','deleted'))` |
 | `pending_email` | `citext` | nullable |
 | `signup_application_id` | `text` | nullable, `references applications(id)` |
+| `stripe_customer_id` | `text` | nullable, `unique` — set at the User's first Checkout; internal, never returned by the API |
 | `test_mode` | `boolean` | not null, default `false` |
 | `created_at`, `updated_at`, `last_login_at` | `timestamptz` | `last_login_at` nullable |
 | `version` | `integer` | not null, default `1` |
@@ -132,6 +133,7 @@ mfa_recovery_codes (
 | `name` | `text` | not null |
 | `status` | `text` | not null, `check (status in ('active','suspended'))` |
 | `created_by` | `text` | not null, `references users(id)` |
+| `stripe_customer_id` | `text` | nullable, `unique` — set at the Organization's first Checkout; internal |
 | `test_mode` | `boolean` | not null, default `false` |
 | `created_at`, `updated_at` | `timestamptz` | |
 | `version` | `integer` | not null, default `1` |
@@ -155,10 +157,39 @@ organization_memberships (
 );
 ```
 
-Every access query (org-wide grants, `org_admin` checks, seat counts) filters on `status = 'active'`; a `pending` row only means "invited, hasn't accepted". **Index:** `(organization_id)` for member-listing queries — the inverse of the primary key's natural lookup direction (by user). This is what makes a User's membership many-to-many: no `organization_id` column on `users` to collide with.
+Every access query (org-wide grants, `org_admin` checks, covered-member counts) filters on `status = 'active'`; a `pending` row only means "invited, hasn't accepted". **Index:** `(organization_id)` for member-listing queries — the inverse of the primary key's natural lookup direction (by user). This is what makes a User's membership many-to-many: no `organization_id` column on `users` to collide with.
 
-{: .decision }
-**API changes awaiting review** ([DECISIONS.md #39](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#39-subscriber-billing-api)). #39 proposes moving the billing columns off `tenants` onto a new `subscriptions` table keyed to a User or an Organization, and adding `applications.access_tier`.
+## subscriptions
+
+The Free/Standard subscription (see [Pricing](../../pricing/) and [API Reference → Billing](../../api-reference/billing/)). Free has no row; a row exists once a User or Organization first starts a Checkout.
+
+```sql
+subscriptions (
+  id text primary key,                          -- sbs_ prefix
+  user_id text references users(id),            -- an individual subscription
+  organization_id text references organizations(id),  -- or an Organization's
+  plan text not null default 'standard' check (plan in ('standard')),
+  status text not null default 'incomplete'
+    check (status in ('active','trialing','past_due','canceled','unpaid','incomplete','incomplete_expired','paused')),
+  stripe_subscription_id text unique,          -- Stripe's sub_…; may change across resubscribes, the row doesn't
+  current_period_start timestamptz,
+  current_period_end timestamptz,
+  cancel_at_period_end boolean not null default false,
+  member_scope text check (member_scope in ('all_members','allowlist','denylist')),
+  member_overrides text[] check (cardinality(member_overrides) <= 1000),
+  quantity_synced integer,                     -- last covered-member count written to Stripe
+  quantity_synced_at timestamptz,
+  test_mode boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  version integer not null default 1,
+  check ((user_id is null) <> (organization_id is null)),
+  check (organization_id is not null or (member_scope is null and member_overrides is null)),
+  check (organization_id is null or member_scope is not null)
+);
+```
+
+**Indexes:** `unique (user_id) where user_id is not null` and `unique (organization_id) where organization_id is not null` — one row per subscriber, updated in place across lapses and resubscribes; `(status)` for the daily quantity sync. It carries the test/live RLS policy like every other table a test credential writes. `active`, `trialing`, and `past_due` are the statuses that cover users; the platform keeps `source: subscription` rows in `entitlements` in step with them (see [Entitlements → Platform-managed](../entitlements/#platform-managed-entitlements)).
 
 ## tenants
 
@@ -169,19 +200,11 @@ Every access query (org-wide grants, `org_admin` checks, seat counts) filters on
 | `owner_user_id` | `text` | nullable, `references users(id)` |
 | `owner_organization_id` | `text` | nullable, `references organizations(id)` |
 | `tier` | `text` | not null, default `'shared'`, `check (tier in ('shared','isolated','dedicated_region'))` |
-| `plan` | `text` | not null, default `'starter'`, `check (plan in ('starter','team','enterprise'))` — see [Pricing](../../pricing/) |
 | `region` | `text` | not null, default `'us-east-1'`, `check (region in ('us-east-1','us-west-2','ca-central-1','eu-west-1','eu-central-1','ap-southeast-2'))`, and `check (tier = 'dedicated_region' or region = 'us-east-1')` |
-| `stripe_customer_id` | `text` | nullable, `unique` — set when the Tenant is created (the Stripe call happens just after commit; a retrying job fills it if that call fails) |
-| `stripe_subscription_id` | `text` | nullable, `unique` — null on Starter |
-| `subscription_status` | `text` | not null, default `'none'`, `check (subscription_status in ('none','active','trialing','past_due','canceled','unpaid','incomplete','incomplete_expired','paused'))` |
-| `current_period_start`, `current_period_end` | `timestamptz` | nullable — mirrored from the Stripe subscription; returned by `GET /v1/tenants/{id}/subscription` |
-| `cancel_at_period_end` | `boolean` | not null, default `false` |
-| `restricted` | `boolean` | not null, default `false` |
-| `seat_count_synced` | `integer` | nullable — last quantity written to Stripe |
 | `created_at`, `updated_at` | `timestamptz` | |
 | `status` | `text` | not null, default `'active'`, `check (status in ('active','migrating','suspended'))` |
 
-**Constraint:** `check (owner_user_id is null or owner_organization_id is null)` and `check (owner_user_id is not null or owner_organization_id is not null)` — exactly one owner, same pattern as `applications.owner_*` below. `check (plan = 'enterprise' or tier = 'shared')` — enforces [Pricing](../../pricing/#business-and-enterprise)'s rule that `isolated`/`dedicated_region` are Enterprise-only at the database level, not just in application code. `check (plan != 'starter' or owner_type = 'user')` — enforces [Pricing → Enforcement](../../pricing/#the-tiers)'s rule that a Starter Tenant is always User-owned; auto-provisioning (see [Tenancy](../tenancy/#what-it-represents)) sets `plan: 'team'`, not the column's own `'starter'` default, the moment `owner_type: 'organization'` is resolved, so this constraint is enforced by the provisioning path, not hit as a runtime rejection. **Indexes:** `unique (owner_user_id) where owner_user_id is not null`, `unique (owner_organization_id) where owner_organization_id is not null` — one Tenant per owner, not a list. See [Tenancy](../tenancy/).
+**Constraint:** `check (owner_user_id is null or owner_organization_id is null)` and `check (owner_user_id is not null or owner_organization_id is not null)` — exactly one owner, same pattern as `applications.owner_*` below. Tenants carry no billing columns: [Pricing](../../pricing/) bills Users and Organizations, through `subscriptions` above. **Indexes:** `unique (owner_user_id) where owner_user_id is not null`, `unique (owner_organization_id) where owner_organization_id is not null` — one Tenant per owner, not a list. See [Tenancy](../tenancy/).
 
 ## applications
 
@@ -196,6 +219,7 @@ Every access query (org-wide grants, `org_admin` checks, seat counts) filters on
 | `available_app_roles` | `text[]` | not null, default `'{}'` |
 | `default_app_role` | `text` | nullable, `check (default_app_role is null or default_app_role = any(available_app_roles))` |
 | `visibility` | `text` | not null, `check (visibility in ('public','invite_only','internal'))` |
+| `access_tier` | `text` | not null, default `'standard'`, `check (access_tier in ('free','standard'))` — which [Pricing](../../pricing/) tier unlocks it |
 | `owner_user_id` | `text` | nullable, `references users(id)` |
 | `owner_organization_id` | `text` | nullable, `references organizations(id)` |
 | `review_status` | `text` | not null, default `'approved'`, `check (review_status in ('approved','pending_review','rejected','suspended'))` |
@@ -205,7 +229,7 @@ Every access query (org-wide grants, `org_admin` checks, seat counts) filters on
 | `created_at`, `updated_at` | `timestamptz` | |
 | `version` | `integer` | not null, default `1` |
 
-**Constraint:** `check (owner_user_id is null or owner_organization_id is null)` and `check (owner_user_id is not null or owner_organization_id is not null)` — an Application has exactly one owner, never both and never neither; a Substratal-run "system" Application still sets `owner_user_id` to Substratal's own reserved internal account (the `usr_01JAG0SYSTEM00000000000000` used throughout this site's own examples), not a null owner — see [Applications](../applications/#fields). **Index:** `(owner_user_id)`, `(owner_organization_id)` for "my apps" queries; `(visibility, review_status) where review_status = 'approved'` for the public catalog listing; `(tenant_id)` for a support/ops query of "every Application on this Tenant" during a tier-change migration.
+**Constraint:** `check (owner_user_id is null or owner_organization_id is null)` and `check (owner_user_id is not null or owner_organization_id is not null)` — an Application has exactly one owner, never both and never neither; a Substratal-run "system" Application still sets `owner_user_id` to Substratal's own reserved internal account (the `usr_01JAG0SYSTEM00000000000000` used throughout this site's own examples), not a null owner — see [Applications](../applications/#fields). **Index:** `(owner_user_id)`, `(owner_organization_id)` for "my apps" queries; `(visibility, review_status) where review_status = 'approved'` for the public catalog listing; `(tenant_id)` for a support/ops query of "every Application on this Tenant" during a tier-change migration; `(access_tier)` for the reconcile that keeps platform-managed Entitlements in step.
 
 ## entitlements
 
@@ -213,11 +237,12 @@ Every access query (org-wide grants, `org_admin` checks, seat counts) filters on
 |---|---|---|
 | `id` | `text` | primary key |
 | `user_id` | `text` | nullable, `references users(id)` |
-| `organization_id` | `text` | nullable, `references organizations(id)` — the org-seat grant, not the general multi-tenancy column |
+| `organization_id` | `text` | nullable, `references organizations(id)` — the org-wide grant's holder, not the general multi-tenancy column |
 | `application_id` | `text` | not null, `references applications(id)` |
 | `tenant_id` | `text` | not null, `references tenants(id)` — denormalized from `applications.tenant_id`, see [conventions above](#conventions-used-below) |
 | `status` | `text` | not null, `check (status in ('active','disabled','expired','revoked'))` |
-| `source` | `text` | not null, `check (source in ('purchase','trial','admin_grant','org_seat'))` |
+| `source` | `text` | not null, `check (source in ('purchase','trial','admin_grant','org_seat','free','subscription'))` — `free` and `subscription` are [platform-managed](../entitlements/#platform-managed-entitlements) |
+| `subscription_id` | `text` | nullable, `references subscriptions(id)` — set exactly on `source: subscription` rows |
 | `order_id` | `text` | nullable, `check (char_length(order_id) <= 255)` — an opaque developer-supplied reference, not a foreign key |
 | `starts_at`, `ends_at` | `timestamptz` | `ends_at` nullable |
 | `disabled_reason` | `text` | nullable |
@@ -227,7 +252,7 @@ Every access query (org-wide grants, `org_admin` checks, seat counts) filters on
 | `created_at`, `updated_at` | `timestamptz` | |
 | `version` | `integer` | not null, default `1` |
 
-**Constraints:** `check ((user_id is null) <> (organization_id is null))` (exactly one holder); `check ((source = 'org_seat') = (organization_id is not null))`; `check (source <> 'trial' or ends_at is not null)`; `check (status not in ('disabled','revoked') or disabled_reason is not null)`. **Indexes:** `unique (user_id, application_id, test_mode) where user_id is not null and status in ('active','disabled')` and `unique (organization_id, application_id, test_mode) where organization_id is not null and status in ('active','disabled')`. These are what [`entitlement_already_exists`](../../api-reference/entitlements/#errors-specific-to-this-resource) enforces at the database level, not just in application code; `expired`/`revoked` history rows don't block a new grant. `(application_id, order_id) where order_id is not null` for reconciliation lookups; `(status, ends_at) where status in ('active','disabled') and ends_at is not null` for the 5-minute expiry sweep (a `disabled` row past `ends_at` becomes `expired` too); `(starts_at) where status = 'active'` for the same sweep's other job, firing `access.granted` for rows whose future `starts_at` has just passed; `(application_id, status)` for `GET /v1/entitlements` filtering (see [API Reference → Entitlements](../../api-reference/entitlements/)); `(organization_id)` for org-seat listing; `member_overrides` is read with `= any(member_overrides)` at resolution time rather than its own index — the row count per org-wide grant is small enough that a sequential scan of one array is cheaper than maintaining a GIN index for it.
+**Constraints:** `check ((user_id is null) <> (organization_id is null))` (exactly one holder); `check (organization_id is null or source in ('org_seat','subscription'))` and `check (source <> 'org_seat' or organization_id is not null)` (org rows are seat grants or an Organization's subscription grants); `check (source <> 'free' or user_id is not null)`; `check ((source = 'subscription') = (subscription_id is not null))`; `check (source <> 'trial' or ends_at is not null)`; `check (status not in ('disabled','revoked') or disabled_reason is not null)`. **Indexes:** `unique (user_id, application_id, test_mode) where user_id is not null and status in ('active','disabled') and source not in ('free','subscription')` and the same on `organization_id`. These are what [`entitlement_already_exists`](../../api-reference/entitlements/#errors-specific-to-this-resource) enforces at the database level, not just in application code; `expired`/`revoked` history rows don't block a new grant. Platform-managed rows have their own pair, `unique (user_id, application_id, test_mode, source)` and `unique (organization_id, application_id, test_mode, source)`, both `where status in ('active','disabled') and source in ('free','subscription')`, so a developer grant and a platform-managed row can coexist; `(subscription_id) where subscription_id is not null`. `(application_id, order_id) where order_id is not null` for reconciliation lookups; `(status, ends_at) where status in ('active','disabled') and ends_at is not null` for the 5-minute expiry sweep (a `disabled` row past `ends_at` becomes `expired` too); `(starts_at) where status = 'active'` for the same sweep's other job, firing `access.granted` for rows whose future `starts_at` has just passed; `(application_id, status)` for `GET /v1/entitlements` filtering (see [API Reference → Entitlements](../../api-reference/entitlements/)); `(organization_id)` for org-seat listing; `member_overrides` is read with `= any(member_overrides)` at resolution time rather than its own index — the row count per org-wide grant is small enough that a sequential scan of one array is cheaper than maintaining a GIN index for it.
 
 ## roles, user_role_assignments
 
@@ -376,13 +401,13 @@ This only applies to fields an Application has declared. An arbitrary, undeclare
 | `target_id` | `text` | not null |
 | `target_user_id` | `text` | nullable — the User whose access/data changed, when there is one |
 | `application_id`, `organization_id` | `text` | nullable |
-| `tenant_id` | `text` | nullable — set whenever `application_id` is (denormalized the same way as other per-Application tables) and on `tenant.*` events (the Tenant itself); `null` for platform-level events (e.g. `user.created`) with neither |
+| `tenant_id` | `text` | nullable — set whenever `application_id` is (denormalized the same way as other per-Application tables) and on `tenant.*` events (the Tenant itself); `null` for platform-level events (e.g. `user.created`, `subscription.*`) with neither |
 | `before`, `after` | `jsonb` | nullable |
 | `request_id` | `text` | nullable |
 | `test_mode` | `boolean` | not null, default `false` — copied from the change that produced it, so test traffic never shows in a live audit query |
 | `timestamp` | `timestamptz` | not null, default `now()` |
 
-No `updated_at`, no soft-delete column — this table is append-only by design (see [Non-Functional Requirements → Audit](../../non-functional-requirements/#audit)); revoke `UPDATE`/`DELETE` grants on this table for the application's own database role, so an application-layer bug can't violate the "never edited" guarantee even accidentally. The one exception to "never deleted" is the scheduled archival job (see [Non-Functional Requirements → Audit log lifecycle](../../non-functional-requirements/#audit-log-lifecycle) and [root `DEPLOYMENT.md` → Audit log archival](https://github.com/CompositeCode/substratalapps.com/blob/main/DEPLOYMENT.md#audit-log-archival)), which runs as a separate, elevated role specifically for that one job — rows it has already archived shape-only to cold storage are deleted from this table, nothing else ever is. **Indexes:** `(target_user_id, timestamp desc)`, `(application_id, timestamp desc)`, `(actor_id, timestamp desc)`, `(target_type, target_id, timestamp desc)`, `(organization_id, timestamp desc)`, `(tenant_id, timestamp desc)` — one per documented filter in [API Reference → Audit](../../api-reference/audit/), the last one being what a tier-change migration (and the archival job itself) uses to pull "every event for this Tenant" without scanning the whole table.
+No `updated_at`, no soft-delete column — this table is append-only by design (see [Non-Functional Requirements → Audit](../../non-functional-requirements/#audit)). A trigger (`audit_events_append_only`) rejects every `UPDATE` and `DELETE` unless the transaction has set `app.audit_maintenance = 'on'`, so neither an application bug nor a direct SQL session can violate the "never edited" guarantee. Only two scheduled jobs set it: the archival job (see [Non-Functional Requirements → Audit log lifecycle](../../non-functional-requirements/#audit-log-lifecycle) and [root `DEPLOYMENT.md` → Audit log archival](https://github.com/CompositeCode/substratalapps.com/blob/main/DEPLOYMENT.md#audit-log-archival)), which deletes rows it has already archived shape-only to cold storage, and the erasure cascade, which redacts `before`/`after` for an erased User. **Indexes:** `(target_user_id, timestamp desc)`, `(application_id, timestamp desc)`, `(actor_id, timestamp desc)`, `(target_type, target_id, timestamp desc)`, `(organization_id, timestamp desc)`, `(tenant_id, timestamp desc)` — one per documented filter in [API Reference → Audit](../../api-reference/audit/), the last one being what a tier-change migration (and the archival job itself) uses to pull "every event for this Tenant" without scanning the whole table.
 
 ## api_keys
 
@@ -414,7 +439,7 @@ No `updated_at`, no soft-delete column — this table is append-only by design (
 webhook_subscriptions (
   id text primary key,                         -- whk_...
   scope text not null,                         -- 'platform' or an application_id
-  tenant_id text references tenants(id),       -- null for platform scope; the plan limit counts per tenant
+  tenant_id text references tenants(id),       -- null for platform scope
   url text not null,
   events text[] not null,                      -- or '{*}'
   description text,
@@ -603,7 +628,7 @@ erasure_requests (
 stripe_events (
   id text primary key,                         -- Stripe's own evt_... id; insert-or-skip makes handling idempotent
   type text not null,
-  tenant_id text references tenants(id),
+  subscription_id text references subscriptions(id),  -- the subscription it was applied to, once processed
   received_at timestamptz not null default now(),
   processed_at timestamptz
 );

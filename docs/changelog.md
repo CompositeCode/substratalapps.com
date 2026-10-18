@@ -12,6 +12,19 @@ What's changed in this specification over time. Questions still awaiting a decis
 
 ---
 
+## 2026-10-18 — Subscriber billing applied; decisions folded into the spec
+
+**Subscriber billing** ([DECISIONS.md #39](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#resolved), now resolved). The Free/Standard pricing from 2026-10-17 is now the API:
+
+- **[Billing](../api-reference/billing/) is rewritten.** The four `/v1/tenants/{id}/…` billing endpoints are gone. In their place: `GET /v1/users/{id}/subscription`, `POST /v1/users/me/billing/checkout-sessions` and `…/portal-sessions`, and `GET`/`PATCH /v1/organizations/{id}/subscription` with the Organization's own Checkout and Portal sessions. A new Subscription object (`sbs_`) belongs to a User or an Organization; Organizations choose which members it covers with `member_scope`.
+- **Access stays Entitlement-based.** `Entitlement.source` gains `free` and `subscription`, both [platform-managed](../domain-model/entitlements/#platform-managed-entitlements): every User gets free Applications at signup, and a covering subscription grants every standard Application. Admins can disable and re-enable them; anything else returns `409 entitlement_platform_managed`. Entitlements gain `subscription_id`.
+- **Applications gain `access_tier`** (`free` | `standard`, default `standard`), a moderation field with an `access_tier` list filter. **Users gain `plan` and `plan_sources`.**
+- **Removed:** Tenant `plan`, `subscription_status`, and `restricted` (and the `plan`/`restricted` list filters); the per-plan caps on Applications, AppRoles, webhooks, and seats; `402 subscription_required`; `member_decision: seat_limit`; `plan_does_not_allow_tier`; `GET /v1/tenants/{id}/usage`. `plan_limit_reached` is reserved for future business and enterprise limits.
+- **Audit:** `subscription.created`, `subscription.status_changed`, and `subscription.members_changed` (target type `subscription`) replace `tenant.plan_changed` and `tenant.subscription_status_changed`. The audit hot window is one year for every Tenant.
+- **New workflows:** [A User subscribes to Standard](../workflows/#a-user-subscribes-to-standard) and [An Organization subscribes to Standard for its members](../workflows/#an-organization-subscribes-to-standard-for-its-members).
+
+**Decisions folded into the spec.** #32–#34, #36, #37, and #40 are confirmed as proposed and written into the pages they govern: Organization and Tenant scoping in the data-access layer ([NFR → Multi-tenancy](../non-functional-requirements/#multi-tenancy)), inline Stripe webhook processing, JWKS caching without CloudFront at Tier 0 ([NFR → Service-level objectives](../non-functional-requirements/#service-level-objectives)), test mode and subscriptions ([Pricing](../pricing/#what-a-user-means-for-an-organization)), audit immutability by trigger ([NFR → Audit](../non-functional-requirements/#audit)), and the push notification defaults ([Push Notifications](../api-reference/notifications/)). Only #31, annual plans and a Standard trial, is still open.
+
 ## 2026-10-17 — Push notifications and the notification inbox
 
 New: [Push Notifications](../api-reference/notifications/), so an Application can send a User alerts and other updates without building its own push stack, and the platform can tell a User about their account.
@@ -23,7 +36,7 @@ New: [Push Notifications](../api-reference/notifications/), so an Application ca
 - **Platform alerts.** A fixed catalog of `security.*` and `account.*` notifications (new sign-in, password or email changed, MFA disabled, token reuse, organization invitation, access granted), pushed to the devices of Applications that opt in with the new `receives_platform_notifications` field.
 - **Everywhere else it touches:** 17 operations under a new Notifications tag in `openapi.yaml` (`info.version` `1.0.0-draft.3`), new id prefixes (`dvc_`, `pcr_`, `ntf_`, `ndl_`), webhook events (`device.registered`, `device.deactivated`, `device.deleted`, `notification.push_failed`, `push_credential.failed`), audit actions (`push_credential.created`/`updated`/`deleted`, `device.deleted`), [Database Schema](../domain-model/database-schema/#push_credentials-devices-notifications-notification_deliveries), a new [Domain Model → Notifications](../domain-model/notifications/) page, rate limits and an SLO in [Non-Functional Requirements](../non-functional-requirements/), the export and erasure cascade, Apple, Google, and browser push services as [sub-processors](../compliance/), two new [Workflows](../workflows/#an-application-sends-a-push-alert), and the [Roadmap](../roadmap/#phase-2).
 
-The defaults this rests on (opt-in platform pushes, no broadcast endpoint yet, the per-recipient limit, 90-day retention, no quiet hours yet) are listed for confirmation in [DECISIONS.md #40](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#40-push-notification-defaults). None blocks building. Until the reference implementation builds the feature, every Notifications operation returns `501 not_implemented`.
+The defaults this rests on (opt-in platform pushes, no broadcast endpoint yet, the per-recipient limit, 90-day retention, no quiet hours yet) are listed for confirmation in [DECISIONS.md #40](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#resolved). None blocks building. Until the reference implementation builds the feature, every Notifications operation returns `501 not_implemented`.
 
 ## 2026-10-17 — Free and Standard pricing; OpenAPI Specification section
 
@@ -35,7 +48,7 @@ The defaults this rests on (opt-in platform pushes, no broadcast endpoint yet, t
 
 The previous Starter / Team / Enterprise plans, their per-Tenant limits, and Tenant restricted mode are retired from [Pricing](../pricing/). [Billing system of record](../domain-model/orders-and-audit/#billing-system-of-record), the [Glossary](../glossary/), the [Roadmap](../roadmap/), and [NFR → Audit log lifecycle](../non-functional-requirements/#audit-log-lifecycle) are updated to match. [DECISIONS.md #31](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#31-published-prices-and-billing-options) now covers only annual plans and a Standard trial, and #35 is withdrawn.
 
-The API changes that implement the new model aren't applied yet. They're proposed in [DECISIONS.md #39](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#39-subscriber-billing-api), and every affected page (Billing, Tenancy, Entitlements, Applications, Organizations, Webhooks, Conventions, Access Control, Database Schema, Workflows) carries an "Awaiting decision" callout until then. `openapi.yaml` is unchanged.
+The API changes that implement the new model aren't applied yet. They're proposed in [DECISIONS.md #39](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#resolved), and every affected page (Billing, Tenancy, Entitlements, Applications, Organizations, Webhooks, Conventions, Access Control, Database Schema, Workflows) carries an "Awaiting decision" callout until then. `openapi.yaml` is unchanged.
 
 **OpenAPI Specification.** A new top-level section for developers building against the API: [OpenAPI Specification](../openapi/) explains how to read, download, validate, and generate clients from `openapi.yaml`. The [Interactive Reference](../openapi/reference/) renders the document with Swagger UI, including "Try it out" against a local devserver.
 

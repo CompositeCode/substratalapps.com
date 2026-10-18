@@ -15,7 +15,7 @@ nav_order: 7
 
 ## Order
 
-`order_id` is an opaque, developer-supplied reference (no entity, table, or endpoint), following from the [billing system of record](#billing-system-of-record). `billing.manage` and `billing.refund` apply to the one billing relationship Substratal actually has, platform subscriptions. `billing.manage` lets support view a Tenant's subscription and usage and open its billing portal. `billing.refund` is reserved for Stripe credits and refunds, which are done in the Stripe dashboard today, so it has no endpoint yet.
+`order_id` is an opaque, developer-supplied reference (no entity, table, or endpoint), following from the [billing system of record](#billing-system-of-record). `billing.manage` and `billing.refund` apply to the one billing relationship Substratal actually has, the Free/Standard subscription. `billing.manage` lets support view any User's or Organization's subscription and open its billing portal. `billing.refund` is reserved for Stripe credits and refunds, which are done in the Stripe dashboard today, so it has no endpoint yet.
 
 **An Order isn't an entity in this API.** There's no `orders` table, no `ord_` resource, and no Orders endpoint. The commerce record an Entitlement traces back to lives in the *developer's own* billing system (see [Billing system of record](#billing-system-of-record) below). What this API stores is a **reference** to it:
 
@@ -35,8 +35,7 @@ Today Substratal is the developer of every Application in the catalog, so it bil
 
 Substratal Apps is not a payment processor or marketplace billing engine for anyone else's Application, including after the marketplace phase ships. When the marketplace ships, it makes third-party Applications discoverable, each with its developer's own pricing and billing, entirely outside this API. It is not a checkout that Substratal runs.
 
-{: .decision }
-**API changes awaiting review** ([DECISIONS.md #39](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#39-subscriber-billing-api)). How a Standard subscription is reflected into Entitlements, and the `tenant.plan_changed` audit action below, change under that proposal.
+How a Standard subscription turns into access is in [Entitlements → Platform-managed Entitlements](../entitlements/#platform-managed-entitlements): the platform grants and ends `free` and `subscription` Entitlements, and Applications see them like any other.
 
 ---
 
@@ -49,8 +48,8 @@ An immutable record of who changed what access, when. Never edited or deleted th
 | `id` | string | `evt_` prefix. |
 | `action` | string | See [Action catalog](#action-catalog) below. |
 | `actor` | object | Who made the change: `{ "type": "user" \| "api_key" \| "system", "id": "usr_…" \| "key_…" \| "system" }`. A change made by a User through an MCP or agent session that used their own token is `type: user`; the audit log doesn't distinguish which client a User's token was used from. A change made by an API Key is `type: api_key`, with the key's id. System-initiated changes, such as a trial expiring, an erasure cascade, or a Stripe sync, are `type: system`, `id: "system"`. |
-| `target` | object | What changed: `{ "type": "user" \| "entitlement" \| "role" \| "role_assignment" \| "application" \| "organization" \| "tenant" \| "tier_change_request" \| "api_key" \| "webhook" \| "push_credential" \| "device", "id": "…" }`. `id` is the target's own id, with one exception: a Role assignment has no id of its own, so for `role_assignment` it's the `role_id`, and the User is in `target_user_id`. |
-| `target_user_id` | string, nullable | Whose access or data changed, when there is such a User. It's `null` for events with no user subject, such as `application.updated`, `api_key.created`, or `tenant.plan_changed`. For an org-wide Entitlement change it's also `null`. The per-member effect shows up as [`access.*` webhooks](../../api-reference/webhooks/#event-types), not as one Audit Event per member. |
+| `target` | object | What changed: `{ "type": "user" \| "entitlement" \| "role" \| "role_assignment" \| "application" \| "organization" \| "subscription" \| "tenant" \| "tier_change_request" \| "api_key" \| "webhook" \| "push_credential" \| "device", "id": "…" }`. `id` is the target's own id, with one exception: a Role assignment has no id of its own, so for `role_assignment` it's the `role_id`, and the User is in `target_user_id`. |
+| `target_user_id` | string, nullable | Whose access or data changed, when there is such a User. It's `null` for events with no user subject, such as `application.updated`, `api_key.created`, or an Organization's `subscription.status_changed`. For an org-wide Entitlement change it's also `null`. The per-member effect shows up as [`access.*` webhooks](../../api-reference/webhooks/#event-types), not as one Audit Event per member. |
 | `application_id`, `organization_id`, `tenant_id` | string, nullable | Scope, where relevant. `tenant_id` is the Tenant the change belongs to: denormalized from the Application when there is one, set directly for `tenant.*` events, and `null` for platform-level events with neither (for example `user.created`). |
 | `before` / `after` | object, nullable | A snapshot of the changed fields only, not the whole record. Secrets and hashes never appear, even as before/after values. |
 | `request_id` | string, nullable | The `X-Request-Id` of the API call that caused it, or `null` for system events. It joins audit to request logs. |
@@ -94,7 +93,7 @@ Every value `action` can take. It's mirrored exactly by the `AuditAction` enum i
 | `user.password_reset` | `POST /v1/auth/password/reset` | `user` |
 | `user.mfa_enabled` / `user.mfa_disabled` | TOTP confirmed / disabled by the user | `user` |
 | `user.mfa_reset` | `DELETE /v1/users/{id}/mfa/totp` — **admin-only** | `user` |
-| `entitlement.granted` | An Entitlement is created, or returns to `active` | `entitlement` |
+| `entitlement.granted` | An Entitlement is created, or returns to `active`. Platform-managed `free` and `subscription` rows are granted with actor `system` | `entitlement` |
 | `entitlement.disabled` | `status` set to `disabled` | `entitlement` |
 | `entitlement.revoked` | `status` set to `revoked` | `entitlement` |
 | `entitlement.expired` | Automatic transition to `expired` (actor `system`) | `entitlement` |
@@ -112,8 +111,9 @@ Every value `action` can take. It's mirrored exactly by the `AuditAction` enum i
 | `organization.member_invited` | A `pending` membership is created by email; the person hasn't accepted yet | `organization` |
 | `organization.member_added` / `organization.member_removed` | A membership becomes `active` (accepted, or added directly by `organizations.manage`), or is removed, including leaving and declining | `organization` |
 | `organization.member_role_changed` | `PATCH /v1/organizations/{id}/members/{userId}` | `organization` |
-| `tenant.plan_changed` | `plan` changes via a Stripe sync (actor `system`) | `tenant` |
-| `tenant.subscription_status_changed` | `subscription_status` or `restricted` changes via a Stripe sync (actor `system`) | `tenant` |
+| `subscription.created` | The first Checkout for a User or Organization creates its [Subscription](../../api-reference/billing/#the-subscription-object) (`status: incomplete`) | `subscription` |
+| `subscription.status_changed` | `status` changes via a Stripe sync (actor `system`) | `subscription` |
+| `subscription.members_changed` | An org admin changes which members an Organization's subscription covers (`PATCH /v1/organizations/{id}/subscription`) | `subscription` |
 | `tenant.tier_change_requested` | `POST /v1/tenants/{id}/tier-change-requests` — the request itself, not yet the migration | `tier_change_request` |
 | `tenant.tier_change_request_updated` | `PATCH` on a tier-change request (scheduled, started, cancelled) | `tier_change_request` |
 | `tenant.tier_changed` | A tier-change request reaches `completed`: `tier`/`region` change and `status` returns to `active` — see [Tenancy → How a tier change happens today](../tenancy/#how-a-tier-change-happens-today) | `tenant` |

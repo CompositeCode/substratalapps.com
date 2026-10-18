@@ -4,7 +4,7 @@ info:
   version: "1.0.0-draft.3"
   summary: >-
     User accounts, auth, roles, per-app entitlements (the on/off access
-    switch), profiles, settings, organizations, tenancy, platform billing,
+    switch), profiles, settings, organizations, tenancy, subscription billing,
     and push notifications for applications built on Substratal Apps. Target contract for an API
     that is not yet implemented; the prose specification is authoritative.
   description: >-
@@ -966,6 +966,7 @@ paths:
         - $ref: "#/components/parameters/Cursor"
         - { name: visibility, in: query, schema: { $ref: "#/components/schemas/ApplicationVisibility" } }
         - { name: review_status, in: query, schema: { $ref: "#/components/schemas/ApplicationReviewStatus" } }
+        - { name: access_tier, in: query, schema: { $ref: "#/components/schemas/ApplicationAccessTier" } }
         - { name: owned, in: query, schema: { type: boolean } }
         - { name: tenant_id, in: query, schema: { type: string } }
         - { name: owner_user_id, in: query, schema: { type: string } }
@@ -998,7 +999,6 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Application" }
-        "402": { $ref: "#/components/responses/PaymentRequired" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "409": { $ref: "#/components/responses/Conflict" }
         "422": { $ref: "#/components/responses/Unprocessable" }
@@ -1093,7 +1093,6 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Entitlement" }
-        "402": { $ref: "#/components/responses/PaymentRequired" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "409": { $ref: "#/components/responses/Conflict" }
         "422": { $ref: "#/components/responses/Unprocessable" }
@@ -1607,7 +1606,6 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Entitlement" }
-        "402": { $ref: "#/components/responses/PaymentRequired" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "409": { $ref: "#/components/responses/Conflict" }
         "422": { $ref: "#/components/responses/Unprocessable" }
@@ -1623,10 +1621,8 @@ paths:
       parameters:
         - $ref: "#/components/parameters/Limit"
         - $ref: "#/components/parameters/Cursor"
-        - { name: plan, in: query, schema: { $ref: "#/components/schemas/TenantPlan" } }
         - { name: tier, in: query, schema: { $ref: "#/components/schemas/TenantTier" } }
         - { name: status, in: query, schema: { $ref: "#/components/schemas/TenantStatus" } }
-        - { name: restricted, in: query, schema: { type: boolean } }
         - { name: owner_user_id, in: query, schema: { type: string } }
         - { name: owner_organization_id, in: query, schema: { type: string } }
       responses:
@@ -1742,45 +1738,122 @@ paths:
 
   # ───────────────────────────── Billing ─────────────────────────────
 
-  /tenants/{id}/subscription:
+  /users/{id}/subscription:
     parameters:
-      - { name: id, in: path, required: true, schema: { type: string } }
+      - $ref: "#/components/parameters/UserIdOrMe"
     get:
-      operationId: billing.getSubscription
+      operationId: billing.getUserSubscription
       tags: [Billing]
-      summary: Current plan, subscription status, period, and seats
+      summary: A User's plan, what covers it, and their own subscription (self or billing.manage)
       x-substratal-phase: phase2
       responses:
         "200":
-          description: Subscription
+          description: The User's plan and individual subscription
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/Subscription" }
+              schema: { $ref: "#/components/schemas/UserSubscription" }
+        "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
 
-  /tenants/{id}/usage:
+  /users/me/billing/checkout-sessions:
+    post:
+      operationId: billing.createUserCheckoutSession
+      tags: [Billing]
+      summary: Start a Stripe Checkout to subscribe yourself to Standard (User token)
+      x-substratal-phase: phase2
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CheckoutSessionCreate" }
+      responses:
+        "201":
+          description: Checkout URL
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RedirectSession" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/Unprocessable" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+
+  /users/me/billing/portal-sessions:
+    post:
+      operationId: billing.createUserPortalSession
+      tags: [Billing]
+      summary: Open the Stripe Customer Portal for your own subscription (User token)
+      x-substratal-phase: phase2
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PortalSessionCreate" }
+      responses:
+        "201":
+          description: Portal URL
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RedirectSession" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+
+  /organizations/{id}/subscription:
     parameters:
       - { name: id, in: path, required: true, schema: { type: string } }
     get:
-      operationId: billing.getUsage
+      operationId: billing.getOrganizationSubscription
       tags: [Billing]
-      summary: Usage against every plan limit
+      summary: An Organization's plan and Standard subscription (org admin or billing.manage)
       x-substratal-phase: phase2
       responses:
         "200":
-          description: Usage
+          description: The Organization's plan and subscription
+          headers:
+            ETag: { $ref: "#/components/headers/ETag" }
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/TenantUsage" }
+              schema: { $ref: "#/components/schemas/OrganizationSubscription" }
+        "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      operationId: billing.updateOrganizationSubscription
+      tags: [Billing]
+      summary: Choose which members the Organization's subscription covers (org admin)
+      x-substratal-phase: phase2
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                member_scope: { $ref: "#/components/schemas/EntitlementMemberScope" }
+                member_overrides: { type: [array, "null"], maxItems: 1000, items: { type: string } }
+      responses:
+        "200":
+          description: Updated
+          headers:
+            ETag: { $ref: "#/components/headers/ETag" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OrganizationSubscription" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/Unprocessable" }
 
-  /tenants/{id}/billing/checkout-sessions:
+  /organizations/{id}/billing/checkout-sessions:
     parameters:
       - { name: id, in: path, required: true, schema: { type: string } }
     post:
-      operationId: billing.createCheckoutSession
+      operationId: billing.createOrganizationCheckoutSession
       tags: [Billing]
-      summary: Start a Stripe Checkout to subscribe to Team (owner)
+      summary: Start a Stripe Checkout to subscribe the Organization to Standard (org admin, User token)
       x-substratal-phase: phase2
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
@@ -1789,47 +1862,47 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required: [plan, success_url, cancel_url]
-              properties:
-                plan: { type: string, enum: [team] }
-                success_url: { type: string, format: uri }
-                cancel_url: { type: string, format: uri }
+              allOf:
+                - $ref: "#/components/schemas/CheckoutSessionCreate"
+                - type: object
+                  properties:
+                    member_scope: { $ref: "#/components/schemas/EntitlementMemberScope" }
+                    member_overrides: { type: array, maxItems: 1000, items: { type: string } }
       responses:
         "201":
           description: Checkout URL
           content:
             application/json:
               schema: { $ref: "#/components/schemas/RedirectSession" }
+        "400": { $ref: "#/components/responses/BadRequest" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/Conflict" }
         "422": { $ref: "#/components/responses/Unprocessable" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
 
-  /tenants/{id}/billing/portal-sessions:
+  /organizations/{id}/billing/portal-sessions:
     parameters:
       - { name: id, in: path, required: true, schema: { type: string } }
     post:
-      operationId: billing.createPortalSession
+      operationId: billing.createOrganizationPortalSession
       tags: [Billing]
-      summary: Open the Stripe Customer Portal (owner or billing.manage)
+      summary: Open the Stripe Customer Portal for the Organization's subscription (org admin or billing.manage, User token)
       x-substratal-phase: phase2
       requestBody:
         required: true
         content:
           application/json:
-            schema:
-              type: object
-              required: [return_url]
-              properties:
-                return_url: { type: string, format: uri }
+            schema: { $ref: "#/components/schemas/PortalSessionCreate" }
       responses:
         "201":
           description: Portal URL
           content:
             application/json:
               schema: { $ref: "#/components/schemas/RedirectSession" }
+        "400": { $ref: "#/components/responses/BadRequest" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/Conflict" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
 
@@ -1934,7 +2007,6 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/WebhookWithSecret" }
-        "402": { $ref: "#/components/responses/PaymentRequired" }
         "409": { $ref: "#/components/responses/Conflict" }
         "422": { $ref: "#/components/responses/Unprocessable" }
 
@@ -2612,11 +2684,6 @@ components:
       content:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }
-    PaymentRequired:
-      description: "subscription_required — the owning Tenant is restricted after a lapsed subscription"
-      content:
-        application/json:
-          schema: { $ref: "#/components/schemas/Error" }
     Forbidden:
       description: "Authenticated but not permitted (forbidden, destructive_operation_restricted, entitlement_required, role_escalation_forbidden, …)"
       content:
@@ -2628,7 +2695,7 @@ components:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }
     Conflict:
-      description: "State conflict (version_conflict, idempotency_key_reused, plan_limit_reached, entitlement_already_exists, invalid_status_transition, …)"
+      description: "State conflict (version_conflict, idempotency_key_reused, entitlement_already_exists, entitlement_platform_managed, subscription_exists, invalid_status_transition, …)"
       content:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }
@@ -2799,6 +2866,8 @@ components:
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
         last_login_at: { type: [string, "null"], format: date-time }
+        plan: { $ref: "#/components/schemas/Plan" }
+        plan_sources: { type: array, items: { $ref: "#/components/schemas/PlanSource" }, description: "What gives this User Standard: their own subscription, an Organization's, or both. Empty on Free." }
 
     UserPage:
       allOf:
@@ -2942,6 +3011,11 @@ components:
         key: { type: string, pattern: "^app\\.[a-z0-9_-]+\\.[a-z0-9_.]{1,64}$" }
         description: { type: string, maxLength: 255 }
 
+    ApplicationAccessTier:
+      type: string
+      enum: [free, standard]
+      description: "Which plan unlocks the Application: free for every User, standard for Users covered by a Standard subscription. Set by applications.manage; defaults to standard."
+
     ApplicationSummary:
       type: object
       properties:
@@ -2951,6 +3025,7 @@ components:
         description: { type: [string, "null"] }
         icon_url: { type: [string, "null"] }
         visibility: { $ref: "#/components/schemas/ApplicationVisibility" }
+        access_tier: { $ref: "#/components/schemas/ApplicationAccessTier" }
         review_status: { $ref: "#/components/schemas/ApplicationReviewStatus" }
 
     ApplicationSummaryPage:
@@ -2976,6 +3051,7 @@ components:
         available_app_roles: { type: array, maxItems: 20, items: { type: string, pattern: "^[a-z][a-z0-9_]{1,40}$" } }
         default_app_role: { type: [string, "null"] }
         visibility: { $ref: "#/components/schemas/ApplicationVisibility" }
+        access_tier: { $ref: "#/components/schemas/ApplicationAccessTier" }
         owner_user_id: { type: [string, "null"] }
         owner_organization_id: { type: [string, "null"] }
         review_status: { $ref: "#/components/schemas/ApplicationReviewStatus" }
@@ -3010,7 +3086,8 @@ components:
 
     EntitlementSource:
       type: string
-      enum: [purchase, trial, admin_grant, org_seat]
+      enum: [purchase, trial, admin_grant, org_seat, free, subscription]
+      description: "free and subscription rows are platform-managed: granted and ended by the platform from the Application's access_tier and the holder's subscription. An admin may disable and re-enable one; nothing else about it can be changed."
 
     EntitlementMemberScope:
       type: string
@@ -3021,7 +3098,7 @@ components:
       description: "Computed per member at read time; present only when reading a specific member's view of an org-wide grant."
       properties:
         organization_id: { type: string }
-        member_decision: { type: string, enum: [included, excluded, seat_limit] }
+        member_decision: { type: string, enum: [included, excluded] }
 
     Entitlement:
       type: object
@@ -3033,6 +3110,7 @@ components:
         status: { $ref: "#/components/schemas/EntitlementStatus" }
         source: { $ref: "#/components/schemas/EntitlementSource" }
         order_id: { type: [string, "null"], maxLength: 255, description: "Opaque developer-supplied billing reference" }
+        subscription_id: { type: [string, "null"], readOnly: true, description: "The subscription a source: subscription row comes from." }
         starts_at: { type: string, format: date-time }
         ends_at: { type: [string, "null"], format: date-time }
         disabled_reason: { type: [string, "null"] }
@@ -3128,7 +3206,7 @@ components:
               entitlement_id: { type: string }
               status: { $ref: "#/components/schemas/EntitlementStatus" }
               organization_id: { type: [string, "null"] }
-              member_decision: { type: [string, "null"], enum: [included, excluded, seat_limit, null] }
+              member_decision: { type: [string, "null"], enum: [included, excluded, null] }
         roles: { type: array, items: { type: string } }
         effective_permissions: { type: array, items: { type: string } }
         computed_at: { type: string, format: date-time }
@@ -3190,18 +3268,14 @@ components:
       type: string
       enum: [shared, isolated, dedicated_region]
 
-    TenantPlan:
-      type: string
-      enum: [starter, team, enterprise]
-      description: "Commercial plan, independent of tier. isolated/dedicated_region require enterprise; starter requires a user owner."
-
     TenantStatus:
       type: string
       enum: [active, migrating, suspended]
 
     SubscriptionStatus:
       type: string
-      enum: [none, active, trialing, past_due, canceled, unpaid, incomplete, incomplete_expired, paused]
+      enum: [active, trialing, past_due, canceled, unpaid, incomplete, incomplete_expired, paused]
+      description: "Mirrors Stripe. active, trialing, and past_due cover their users with Standard; the rest don't."
 
     Tenant:
       type: object
@@ -3211,11 +3285,8 @@ components:
         owner_user_id: { type: [string, "null"] }
         owner_organization_id: { type: [string, "null"] }
         tier: { $ref: "#/components/schemas/TenantTier" }
-        plan: { $ref: "#/components/schemas/TenantPlan" }
         region: { $ref: "#/components/schemas/Region" }
         status: { $ref: "#/components/schemas/TenantStatus" }
-        subscription_status: { $ref: "#/components/schemas/SubscriptionStatus" }
-        restricted: { type: boolean }
         application_count: { type: integer }
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
@@ -3256,47 +3327,73 @@ components:
           properties:
             data: { type: array, items: { $ref: "#/components/schemas/TenantTierChangeRequest" } }
 
+    Plan:
+      type: string
+      enum: [free, standard]
+      description: "Business and enterprise plans come later."
+
+    PlanSource:
+      type: object
+      required: [type, id]
+      properties:
+        type: { type: string, enum: [user, organization] }
+        id: { type: string, description: "The User (an individual subscription) or the Organization whose subscription covers this User." }
+
     Subscription:
       type: object
       properties:
-        tenant_id: { type: string }
-        plan: { $ref: "#/components/schemas/TenantPlan" }
-        subscription_status: { $ref: "#/components/schemas/SubscriptionStatus" }
-        restricted: { type: boolean }
+        id: { type: string, description: "sbs_ prefix" }
+        subscriber_type: { type: string, enum: [user, organization] }
+        user_id: { type: [string, "null"] }
+        organization_id: { type: [string, "null"] }
+        plan: { type: string, enum: [standard] }
+        status: { $ref: "#/components/schemas/SubscriptionStatus" }
         current_period_start: { type: [string, "null"], format: date-time }
         current_period_end: { type: [string, "null"], format: date-time }
         cancel_at_period_end: { type: boolean }
-        seats:
+        member_scope: { oneOf: [ { $ref: "#/components/schemas/EntitlementMemberScope" }, { type: "null" } ], description: "Organization subscriptions only." }
+        member_overrides: { type: [array, "null"], items: { type: string } }
+        quantity:
           type: object
+          description: "Users billed. Always 1 for an individual subscription; for an Organization, covered members."
           properties:
             current: { type: integer }
-            included: { type: integer }
-            billable: { type: integer }
+            last_synced: { type: [integer, "null"] }
             last_synced_at: { type: [string, "null"], format: date-time }
-        add_ons:
-          type: array
-          items:
-            type: object
-            properties:
-              code: { type: string, enum: [isolated_tenancy, dedicated_region_tenancy] }
-              amount: { type: integer, description: Cents per month }
+        unit_amount: { type: integer, description: "Cents per user per month (600)." }
         currency: { type: string, const: usd }
+        test_mode: { type: boolean }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
 
-    TenantUsage:
+    UserSubscription:
       type: object
       properties:
-        tenant_id: { type: string }
-        plan: { $ref: "#/components/schemas/TenantPlan" }
-        limits:
-          type: object
-          additionalProperties:
-            type: object
-            properties:
-              limit: { type: [integer, "null"] }
-              current: { type: integer }
-              included: { type: integer }
-          description: "Keys: applications, seats, app_roles (current = highest count on any one Application), webhooks, audit_hot_window_days. The same names as plan_limit_reached's details.resource." 
-        fits_plans: { type: array, items: { $ref: "#/components/schemas/TenantPlan" } }
+        user_id: { type: string }
+        plan: { $ref: "#/components/schemas/Plan" }
+        plan_sources: { type: array, items: { $ref: "#/components/schemas/PlanSource" } }
+        subscription: { oneOf: [ { $ref: "#/components/schemas/Subscription" }, { type: "null" } ], description: "The User's own individual subscription, if they've ever started one." }
+
+    OrganizationSubscription:
+      type: object
+      properties:
+        organization_id: { type: string }
+        plan: { $ref: "#/components/schemas/Plan" }
+        subscription: { oneOf: [ { $ref: "#/components/schemas/Subscription" }, { type: "null" } ] }
+
+    CheckoutSessionCreate:
+      type: object
+      required: [plan, success_url, cancel_url]
+      properties:
+        plan: { type: string, enum: [standard, business, enterprise], description: "Only standard is self-service; business and enterprise return 422 plan_requires_sales." }
+        success_url: { type: string, format: uri }
+        cancel_url: { type: string, format: uri }
+
+    PortalSessionCreate:
+      type: object
+      required: [return_url]
+      properties:
+        return_url: { type: string, format: uri }
 
     RedirectSession:
       type: object
@@ -3346,8 +3443,9 @@ components:
         - organization.member_added
         - organization.member_removed
         - organization.member_role_changed
-        - tenant.plan_changed
-        - tenant.subscription_status_changed
+        - subscription.created
+        - subscription.status_changed
+        - subscription.members_changed
         - tenant.tier_change_requested
         - tenant.tier_change_request_updated
         - tenant.tier_changed
@@ -3367,7 +3465,7 @@ components:
 
     AuditTargetType:
       type: string
-      enum: [user, entitlement, role, role_assignment, application, organization, tenant, tier_change_request, api_key, webhook, push_credential, device]
+      enum: [user, entitlement, role, role_assignment, application, organization, subscription, tenant, tier_change_request, api_key, webhook, push_credential, device]
 
     AuditEvent:
       type: object

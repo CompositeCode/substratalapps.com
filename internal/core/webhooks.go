@@ -282,19 +282,6 @@ func (s *Server) WebhooksCreate(w http.ResponseWriter, r *http.Request) {
 			if err := tenantWritable(t); err != nil {
 				return err
 			}
-			if t.Restricted {
-				return subscriptionRequired(t)
-			}
-			if l := plans[t.Plan].Webhooks; l != nil {
-				var n int
-				if err := db.One(c.ctx, c.q, &n, `select to_jsonb(count(*)) from webhook_subscriptions where tenant_id = :t`,
-					db.Args{"t": t.ID}); err != nil {
-					return err
-				}
-				if n >= *l {
-					return planLimitErr("webhooks", *l, n, t)
-				}
-			}
 			tenantID = &t.ID
 		}
 		secret := ids.Secret(ids.WebhookSecret)

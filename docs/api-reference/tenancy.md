@@ -8,7 +8,7 @@ nav_order: 10
 # Tenancy
 {: .no_toc }
 
-Where a Tenant's data lives, and the support-run process to change it. See [Domain Model → Tenancy](../../domain-model/tenancy/) for the full field reference, and [Billing](../billing/) for the Tenant's platform subscription.
+Where a Tenant's data lives, and the support-run process to change it. See [Domain Model → Tenancy](../../domain-model/tenancy/) for the full field reference, Tenants aren't billed; [Billing](../billing/) covers the Free/Standard subscription, which belongs to Users and Organizations.
 {: .fs-6 .fw-300 }
 
 1. TOC
@@ -36,9 +36,6 @@ A Tenant is owned by either a User or an Organization. "Owner" here means the `o
 
 Tenants are never created or deleted directly. One is created automatically the first time its owner gets an Application (see [Applications → `POST`](../applications/#post-v1applications)), and it persists after that.
 
-{: .decision }
-**API changes awaiting review** ([DECISIONS.md #39](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#39-subscriber-billing-api)). #39 proposes removing `plan`, `subscription_status`, and `restricted` from the Tenant, since Tenants are no longer what's billed. `isolated`/`dedicated_region` would wait for business pricing instead of requiring `plan: enterprise`.
-
 ## The Tenant object
 
 ```json
@@ -48,11 +45,8 @@ Tenants are never created or deleted directly. One is created automatically the 
   "owner_user_id": null,
   "owner_organization_id": "org_01JAFZ8Y7X6W5V4V3T2S1R0Q9P",
   "tier": "isolated",
-  "plan": "enterprise",
   "region": "us-east-1",
   "status": "active",
-  "subscription_status": "active",
-  "restricted": false,
   "application_count": 3,
   "created_at": "2026-04-02T10:00:00Z",
   "updated_at": "2026-09-14T03:12:00Z"
@@ -60,12 +54,11 @@ Tenants are never created or deleted directly. One is created automatically the 
 ```
 
 - `region` is always set. It's `us-east-1` for `shared` and `isolated`, and the chosen region for `dedicated_region`. Earlier drafts used `null` for "the default region". Always returning a real value means a reader never has to know what the default is.
-- `subscription_status` and `restricted` mirror the Stripe-synced billing state. See [Billing](../billing/) and [Pricing → Subscription lapse](../../pricing/#when-a-subscription-lapses).
 - `status: migrating` holds for the duration of an `in_progress` tier change. While it does, reads keep working, and writes to that Tenant's data return `503 service_unavailable` with `Retry-After`.
 
 ## `GET /v1/tenants`
 
-A non-`tenants.manage` caller gets the Tenants they own: at most one owned personally, plus one per Organization where they're `org_admin` and the Organization owns a Tenant. This is how a developer finds their own `tenant_id` without knowing it in advance. `tenants.manage` holders see every Tenant and can filter by `plan`, `tier`, `status`, `restricted`, `owner_user_id`, and `owner_organization_id`.
+A non-`tenants.manage` caller gets the Tenants they own: at most one owned personally, plus one per Organization where they're `org_admin` and the Organization owns a Tenant. This is how a developer finds their own `tenant_id` without knowing it in advance. `tenants.manage` holders see every Tenant and can filter by `tier`, `status`, `owner_user_id`, and `owner_organization_id`.
 
 ## `GET /v1/tenants/{id}`
 
@@ -106,7 +99,6 @@ The `dedicated_region` allow-list is `us-east-1`, `us-west-2`, `ca-central-1`, `
 Validation:
 
 - `requested_tier` must be strictly higher on the ladder `shared < isolated < dedicated_region` (`409 invalid_tier_transition`). Moving down implies tearing down dedicated infrastructure and is handled by ops directly, not as a modeled transition. Changing region *within* `dedicated_region` counts as an upgrade request.
-- The Tenant's `plan` must be `enterprise` (`409 plan_does_not_allow_tier`). Upgrade the plan first; see [Billing](../billing/).
 - `requested_region` is required for `dedicated_region` and must be in the supported list: `us-east-1`, `us-west-2`, `ca-central-1`, `eu-west-1`, `eu-central-1`, `ap-southeast-2` (`422 unsupported_region`). It's forbidden for `isolated`.
 - `reason` is required, up to 2,000 characters.
 - There can be only one open (`pending`/`scheduled`/`in_progress`) request per Tenant (`409 tier_change_already_pending`).
@@ -149,6 +141,5 @@ Any other transition returns `409 invalid_request_transition`. Every change writ
 | `tier_change_request_not_found` | 404 | `{requestId}` doesn't resolve for this Tenant. |
 | `tier_change_already_pending` | 409 | An open request already exists. |
 | `invalid_tier_transition` | 409 | Not an upgrade on the ladder. |
-| `plan_does_not_allow_tier` | 409 | `isolated`/`dedicated_region` on a non-Enterprise plan. |
 | `unsupported_region` | 422 | `requested_region` isn't on the supported list. |
 | `invalid_request_transition` | 409 | A request `status` change not in the table above. |

@@ -43,8 +43,9 @@ func (c *Call) emailTaken(addr string) (userRow, bool, error) {
 }
 
 // createUser creates the User, an optional password identity, a default
-// Profile and Settings, and the member platform Role, in the current
-// transaction (NFR → Transaction boundaries), and writes user.created.
+// Profile and Settings, the member platform Role, and a free Entitlement to
+// each free Application, in the current transaction (NFR → Transaction
+// boundaries), and writes user.created.
 func (c *Call) createUser(n newUser) (userRow, error) {
 	id := ids.New(ids.User)
 	display := n.DisplayName
@@ -87,7 +88,11 @@ func (c *Call) createUser(n newUser) (userRow, error) {
 	if n.ActorType != "" {
 		a.ActorType, a.ActorID = n.ActorType, n.ActorID
 	}
-	return u, c.audit(a)
+	if err := c.audit(a); err != nil {
+		return u, err
+	}
+	// Every User starts on Free: a free Entitlement to each free Application.
+	return u, c.reconcileAccess(accessScope{UserID: id})
 }
 
 func truncate(s string, n int) string {

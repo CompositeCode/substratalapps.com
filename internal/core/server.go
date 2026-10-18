@@ -33,18 +33,27 @@ type Notifier interface {
 
 // Billing is the Stripe-facing surface the billing endpoints need.
 type Billing interface {
-	EnsureCustomer(ctx context.Context, tenantID, email string) (customerID string, err error)
+	EnsureCustomer(ctx context.Context, who BillingSubscriber, email string) (customerID string, err error)
 	CheckoutSession(ctx context.Context, in CheckoutInput) (url string, expires time.Time, err error)
 	PortalSession(ctx context.Context, customerID, returnURL string) (url string, expires time.Time, err error)
+	// LiveMode reports whether the configured Stripe key is a live key.
+	LiveMode() bool
 }
 
-// CheckoutInput is a Team upgrade request.
+// BillingSubscriber is who a Stripe Customer or subscription belongs to.
+type BillingSubscriber struct {
+	Type string // user | organization
+	ID   string
+}
+
+// CheckoutInput is a request to subscribe to Standard.
 type CheckoutInput struct {
-	TenantID   string
-	CustomerID string
-	Seats      int
-	SuccessURL string
-	CancelURL  string
+	SubscriptionID string // our sbs_… id, carried in Stripe metadata
+	Subscriber     BillingSubscriber
+	CustomerID     string
+	Quantity       int
+	SuccessURL     string
+	CancelURL      string
 }
 
 // Deps are everything Server needs from the outside world.

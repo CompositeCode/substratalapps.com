@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"slices"
 	"strings"
 	"time"
 
@@ -839,44 +838,14 @@ func (s *Server) OrganizationsGrantEntitlement(w http.ResponseWriter, r *http.Re
 		if err := tenantWritable(t); err != nil {
 			return err
 		}
-		live, err := c.queryEnts(`e.organization_id = :o and e.application_id = :a and e.status in ('active','disabled')`,
-			db.Args{"o": o.ID, "a": a.ID})
+		live, err := c.queryEnts(`e.organization_id = :o and e.application_id = :a and e.status in ('active','disabled')
+			and e.source not in ('free','subscription')`, db.Args{"o": o.ID, "a": a.ID})
 		if err != nil {
 			return err
 		}
 		if len(live) > 0 {
 			return httpx.Conflict("entitlement_already_exists", "This Organization already has a live grant to this Application.").
 				With("existing_entitlement_id", live[0].ID)
-		}
-		// Plan checks on the Application's Tenant: every newly included
-		// active member who isn't already a seat counts as a new one.
-		if !c.testMode() && (t.Restricted || plans[t.Plan].Seats != nil) {
-			members, err := db.All[string](c.ctx, c.q, `select to_jsonb(m.user_id) from organization_memberships m
-				join users u on u.id = m.user_id
-				where m.organization_id = :o and m.status = 'active' and u.status = 'active' and not u.test_mode`,
-				db.Args{"o": o.ID})
-			if err != nil {
-				return err
-			}
-			ss, err := c.seats(t.ID)
-			if err != nil {
-				return err
-			}
-			added := 0
-			for _, uid := range members {
-				included := scope == "all_members" ||
-					(scope == "allowlist" && slices.Contains(overrides, uid)) ||
-					(scope == "denylist" && !slices.Contains(overrides, uid))
-				if included && !ss.isSeat(uid) {
-					added++
-				}
-			}
-			if added > 0 && t.Restricted {
-				return subscriptionRequired(t)
-			}
-			if l := plans[t.Plan].Seats; l != nil && added > 0 && ss.count()+added > *l {
-				return planLimitErr("seats", *l, ss.count(), t)
-			}
 		}
 		pairs, err := c.orgMemberPairs(o.ID, a.ID)
 		if err != nil {

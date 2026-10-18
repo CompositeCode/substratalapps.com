@@ -31,8 +31,8 @@ var PlatformPermissions = []PlatformPermission{
 	{"applications.manage", "platform", "Create and edit Application catalog entries."},
 	{"roles.manage", "platform", "Define Roles and assign/remove them on any user. On an app-scoped key, confined to that Application's Roles."},
 	{"organizations.manage", "platform", "Manage any Organization: suspend/reactivate, membership, and member scope."},
-	{"billing.manage", "platform", "View any Tenant's platform subscription and usage, and open its billing portal."},
-	{"billing.refund", "platform", "Issue platform-subscription refunds and credits."},
+	{"billing.manage", "platform", "View any User's or Organization's subscription, and open its billing portal."},
+	{"billing.refund", "platform", "Issue subscription refunds and credits."},
 	{"audit.view", "platform", "Query the Audit log for any user. On an app-scoped key, confined to that Application's events."},
 	{"webhooks.manage", "platform", "Manage any webhook subscription, and create platform-scoped ones."},
 	{"api_keys.manage", "platform", "Create, rotate, and revoke any API Key."},
@@ -320,9 +320,6 @@ func (s *Server) RolesCreate(w http.ResponseWriter, r *http.Request) {
 			}
 			if err := tenantWritable(t); err != nil {
 				return err
-			}
-			if t.Restricted && !c.testMode() {
-				return subscriptionRequired(t)
 			}
 		}
 		perms := dedupe(in.Permissions)

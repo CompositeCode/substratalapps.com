@@ -33,12 +33,13 @@ The hub is the **only** writer of Entitlement and Role state. Apps read (via JWT
 
 ## Multi-tenancy
 
-Two independent axes, both enforced the same way — **Postgres Row-Level Security policies**, not application-code `WHERE` clauses a future query can forget to add — but answering different questions, and easy to conflate if read too quickly:
+Three scoping axes. They answer different questions, and are easy to conflate if read too quickly:
 
-- **`organization_id`** — team/seat grouping. Every record that can belong to an [Organization](../domain-model/users-and-organizations/#organization) is scoped by it, keyed off a session variable the API layer sets per request (`SET LOCAL app.current_org_id = ...`). This matters even before Organizations are customer-facing everywhere (see [Decisions](../domain-model/users-and-organizations/#organization)) — the column and the policy exist and are enforced from day one so neither is a migration later.
-- **`tenant_id`** — infrastructure placement. Every record scoped to one [Application](../domain-model/applications/) carries it, denormalized from that Application's own `tenant_id` (see [Tenancy](../domain-model/tenancy/)), keyed off a second session variable (`SET LOCAL app.current_tenant_id = ...`). For a `shared`-tier [Tenant](../domain-model/tenancy/#tiers) this policy is the *only* isolation in place; for `isolated`/`dedicated_region`, the row additionally never lives on the same physical cluster as another Tenant's rows at all — the RLS policy and the physical placement are deliberately redundant, not an either/or.
+- **Test vs. live** — every table a test-mode credential can write carries `test_mode`, and a **Postgres Row-Level Security policy** keyed on a session variable the API sets in every request's transaction (`app.current_test_mode`) keeps test and live rows invisible to each other, on both database backends. It fails closed: a transaction that doesn't set it sees live rows only. This is enforced by the database, not by application `WHERE` clauses a future query could forget.
+- **`organization_id`** — team grouping. Every record that can belong to an [Organization](../domain-model/users-and-organizations/#organization) carries it from day one, so it's never a migration later.
+- **`tenant_id`** — infrastructure placement. Every record scoped to one [Application](../domain-model/applications/) carries it, denormalized from that Application's own `tenant_id` (see [Tenancy](../domain-model/tenancy/)).
 
-A query that omits either session variable should fail closed (return nothing) by policy default, not fail open. See [Decisions → Tenant vs. Organization](../domain-model/tenancy/#tenant-vs-organization) for why these are two columns and two policies, not one.
+On the `shared` tier, Organization and Tenant scoping are enforced in the data-access layer: app-confined API keys, owner and `org_admin` checks, and explicit `tenant_id` / `organization_id` filters, each covered by integration tests. They aren't RLS policies, because a single request legitimately spans many of both: a User in several Organizations, a platform admin listing every Entitlement, a job sweeping every Tenant. An `isolated` or `dedicated_region` Tenant's rows never share a physical cluster with another Tenant's at all. When the first such Tenant needs a second line of defense inside its own cluster, per-request allowed-set policies (`app.allowed_tenant_ids`, with an explicit platform bypass) are added then. See [Tenant vs. Organization](../domain-model/tenancy/#tenant-vs-organization) for why these are separate columns.
 
 ## Concurrency control
 
@@ -50,7 +51,7 @@ Any write described as "also creates" or "also assigns" elsewhere in this spec �
 
 ## Audit
 
-Every state change listed in the [Action catalog](../domain-model/orders-and-audit/#action-catalog) produces an immutable [Audit Event](../domain-model/orders-and-audit/), written in the same transaction as the change: actor (user, API key, or system), action, target, before/after snapshot, request id, and timestamp. Audit events are never deleted or edited through the API, including when the record they describe is later deleted. Two scheduled jobs are the only writers after insert, and both only reduce an event to its shape: the archival job ([Audit log lifecycle](#audit-log-lifecycle)) and step 4 of the [Hard-delete cascade](#hard-delete-cascade), which redacts `before`/`after`. Both run as a separate database role that holds `UPDATE`/`DELETE` on `audit_events`; the API's own role never does.
+Every state change listed in the [Action catalog](../domain-model/orders-and-audit/#action-catalog) produces an immutable [Audit Event](../domain-model/orders-and-audit/), written in the same transaction as the change: actor (user, API key, or system), action, target, before/after snapshot, request id, and timestamp. Audit events are never deleted or edited through the API, including when the record they describe is later deleted. Two scheduled jobs are the only writers after insert, and both only reduce an event to its shape: the archival job ([Audit log lifecycle](#audit-log-lifecycle)) and step 4 of the [Hard-delete cascade](#hard-delete-cascade), which redacts `before`/`after`. The database enforces this for every caller, including a direct SQL session: a trigger rejects every `UPDATE` and `DELETE` on `audit_events` unless the transaction has set `app.audit_maintenance = 'on'`, which only those two jobs do.
 
 ## Idempotency & retries
 
@@ -83,7 +84,7 @@ Separate from the [Audit log](#audit), which records *changes to state*. The sec
 
 ## Service-level objectives
 
-Targets for the API itself, measured monthly at the API Gateway. They're published to customers only once there's a track record, and they aren't contractual until an Enterprise agreement says so.
+Targets for the API itself, measured monthly at the API Gateway. They're published to customers only once there's a track record, and they aren't contractual until a business or enterprise agreement says so.
 
 | Objective | Target |
 |---|---|
@@ -92,7 +93,7 @@ Targets for the API itself, measured monthly at the API Gateway. They're publish
 | All other endpoints | p95 < 400 ms |
 | Webhook dispatch (commit → first attempt) | p95 < 10 s |
 | Push notification dispatch (commit → first provider attempt) | p95 < 10 s |
-| JWKS availability | 99.99% (served from CloudFront with a 1-hour cache, so it survives an API outage) |
+| JWKS availability | 99.99%. JWKS is served by the API with `Cache-Control: public, max-age=3600`, and Applications cache it for that hour, so a short API outage doesn't stop token verification. CloudFront goes in front of the whole API domain at the [Scale-out](https://github.com/CompositeCode/substratalapps.com/blob/main/DEPLOYMENT.md#scale-out) trigger, not at Tier 0. |
 
 ## Versioning
 
@@ -123,10 +124,6 @@ Every response carries an `X-Request-Id` (server-generated if the caller didn't 
 ### Audit log lifecycle
 
 "Retained indefinitely" and the audit log's **hot-storage window** are two different axes, not a contradiction. The hot window is one year for every Tenant; business and enterprise pricing may negotiate a longer one when it ships.
-
-{: .decision }
-**Proposed — confirm** ([DECISIONS.md #39](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#39-subscriber-billing-api)). The hot window used to vary by the developer's plan (30 days Starter, 1 year Team). With developer plans retired, #39 proposes one year for everyone. The archival job still reads the old per-plan windows until #39 is applied.
-
 
 1. **Hot storage.** A freshly-written Audit Event lives in the primary `audit_events` table (Aurora Postgres) with its full `before`/`after` snapshot — queryable via [API Reference → Audit](../api-reference/audit/) exactly as specified elsewhere on this page.
 2. **Archival, at the end of the hot window.** A scheduled job (see [Deployment Architecture → Audit log archival](https://github.com/CompositeCode/substratalapps.com/blob/main/DEPLOYMENT.md)) moves every Audit Event older than the hot window out of the hot table: `action`, `timestamp`, `actor_type`/`actor_id`, `target_type`/`target_id`, and every other shape field move to cheap, indefinite cold storage; the `before`/`after` snapshot values — the one place the row could hold personal data — are dropped at this point rather than carried forward, the same redaction [Hard-delete cascade](#hard-delete-cascade) step 4 already performs for a deleted User, just applied uniformly by age instead of by erasure request.

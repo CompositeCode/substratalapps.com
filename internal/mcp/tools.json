@@ -508,6 +508,14 @@
             "allOf": [
               {
                 "properties": {
+                  "access_tier": {
+                    "description": "Which plan unlocks the Application: free for every User, standard for Users covered by a Standard subscription. Set by applications.manage; defaults to standard.",
+                    "enum": [
+                      "free",
+                      "standard"
+                    ],
+                    "type": "string"
+                  },
                   "available_app_roles": {
                     "items": {
                       "pattern": "^[a-z][a-z0-9_]{1,40}$",
@@ -712,6 +720,14 @@
       "inputSchema": {
         "additionalProperties": false,
         "properties": {
+          "access_tier": {
+            "description": "Which plan unlocks the Application: free for every User, standard for Users covered by a Standard subscription. Set by applications.manage; defaults to standard.",
+            "enum": [
+              "free",
+              "standard"
+            ],
+            "type": "string"
+          },
           "cursor": {
             "type": "string"
           },
@@ -769,6 +785,7 @@
         "cursor",
         "visibility",
         "review_status",
+        "access_tier",
         "owned",
         "tenant_id",
         "owner_user_id",
@@ -787,6 +804,14 @@
         "properties": {
           "body": {
             "properties": {
+              "access_tier": {
+                "description": "Which plan unlocks the Application: free for every User, standard for Users covered by a Standard subscription. Set by applications.manage; defaults to standard.",
+                "enum": [
+                  "free",
+                  "standard"
+                ],
+                "type": "string"
+              },
               "available_app_roles": {
                 "items": {
                   "pattern": "^[a-z][a-z0-9_]{1,40}$",
@@ -1030,8 +1055,9 @@
                 "organization.member_added",
                 "organization.member_removed",
                 "organization.member_role_changed",
-                "tenant.plan_changed",
-                "tenant.subscription_status_changed",
+                "subscription.created",
+                "subscription.status_changed",
+                "subscription.members_changed",
                 "tenant.tier_change_requested",
                 "tenant.tier_change_request_updated",
                 "tenant.tier_changed",
@@ -1094,6 +1120,7 @@
               "role_assignment",
               "application",
               "organization",
+              "subscription",
               "tenant",
               "tier_change_request",
               "api_key",
@@ -2123,35 +2150,62 @@
       "x_accepts_if_match": false
     },
     {
-      "name": "substratal_billing_createCheckoutSession",
-      "title": "Start a Stripe Checkout to subscribe to Team (owner)",
-      "description": "Start a Stripe Checkout to subscribe to Team (owner)\n\nREST: POST /v1/tenants/{id}/billing/checkout-sessions",
+      "name": "substratal_billing_createOrganizationCheckoutSession",
+      "title": "Start a Stripe Checkout to subscribe the Organization to Standard (org admin, User token)",
+      "description": "Start a Stripe Checkout to subscribe the Organization to Standard (org admin, User token)\n\nREST: POST /v1/organizations/{id}/billing/checkout-sessions",
       "inputSchema": {
         "additionalProperties": false,
         "properties": {
           "body": {
-            "properties": {
-              "cancel_url": {
-                "format": "uri",
-                "type": "string"
-              },
-              "plan": {
-                "enum": [
-                  "team"
+            "allOf": [
+              {
+                "properties": {
+                  "cancel_url": {
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "plan": {
+                    "description": "Only standard is self-service; business and enterprise return 422 plan_requires_sales.",
+                    "enum": [
+                      "standard",
+                      "business",
+                      "enterprise"
+                    ],
+                    "type": "string"
+                  },
+                  "success_url": {
+                    "format": "uri",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "plan",
+                  "success_url",
+                  "cancel_url"
                 ],
-                "type": "string"
+                "type": "object"
               },
-              "success_url": {
-                "format": "uri",
-                "type": "string"
+              {
+                "properties": {
+                  "member_overrides": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "maxItems": 1000,
+                    "type": "array"
+                  },
+                  "member_scope": {
+                    "enum": [
+                      "all_members",
+                      "allowlist",
+                      "denylist"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "type": "object"
               }
-            },
-            "required": [
-              "plan",
-              "success_url",
-              "cancel_url"
-            ],
-            "type": "object"
+            ]
           },
           "id": {
             "type": "string"
@@ -2168,11 +2222,11 @@
         "idempotentHint": true,
         "openWorldHint": false,
         "readOnlyHint": false,
-        "title": "Start a Stripe Checkout to subscribe to Team (owner)"
+        "title": "Start a Stripe Checkout to subscribe the Organization to Standard (org admin, User token)"
       },
-      "x_operation_id": "billing.createCheckoutSession",
+      "x_operation_id": "billing.createOrganizationCheckoutSession",
       "x_method": "POST",
-      "x_path": "/v1/tenants/{id}/billing/checkout-sessions",
+      "x_path": "/v1/organizations/{id}/billing/checkout-sessions",
       "x_path_params": [
         "id"
       ],
@@ -2182,9 +2236,9 @@
       "x_accepts_if_match": false
     },
     {
-      "name": "substratal_billing_createPortalSession",
-      "title": "Open the Stripe Customer Portal (owner or billing.manage)",
-      "description": "Open the Stripe Customer Portal (owner or billing.manage)\n\nREST: POST /v1/tenants/{id}/billing/portal-sessions",
+      "name": "substratal_billing_createOrganizationPortalSession",
+      "title": "Open the Stripe Customer Portal for the Organization's subscription (org admin or billing.manage, User token)",
+      "description": "Open the Stripe Customer Portal for the Organization's subscription (org admin or billing.manage, User token)\n\nREST: POST /v1/organizations/{id}/billing/portal-sessions",
       "inputSchema": {
         "additionalProperties": false,
         "properties": {
@@ -2215,11 +2269,11 @@
         "idempotentHint": false,
         "openWorldHint": false,
         "readOnlyHint": false,
-        "title": "Open the Stripe Customer Portal (owner or billing.manage)"
+        "title": "Open the Stripe Customer Portal for the Organization's subscription (org admin or billing.manage, User token)"
       },
-      "x_operation_id": "billing.createPortalSession",
+      "x_operation_id": "billing.createOrganizationPortalSession",
       "x_method": "POST",
-      "x_path": "/v1/tenants/{id}/billing/portal-sessions",
+      "x_path": "/v1/organizations/{id}/billing/portal-sessions",
       "x_path_params": [
         "id"
       ],
@@ -2229,9 +2283,106 @@
       "x_accepts_if_match": false
     },
     {
-      "name": "substratal_billing_getSubscription",
-      "title": "Current plan, subscription status, period, and seats",
-      "description": "Current plan, subscription status, period, and seats\n\nREST: GET /v1/tenants/{id}/subscription",
+      "name": "substratal_billing_createUserCheckoutSession",
+      "title": "Start a Stripe Checkout to subscribe yourself to Standard (User token)",
+      "description": "Start a Stripe Checkout to subscribe yourself to Standard (User token)\n\nREST: POST /v1/users/me/billing/checkout-sessions",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "properties": {
+              "cancel_url": {
+                "format": "uri",
+                "type": "string"
+              },
+              "plan": {
+                "description": "Only standard is self-service; business and enterprise return 422 plan_requires_sales.",
+                "enum": [
+                  "standard",
+                  "business",
+                  "enterprise"
+                ],
+                "type": "string"
+              },
+              "success_url": {
+                "format": "uri",
+                "type": "string"
+              }
+            },
+            "required": [
+              "plan",
+              "success_url",
+              "cancel_url"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "body"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": false,
+        "title": "Start a Stripe Checkout to subscribe yourself to Standard (User token)"
+      },
+      "x_operation_id": "billing.createUserCheckoutSession",
+      "x_method": "POST",
+      "x_path": "/v1/users/me/billing/checkout-sessions",
+      "x_path_params": null,
+      "x_query_params": null,
+      "x_has_body": true,
+      "x_needs_idempotency_key": true,
+      "x_accepts_if_match": false
+    },
+    {
+      "name": "substratal_billing_createUserPortalSession",
+      "title": "Open the Stripe Customer Portal for your own subscription (User token)",
+      "description": "Open the Stripe Customer Portal for your own subscription (User token)\n\nREST: POST /v1/users/me/billing/portal-sessions",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "properties": {
+              "return_url": {
+                "format": "uri",
+                "type": "string"
+              }
+            },
+            "required": [
+              "return_url"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "body"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false,
+        "title": "Open the Stripe Customer Portal for your own subscription (User token)"
+      },
+      "x_operation_id": "billing.createUserPortalSession",
+      "x_method": "POST",
+      "x_path": "/v1/users/me/billing/portal-sessions",
+      "x_path_params": null,
+      "x_query_params": null,
+      "x_has_body": true,
+      "x_needs_idempotency_key": false,
+      "x_accepts_if_match": false
+    },
+    {
+      "name": "substratal_billing_getOrganizationSubscription",
+      "title": "An Organization's plan and Standard subscription (org admin or billing.manage)",
+      "description": "An Organization's plan and Standard subscription (org admin or billing.manage)\n\nREST: GET /v1/organizations/{id}/subscription",
       "inputSchema": {
         "additionalProperties": false,
         "properties": {
@@ -2249,11 +2400,11 @@
         "idempotentHint": true,
         "openWorldHint": false,
         "readOnlyHint": true,
-        "title": "Current plan, subscription status, period, and seats"
+        "title": "An Organization's plan and Standard subscription (org admin or billing.manage)"
       },
-      "x_operation_id": "billing.getSubscription",
+      "x_operation_id": "billing.getOrganizationSubscription",
       "x_method": "GET",
-      "x_path": "/v1/tenants/{id}/subscription",
+      "x_path": "/v1/organizations/{id}/subscription",
       "x_path_params": [
         "id"
       ],
@@ -2263,13 +2414,14 @@
       "x_accepts_if_match": false
     },
     {
-      "name": "substratal_billing_getUsage",
-      "title": "Usage against every plan limit",
-      "description": "Usage against every plan limit\n\nREST: GET /v1/tenants/{id}/usage",
+      "name": "substratal_billing_getUserSubscription",
+      "title": "A User's plan, what covers it, and their own subscription (self or billing.manage)",
+      "description": "A User's plan, what covers it, and their own subscription (self or billing.manage)\n\nREST: GET /v1/users/{id}/subscription",
       "inputSchema": {
         "additionalProperties": false,
         "properties": {
           "id": {
+            "description": "A usr_... id, or the literal string 'me' for the calling User (not valid for API Keys).",
             "type": "string"
           }
         },
@@ -2283,11 +2435,11 @@
         "idempotentHint": true,
         "openWorldHint": false,
         "readOnlyHint": true,
-        "title": "Usage against every plan limit"
+        "title": "A User's plan, what covers it, and their own subscription (self or billing.manage)"
       },
-      "x_operation_id": "billing.getUsage",
+      "x_operation_id": "billing.getUserSubscription",
       "x_method": "GET",
-      "x_path": "/v1/tenants/{id}/usage",
+      "x_path": "/v1/users/{id}/subscription",
       "x_path_params": [
         "id"
       ],
@@ -2295,6 +2447,68 @@
       "x_has_body": false,
       "x_needs_idempotency_key": false,
       "x_accepts_if_match": false
+    },
+    {
+      "name": "substratal_billing_updateOrganizationSubscription",
+      "title": "Choose which members the Organization's subscription covers (org admin)",
+      "description": "Choose which members the Organization's subscription covers (org admin)\n\nREST: PATCH /v1/organizations/{id}/subscription",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "properties": {
+              "member_overrides": {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 1000,
+                "type": [
+                  "array",
+                  "null"
+                ]
+              },
+              "member_scope": {
+                "enum": [
+                  "all_members",
+                  "allowlist",
+                  "denylist"
+                ],
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "id": {
+            "type": "string"
+          },
+          "if_match": {
+            "description": "ETag from a prior read; a mismatch returns 409 version_conflict.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "body"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": false,
+        "title": "Choose which members the Organization's subscription covers (org admin)"
+      },
+      "x_operation_id": "billing.updateOrganizationSubscription",
+      "x_method": "PATCH",
+      "x_path": "/v1/organizations/{id}/subscription",
+      "x_path_params": [
+        "id"
+      ],
+      "x_query_params": null,
+      "x_has_body": true,
+      "x_needs_idempotency_key": false,
+      "x_accepts_if_match": true
     },
     {
       "name": "substratal_devices_delete",
@@ -2904,11 +3118,14 @@
             "type": "string"
           },
           "source": {
+            "description": "free and subscription rows are platform-managed: granted and ended by the platform from the Application's access_tier and the holder's subscription. An admin may disable and re-enable one; nothing else about it can be changed.",
             "enum": [
               "purchase",
               "trial",
               "admin_grant",
-              "org_seat"
+              "org_seat",
+              "free",
+              "subscription"
             ],
             "type": "string"
           },
@@ -2982,11 +3199,14 @@
             "type": "integer"
           },
           "source": {
+            "description": "free and subscription rows are platform-managed: granted and ended by the platform from the Application's access_tier and the holder's subscription. An admin may disable and re-enable one; nothing else about it can be changed.",
             "enum": [
               "purchase",
               "trial",
               "admin_grant",
-              "org_seat"
+              "org_seat",
+              "free",
+              "subscription"
             ],
             "type": "string"
           },
@@ -5212,18 +5432,6 @@
           "owner_user_id": {
             "type": "string"
           },
-          "plan": {
-            "description": "Commercial plan, independent of tier. isolated/dedicated_region require enterprise; starter requires a user owner.",
-            "enum": [
-              "starter",
-              "team",
-              "enterprise"
-            ],
-            "type": "string"
-          },
-          "restricted": {
-            "type": "boolean"
-          },
           "status": {
             "enum": [
               "active",
@@ -5257,10 +5465,8 @@
       "x_query_params": [
         "limit",
         "cursor",
-        "plan",
         "tier",
         "status",
-        "restricted",
         "owner_user_id",
         "owner_organization_id"
       ],
@@ -6343,14 +6549,14 @@
       "name": "llms.txt",
       "description": "Machine-oriented index of every page of the Substratal Apps API specification.",
       "mimeType": "text/markdown",
-      "text": "# Substratal Apps — Platform API\n\n\u003e Substratal Apps is the user/organization/tenancy/settings/storage layer an\n\u003e app developer would otherwise have to build themselves — comparable in\n\u003e shape to Auth0, Clerk, or WorkOS, scoped around everything a multi-tenant\n\u003e app needs: accounts, roles and permissions, per-app settings, team/tenancy\n\u003e structure, and per-user storage, all behind one API. This site is the\n\u003e system of record for that API: users, roles, per-app access (the \"turn an\n\u003e app on/off for a user\" switch), profiles, and settings across every\n\u003e Application built on the platform. It is API-first: no user-facing\n\u003e interface is specified here — a dashboard for easier onboarding is\n\u003e planned, but it is a separate, later client of this API. Billing is each\n\u003e Application developer's own concern; this API tracks entitlement state,\n\u003e it does not process payments.\n\nThis site is the living specification. Treat it as authoritative over any\nolder single-file draft found elsewhere in the repository's history.\n\n## Start here\n\n- [Home](https://compositecode.github.io/substratalapps.com/): what Substratal Apps is and how this site is organized.\n- [Getting Started](https://compositecode.github.io/substratalapps.com/getting-started/): the fastest path to understanding the system before writing code against it.\n- [Quickstart](https://compositecode.github.io/substratalapps.com/quickstart/): a runnable curl walkthrough of the core access model.\n- [Domain Model](https://compositecode.github.io/substratalapps.com/domain-model/): the entities — User, Organization, Tenant, Application, Role, Permission, Entitlement, Profile, Setting, Order, Audit Event.\n- [Tenancy](https://compositecode.github.io/substratalapps.com/domain-model/tenancy/): the infrastructure-placement/data-isolation boundary for an Application owner — shared, isolated, or dedicated-region. Distinct from Organization.\n- [Access Control](https://compositecode.github.io/substratalapps.com/access-control/): how Entitlement (is the app on?) and Role (what can they do?) combine to decide every request, including Organization-vs-User precedence when an org-wide grant and a User's own standing could otherwise conflict.\n- [Notifications](https://compositecode.github.io/substratalapps.com/domain-model/notifications/): the Device, PushCredential, Notification, and delivery records behind push notifications and the inbox.\n- [Database Schema](https://compositecode.github.io/substratalapps.com/domain-model/database-schema/): Postgres types, constraints, and indexes behind every entity — for implementers, not API callers.\n\n## API reference\n\n- [Conventions](https://compositecode.github.io/substratalapps.com/api-reference/conventions/): base URL, auth, pagination, idempotency, error shape, ID format.\n- [Auth](https://compositecode.github.io/substratalapps.com/api-reference/auth/): signup, login, MFA, sessions, password/email lifecycle, and how an Application obtains its per-app JWT.\n- [Users](https://compositecode.github.io/substratalapps.com/api-reference/users/)\n- [Profiles](https://compositecode.github.io/substratalapps.com/api-reference/profiles/)\n- [Settings](https://compositecode.github.io/substratalapps.com/api-reference/settings/)\n- [Applications](https://compositecode.github.io/substratalapps.com/api-reference/applications/)\n- [Entitlements](https://compositecode.github.io/substratalapps.com/api-reference/entitlements/): the on/off switch for a user's access to an app.\n- [Roles \u0026 Permissions](https://compositecode.github.io/substratalapps.com/api-reference/roles-and-permissions/)\n- [Organizations](https://compositecode.github.io/substratalapps.com/api-reference/organizations/)\n- [Tenancy](https://compositecode.github.io/substratalapps.com/api-reference/tenancy/): fetch a Tenant and request a tier change — support-only today, no customer self-service.\n- [Billing](https://compositecode.github.io/substratalapps.com/api-reference/billing/): the Free/Standard subscription — Stripe Checkout and Customer Portal. Being reworked for subscriber billing (DECISIONS.md #39).\n- [Audit](https://compositecode.github.io/substratalapps.com/api-reference/audit/)\n- [Webhooks](https://compositecode.github.io/substratalapps.com/api-reference/webhooks/)\n- [Push Notifications](https://compositecode.github.io/substratalapps.com/api-reference/notifications/): alerts and updates to a User's devices through APNs, FCM, and Web Push, plus their notification inbox — device registration, an Application's push credentials, sending, and platform alerts.\n- [API Keys](https://compositecode.github.io/substratalapps.com/api-reference/api-keys/): service-to-service credentials.\n- [openapi.yaml](https://compositecode.github.io/substratalapps.com/openapi.yaml): the same API surface as a machine-readable OpenAPI 3.1 document.\n- [OpenAPI Specification](https://compositecode.github.io/substratalapps.com/openapi/): the same document rendered as interactive Swagger UI, with how to use it to build against the API.\n\n## Also useful\n\n- [Workflows](https://compositecode.github.io/substratalapps.com/workflows/): purchase-to-access, admin revokes access, role changes, end to end.\n- [Trust Model](https://compositecode.github.io/substratalapps.com/trust-model/): how a separately-hosted downstream app verifies a user's access against this API.\n- [MCP Server](https://compositecode.github.io/substratalapps.com/mcp-server/): a Model Context Protocol server that lets an AI agent call this API as tools, generated from openapi.yaml, using the same Bearer credential as every other caller — no new auth model.\n- [Non-Functional Requirements](https://compositecode.github.io/substratalapps.com/non-functional-requirements/)\n- [Compliance \u0026 Data Protection](https://compositecode.github.io/substratalapps.com/compliance/): which of SOC 2, HIPAA, GDPR, and CCPA apply, and when.\n- [Roadmap](https://compositecode.github.io/substratalapps.com/roadmap/): MVP through Phase 3.\n- [Pricing](https://compositecode.github.io/substratalapps.com/pricing/): Free, and Standard at $6 per user per month — what people using Substratal's own apps pay, individually or through an Organization. Business and Enterprise pricing comes later.\n- [Changelog](https://compositecode.github.io/substratalapps.com/changelog/): what's changed in this spec over time.\n- [Glossary](https://compositecode.github.io/substratalapps.com/glossary/)\n- [Versions](https://compositecode.github.io/substratalapps.com/versions/): every released version of this spec; older versions are frozen copies under `/versions/\u003cversion\u003e/`.\n\nDeployment/infrastructure, the build plan, and other project-planning material are intentionally not part of this API-specification site — they live as plain Markdown in the repository root at https://github.com/CompositeCode/substratalapps.com, starting from its README.md.\n"
+      "text": "# Substratal Apps — Platform API\n\n\u003e Substratal Apps is the user/organization/tenancy/settings/storage layer an\n\u003e app developer would otherwise have to build themselves — comparable in\n\u003e shape to Auth0, Clerk, or WorkOS, scoped around everything a multi-tenant\n\u003e app needs: accounts, roles and permissions, per-app settings, team/tenancy\n\u003e structure, and per-user storage, all behind one API. This site is the\n\u003e system of record for that API: users, roles, per-app access (the \"turn an\n\u003e app on/off for a user\" switch), profiles, and settings across every\n\u003e Application built on the platform. It is API-first: no user-facing\n\u003e interface is specified here — a dashboard for easier onboarding is\n\u003e planned, but it is a separate, later client of this API. Billing is each\n\u003e Application developer's own concern; this API tracks entitlement state,\n\u003e it does not process payments.\n\nThis site is the living specification. Treat it as authoritative over any\nolder single-file draft found elsewhere in the repository's history.\n\n## Start here\n\n- [Home](https://compositecode.github.io/substratalapps.com/): what Substratal Apps is and how this site is organized.\n- [Getting Started](https://compositecode.github.io/substratalapps.com/getting-started/): the fastest path to understanding the system before writing code against it.\n- [Quickstart](https://compositecode.github.io/substratalapps.com/quickstart/): a runnable curl walkthrough of the core access model.\n- [Domain Model](https://compositecode.github.io/substratalapps.com/domain-model/): the entities — User, Organization, Tenant, Application, Role, Permission, Entitlement, Profile, Setting, Order, Audit Event.\n- [Tenancy](https://compositecode.github.io/substratalapps.com/domain-model/tenancy/): the infrastructure-placement/data-isolation boundary for an Application owner — shared, isolated, or dedicated-region. Distinct from Organization.\n- [Access Control](https://compositecode.github.io/substratalapps.com/access-control/): how Entitlement (is the app on?) and Role (what can they do?) combine to decide every request, including Organization-vs-User precedence when an org-wide grant and a User's own standing could otherwise conflict.\n- [Notifications](https://compositecode.github.io/substratalapps.com/domain-model/notifications/): the Device, PushCredential, Notification, and delivery records behind push notifications and the inbox.\n- [Database Schema](https://compositecode.github.io/substratalapps.com/domain-model/database-schema/): Postgres types, constraints, and indexes behind every entity — for implementers, not API callers.\n\n## API reference\n\n- [Conventions](https://compositecode.github.io/substratalapps.com/api-reference/conventions/): base URL, auth, pagination, idempotency, error shape, ID format.\n- [Auth](https://compositecode.github.io/substratalapps.com/api-reference/auth/): signup, login, MFA, sessions, password/email lifecycle, and how an Application obtains its per-app JWT.\n- [Users](https://compositecode.github.io/substratalapps.com/api-reference/users/)\n- [Profiles](https://compositecode.github.io/substratalapps.com/api-reference/profiles/)\n- [Settings](https://compositecode.github.io/substratalapps.com/api-reference/settings/)\n- [Applications](https://compositecode.github.io/substratalapps.com/api-reference/applications/)\n- [Entitlements](https://compositecode.github.io/substratalapps.com/api-reference/entitlements/): the on/off switch for a user's access to an app.\n- [Roles \u0026 Permissions](https://compositecode.github.io/substratalapps.com/api-reference/roles-and-permissions/)\n- [Organizations](https://compositecode.github.io/substratalapps.com/api-reference/organizations/)\n- [Tenancy](https://compositecode.github.io/substratalapps.com/api-reference/tenancy/): fetch a Tenant and request a tier change — support-only today, no customer self-service.\n- [Billing](https://compositecode.github.io/substratalapps.com/api-reference/billing/): the Free/Standard subscription — a User's or Organization's plan, Stripe Checkout and Customer Portal, and which members an Organization's subscription covers.\n- [Audit](https://compositecode.github.io/substratalapps.com/api-reference/audit/)\n- [Webhooks](https://compositecode.github.io/substratalapps.com/api-reference/webhooks/)\n- [Push Notifications](https://compositecode.github.io/substratalapps.com/api-reference/notifications/): alerts and updates to a User's devices through APNs, FCM, and Web Push, plus their notification inbox — device registration, an Application's push credentials, sending, and platform alerts.\n- [API Keys](https://compositecode.github.io/substratalapps.com/api-reference/api-keys/): service-to-service credentials.\n- [openapi.yaml](https://compositecode.github.io/substratalapps.com/openapi.yaml): the same API surface as a machine-readable OpenAPI 3.1 document.\n- [OpenAPI Specification](https://compositecode.github.io/substratalapps.com/openapi/): the same document rendered as interactive Swagger UI, with how to use it to build against the API.\n\n## Also useful\n\n- [Workflows](https://compositecode.github.io/substratalapps.com/workflows/): purchase-to-access, admin revokes access, role changes, end to end.\n- [Trust Model](https://compositecode.github.io/substratalapps.com/trust-model/): how a separately-hosted downstream app verifies a user's access against this API.\n- [MCP Server](https://compositecode.github.io/substratalapps.com/mcp-server/): a Model Context Protocol server that lets an AI agent call this API as tools, generated from openapi.yaml, using the same Bearer credential as every other caller — no new auth model.\n- [Non-Functional Requirements](https://compositecode.github.io/substratalapps.com/non-functional-requirements/)\n- [Compliance \u0026 Data Protection](https://compositecode.github.io/substratalapps.com/compliance/): which of SOC 2, HIPAA, GDPR, and CCPA apply, and when.\n- [Roadmap](https://compositecode.github.io/substratalapps.com/roadmap/): MVP through Phase 3.\n- [Pricing](https://compositecode.github.io/substratalapps.com/pricing/): Free, and Standard at $6 per user per month — what people using Substratal's own apps pay, individually or through an Organization. Business and Enterprise pricing comes later.\n- [Changelog](https://compositecode.github.io/substratalapps.com/changelog/): what's changed in this spec over time.\n- [Glossary](https://compositecode.github.io/substratalapps.com/glossary/)\n- [Versions](https://compositecode.github.io/substratalapps.com/versions/): every released version of this spec; older versions are frozen copies under `/versions/\u003cversion\u003e/`.\n\nDeployment/infrastructure, the build plan, and other project-planning material are intentionally not part of this API-specification site — they live as plain Markdown in the repository root at https://github.com/CompositeCode/substratalapps.com, starting from its README.md.\n"
     },
     {
       "uri": "https://compositecode.github.io/substratalapps.com/glossary/",
       "name": "Glossary",
       "description": "Precise definitions for every term the API uses.",
       "mimeType": "text/markdown",
-      "text": "# Glossary\n{: .no_toc }\n\nPrecise definitions for every term used across this site. If a page uses a capitalized term (`Entitlement`, `AppRole`) without defining it inline, it means exactly what's written here.\n{: .fs-6 .fw-300 }\n\n---\n\n#### Access path\nOne way a User reaches an Application: their own personal [Entitlement](#entitlement), or an org-wide grant from an [Organization](#organization) that includes them. Resolved access is the union of every active path. See [Access Control](../access-control/#the-algorithm).\n\n#### API Key\nA long-lived service credential (`satk_live_…`/`satk_test_…`), scoped to the platform or to one Application. An app-scoped key can only ever touch its own Application's rows. See [API Keys](../api-reference/api-keys/).\n\n#### App token\nThe short-lived (5-minute) JWT an Application verifies locally, with `aud` set to that Application. Carries `entitlement_status` and `effective_permissions`. See [Auth → The app token](../api-reference/auth/#the-app-token).\n\n#### Application\n(also \"App\") One developer's separately-hosted app (web, iOS, macOS, Windows, Linux, …) that uses Substratal Apps for its users, settings, organizations, tenancy, and storage. This is its catalog entry. See [Domain Model → Applications](../domain-model/applications/).\n\n#### AppProfile\nPer-app identity data for one user — e.g. a display handle meaningful only inside that one app. Distinct from the global [Profile](#profile).\n\n#### AppRole\nA [Role](#role) scoped to one Application, defined by that app's own catalog entry rather than by the platform. See [Domain Model → Roles \u0026 Permissions](../domain-model/roles-and-permissions/).\n\n#### AppSettings\nPer-app configuration for one user, layered over that user's global [Settings](#settings) and the Application's declared defaults. See [Workflows → Settings resolution](../workflows/#settings-resolution-in-practice).\n\n#### Audit Event\nAn immutable record of who changed what access, when. See [Domain Model → Orders \u0026 Audit](../domain-model/orders-and-audit/).\n\n#### Device\nOne install of an [Application](#application) on one device, signed in as one [User](#user), with the APNs, FCM, or Web Push token that reaches it (`dvc_…`). Tied to the [Session](#session) that registered it, so signing out stops its pushes. See [Push Notifications → Devices](../api-reference/notifications/#devices).\n\n#### Effective permissions\nThe resolved set of [Permissions](#permission) a user holds for a given Application — the union of the permissions on their app-scoped Roles for that app (explicit assignments plus the app's `default_app_role`), and empty unless the User and their Entitlement are both active. Only that app's own `app.\u003cslug\u003e.*` keys ever appear; platform Roles govern the hub, not apps. See [Access Control](../access-control/#step-2-effective-permissions).\n\n#### Entitlement\nThe join record between a User (or Organization) and an Application: do they own it, and is it currently switched on. The record behind \"turn an app on/off for a user.\" See [Domain Model → Entitlements](../domain-model/entitlements/).\n\n#### Hub\nShorthand used throughout this site for Substratal Apps itself — the platform this API belongs to.\n\n#### MCP\nModel Context Protocol — the standard this site's AI-agent-facing tool-call interface implements. See [MCP Server](../mcp-server/). Introduces no new authorization model of its own; see [Authentication — no new model](../mcp-server/#authentication--no-new-model).\n\n#### Notification\nOne alert or update to one User (`ntf_…`), from an Application or from the platform. Pushed to the User's [Devices](#device) when it can be, and always kept in their inbox for 90 days. See [Push Notifications](../api-reference/notifications/).\n\n#### Order\nNot an entity of this API. It's the developer's own commerce record, in their own billing system. An [Entitlement](#entitlement) carries only an opaque `order_id` reference to it. See [Domain Model → Orders \u0026 Audit](../domain-model/orders-and-audit/#order).\n\n#### Organization\nA domain/grouping object for Users — a company, or a group within a company — used to organize shared admin standing and group-wide Application access. Decoupled from infrastructure placement; see [Tenant](#tenant) and [Tenant vs. Organization](../domain-model/tenancy/#tenant-vs-organization). Pulled into [Phase 2](../roadmap/#phase-2); see [Organizations](../domain-model/users-and-organizations/#organization).\n\n#### OrganizationMembership\nThe join record between a User and an Organization, carrying that User's standing *within* that one Organization (`org_admin` or `member`) and whether it's `pending` (invited, not yet accepted) or `active` — a User can hold this for any number of Organizations at once. See [Domain Model → Users \u0026 Organizations](../domain-model/users-and-organizations/#organizationmembership).\n\n#### Permission\nAn atomic, checkable capability, written as a dotted key (`billing.manage`, `app.timetrack.export`). Never assigned directly to a user — always granted through a [Role](#role).\n\n#### Plan\nThe subscription tier covering a User: `free` or `standard`. A User is on Standard through their own subscription or an Organization's. Business and Enterprise plans come later. Independent of [Tier](#tier). See [Pricing](../pricing/).\n\n#### Platform alert\nA [Notification](#notification) the platform raises itself about the User's account, such as a new sign-in or a changed password. Its category is from a fixed catalog under `security.` and `account.`. See [Push Notifications → Platform alerts](../api-reference/notifications/#platform-alerts).\n\n#### PlatformRole\nA [Role](#role) that applies across the whole hub rather than one Application — `superadmin`, `support`, `billing_admin`, `member`.\n\n#### Profile\nGlobal, cross-app identity and contact data for a User — name, avatar, email, locale. Distinct from [AppProfile](#appprofile).\n\n#### Push credential\nAn Application's own key for one push provider: an APNs `.p8` key, an FCM service account, or a Web Push (VAPID) key pair (`pcr_…`). Write-only and KMS-encrypted. Providers deliver only for the app a token was issued to, so every Application brings its own. See [Push Notifications → Push credentials](../api-reference/notifications/#push-credentials).\n\n#### Role\nA named bundle of [Permissions](#permission). Either a [PlatformRole](#platformrole) or an [AppRole](#approle).\n\n#### Seat\nA covered member of an Organization with a Standard subscription: a distinct, active, non-test-mode member included by the subscription's member selection. The unit an Organization is billed on, $6 each per month. See [Pricing](../pricing/#what-a-user-means-for-an-organization).\n\n#### Session\nOne successful login (`ses_…`). Every refresh token and app token minted from it carries its id as `sid`, and revoking it ends them all. See [Auth → Sessions](../api-reference/auth/#sessions).\n\n#### Settings\nGlobal, cross-app configuration for a User — locale, timezone, notification preferences. Distinct from [AppSettings](#appsettings).\n\n#### Tenant\nThe infrastructure-placement and data-isolation boundary for one of Substratal's own paying customers — the owner of an Application's catalog entry. `shared` (default), `isolated`, or `dedicated_region`. Not the same thing as [Organization](#organization) — see [Tenant vs. Organization](../domain-model/tenancy/#tenant-vs-organization). See [Domain Model → Tenancy](../domain-model/tenancy/).\n\n#### Tier\nWhere a [Tenant](#tenant)'s data physically lives: `shared`, `isolated`, or `dedicated_region`. Independent of [Plan](#plan). The non-`shared` tiers are reserved for business and enterprise pricing, which isn't offered yet.\n\n#### User\nA person with an account on Substratal. One identity, used everywhere in the hub and, via the [Trust Model](../trust-model/), in every app they launch from it.\n\n#### Webhook\nA signed HTTPS POST the hub sends an Application when something changes. `access.revoked` and `role.removed` are required subscriptions. See [Webhooks](../api-reference/webhooks/).\n"
+      "text": "# Glossary\n{: .no_toc }\n\nPrecise definitions for every term used across this site. If a page uses a capitalized term (`Entitlement`, `AppRole`) without defining it inline, it means exactly what's written here.\n{: .fs-6 .fw-300 }\n\n---\n\n#### Access path\nOne way a User reaches an Application: their own personal [Entitlement](#entitlement), or an org-wide grant from an [Organization](#organization) that includes them. Resolved access is the union of every active path. See [Access Control](../access-control/#the-algorithm).\n\n#### Access tier\nWhich [Pricing](../pricing/) tier unlocks an [Application](#application): `free` (every User) or `standard` (Users covered by a [Subscription](#subscription)). See [Applications](../domain-model/applications/#fields).\n\n#### API Key\nA long-lived service credential (`satk_live_…`/`satk_test_…`), scoped to the platform or to one Application. An app-scoped key can only ever touch its own Application's rows. See [API Keys](../api-reference/api-keys/).\n\n#### App token\nThe short-lived (5-minute) JWT an Application verifies locally, with `aud` set to that Application. Carries `entitlement_status` and `effective_permissions`. See [Auth → The app token](../api-reference/auth/#the-app-token).\n\n#### Application\n(also \"App\") One developer's separately-hosted app (web, iOS, macOS, Windows, Linux, …) that uses Substratal Apps for its users, settings, organizations, tenancy, and storage. This is its catalog entry. See [Domain Model → Applications](../domain-model/applications/).\n\n#### AppProfile\nPer-app identity data for one user — e.g. a display handle meaningful only inside that one app. Distinct from the global [Profile](#profile).\n\n#### AppRole\nA [Role](#role) scoped to one Application, defined by that app's own catalog entry rather than by the platform. See [Domain Model → Roles \u0026 Permissions](../domain-model/roles-and-permissions/).\n\n#### AppSettings\nPer-app configuration for one user, layered over that user's global [Settings](#settings) and the Application's declared defaults. See [Workflows → Settings resolution](../workflows/#settings-resolution-in-practice).\n\n#### Audit Event\nAn immutable record of who changed what access, when. See [Domain Model → Orders \u0026 Audit](../domain-model/orders-and-audit/).\n\n#### Device\nOne install of an [Application](#application) on one device, signed in as one [User](#user), with the APNs, FCM, or Web Push token that reaches it (`dvc_…`). Tied to the [Session](#session) that registered it, so signing out stops its pushes. See [Push Notifications → Devices](../api-reference/notifications/#devices).\n\n#### Effective permissions\nThe resolved set of [Permissions](#permission) a user holds for a given Application — the union of the permissions on their app-scoped Roles for that app (explicit assignments plus the app's `default_app_role`), and empty unless the User and their Entitlement are both active. Only that app's own `app.\u003cslug\u003e.*` keys ever appear; platform Roles govern the hub, not apps. See [Access Control](../access-control/#step-2-effective-permissions).\n\n#### Entitlement\nThe join record between a User (or Organization) and an Application: do they own it, and is it currently switched on. The record behind \"turn an app on/off for a user.\" See [Domain Model → Entitlements](../domain-model/entitlements/).\n\n#### Hub\nShorthand used throughout this site for Substratal Apps itself — the platform this API belongs to.\n\n#### MCP\nModel Context Protocol — the standard this site's AI-agent-facing tool-call interface implements. See [MCP Server](../mcp-server/). Introduces no new authorization model of its own; see [Authentication — no new model](../mcp-server/#authentication--no-new-model).\n\n#### Notification\nOne alert or update to one User (`ntf_…`), from an Application or from the platform. Pushed to the User's [Devices](#device) when it can be, and always kept in their inbox for 90 days. See [Push Notifications](../api-reference/notifications/).\n\n#### Order\nNot an entity of this API. It's the developer's own commerce record, in their own billing system. An [Entitlement](#entitlement) carries only an opaque `order_id` reference to it. See [Domain Model → Orders \u0026 Audit](../domain-model/orders-and-audit/#order).\n\n#### Organization\nA domain/grouping object for Users — a company, or a group within a company — used to organize shared admin standing and group-wide Application access. Decoupled from infrastructure placement; see [Tenant](#tenant) and [Tenant vs. Organization](../domain-model/tenancy/#tenant-vs-organization). Pulled into [Phase 2](../roadmap/#phase-2); see [Organizations](../domain-model/users-and-organizations/#organization).\n\n#### OrganizationMembership\nThe join record between a User and an Organization, carrying that User's standing *within* that one Organization (`org_admin` or `member`) and whether it's `pending` (invited, not yet accepted) or `active` — a User can hold this for any number of Organizations at once. See [Domain Model → Users \u0026 Organizations](../domain-model/users-and-organizations/#organizationmembership).\n\n#### Permission\nAn atomic, checkable capability, written as a dotted key (`billing.manage`, `app.timetrack.export`). Never assigned directly to a user — always granted through a [Role](#role).\n\n#### Plan\nThe subscription tier covering a User: `free` or `standard`. A User is on Standard through their own subscription or an Organization's. Business and Enterprise plans come later. Independent of [Tier](#tier). See [Pricing](../pricing/).\n\n#### Platform alert\nA [Notification](#notification) the platform raises itself about the User's account, such as a new sign-in or a changed password. Its category is from a fixed catalog under `security.` and `account.`. See [Push Notifications → Platform alerts](../api-reference/notifications/#platform-alerts).\n\n#### PlatformRole\nA [Role](#role) that applies across the whole hub rather than one Application — `superadmin`, `support`, `billing_admin`, `member`.\n\n#### Profile\nGlobal, cross-app identity and contact data for a User — name, avatar, email, locale. Distinct from [AppProfile](#appprofile).\n\n#### Push credential\nAn Application's own key for one push provider: an APNs `.p8` key, an FCM service account, or a Web Push (VAPID) key pair (`pcr_…`). Write-only and KMS-encrypted. Providers deliver only for the app a token was issued to, so every Application brings its own. See [Push Notifications → Push credentials](../api-reference/notifications/#push-credentials).\n\n#### Role\nA named bundle of [Permissions](#permission). Either a [PlatformRole](#platformrole) or an [AppRole](#approle).\n\n#### Seat\nA covered member of an Organization with a Standard subscription: a distinct, active, non-test-mode member included by the subscription's member selection. The unit an Organization is billed on, $6 each per month. See [Pricing](../pricing/#what-a-user-means-for-an-organization).\n\n#### Session\nOne successful login (`ses_…`). Every refresh token and app token minted from it carries its id as `sid`, and revoking it ends them all. See [Auth → Sessions](../api-reference/auth/#sessions).\n\n#### Settings\nGlobal, cross-app configuration for a User — locale, timezone, notification preferences. Distinct from [AppSettings](#appsettings).\n\n#### Subscription\nA User's or an Organization's Standard subscription (`sbs_…`), billed through Stripe at $6 per covered user per month. While it covers its holder, the platform grants `subscription` [Entitlements](#entitlement) to every standard Application. See [API Reference → Billing](../api-reference/billing/).\n\n#### Tenant\nThe infrastructure-placement and data-isolation boundary for an Application's data — it belongs to the owner of the Application's catalog entry, and isn't billed. `shared` (default), `isolated`, or `dedicated_region`. Not the same thing as [Organization](#organization) — see [Tenant vs. Organization](../domain-model/tenancy/#tenant-vs-organization). See [Domain Model → Tenancy](../domain-model/tenancy/).\n\n#### Tier\nWhere a [Tenant](#tenant)'s data physically lives: `shared`, `isolated`, or `dedicated_region`. Independent of [Plan](#plan). The non-`shared` tiers are reserved for business and enterprise pricing, which isn't offered yet.\n\n#### User\nA person with an account on Substratal. One identity, used everywhere in the hub and, via the [Trust Model](../trust-model/), in every app they launch from it.\n\n#### Webhook\nA signed HTTPS POST the hub sends an Application when something changes. `access.revoked` and `role.removed` are required subscriptions. See [Webhooks](../api-reference/webhooks/).\n"
     }
   ]
 }

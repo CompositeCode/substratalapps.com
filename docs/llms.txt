@@ -43,7 +43,7 @@ older single-file draft found elsewhere in the repository's history.
 - [Roles & Permissions]({{ site.url }}{{ site.baseurl }}/api-reference/roles-and-permissions/)
 - [Organizations]({{ site.url }}{{ site.baseurl }}/api-reference/organizations/)
 - [Tenancy]({{ site.url }}{{ site.baseurl }}/api-reference/tenancy/): fetch a Tenant and request a tier change — support-only today, no customer self-service.
-- [Billing]({{ site.url }}{{ site.baseurl }}/api-reference/billing/): the Free/Standard subscription — Stripe Checkout and Customer Portal. Being reworked for subscriber billing (DECISIONS.md #39).
+- [Billing]({{ site.url }}{{ site.baseurl }}/api-reference/billing/): the Free/Standard subscription — a User's or Organization's plan, Stripe Checkout and Customer Portal, and which members an Organization's subscription covers.
 - [Audit]({{ site.url }}{{ site.baseurl }}/api-reference/audit/)
 - [Webhooks]({{ site.url }}{{ site.baseurl }}/api-reference/webhooks/)
 - [Push Notifications]({{ site.url }}{{ site.baseurl }}/api-reference/notifications/): alerts and updates to a User's devices through APNs, FCM, and Web Push, plus their notification inbox — device registration, an Application's push credentials, sending, and platform alerts.

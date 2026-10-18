@@ -21,9 +21,6 @@ Every access decision in this system factors into two independent questions, che
 
 These are independent on purpose. A support agent can hold a platform Role that lets them *view* every user's entitlements without holding a single entitlement themselves — the ability to administer access is not the same axis as the ability to use an app. Conversely, a user can own an app (active entitlement) but hold no special role inside it beyond the implicit default member role — most users, most of the time.
 
-{: .decision }
-**API changes awaiting review** ([DECISIONS.md #39](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#39-subscriber-billing-api)). `seat_limited` below exists only for the retired Starter seat cap. #39 proposes removing it. The algorithm itself doesn't change: Standard access arrives as Entitlements.
-
 ## The algorithm
 
 ```
@@ -44,15 +41,12 @@ resolved_entitlement_status(user, application) :=
     "active" if ∃ org ∈ active_organizations(user) :
                    path_active(org_entitlement(org, application))
                    AND member_included(org_entitlement(org, application), user)
-                   AND NOT seat_limited(org_entitlement(org, application), user)
     "scheduled" if some live path has status "active" but starts_at > now
     else the most relevant non-active status among the user's paths, by precedence
          disabled > expired > revoked, or "none" if no path exists at all
 
 active_organizations(user) := organizations where the user's membership.status == "active"
                               (a pending invitation is never a path)
-seat_limited(grant, user)  := the grant's Application is on a Starter Tenant at its seat cap
-                              and this user isn't already one of its seats (see Pricing → Enforcement)
 
 member_included(grant, user) :=
     grant.member_scope == "all_members"

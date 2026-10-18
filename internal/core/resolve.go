@@ -2,7 +2,6 @@ package core
 
 import (
 	"encoding/json"
-	"slices"
 	"time"
 
 	"github.com/CompositeCode/substratalapps.com/internal/access"
@@ -34,8 +33,7 @@ type pathRow struct {
 	MembershipActive bool       `json:"membership_active"`
 }
 
-// resolvePairs runs resolved_entitlement_status for every pair in one
-// query, then applies Starter seat limits where they can matter.
+// resolvePairs runs resolved_entitlement_status for every pair in one query.
 func (c *Call) resolvePairs(pairs []pair) (map[pair]resolved, error) {
 	out := make(map[pair]resolved, len(pairs))
 	if len(pairs) == 0 {
@@ -52,7 +50,6 @@ func (c *Call) resolvePairs(pairs []pair) (map[pair]resolved, error) {
 			'user_id', req.u, 'application_id', req.a,
 			'user_status', (select status from users where id = req.u),
 			'tenant_id', (select tenant_id from applications where id = req.a),
-			'plan', (select t.plan from tenants t join applications a on a.tenant_id = t.id where a.id = req.a),
 			'paths', coalesce((select jsonb_agg(p) from (
 				select e.id as entitlement_id, e.source, e.status, null::text as organization_id,
 				       e.starts_at, e.ends_at, null::text as member_scope, null::text[] as member_overrides,
@@ -69,14 +66,12 @@ func (c *Call) resolvePairs(pairs []pair) (map[pair]resolved, error) {
 	if err != nil {
 		return nil, err
 	}
-	seatCache := map[string]*seatSet{}
 	for _, raw := range rows {
 		var r struct {
 			UserID     string    `json:"user_id"`
 			AppID      string    `json:"application_id"`
 			UserStatus *string   `json:"user_status"`
 			TenantID   *string   `json:"tenant_id"`
-			Plan       *string   `json:"plan"`
 			Paths      []pathRow `json:"paths"`
 		}
 		if err := json.Unmarshal(raw, &r); err != nil {
@@ -90,25 +85,6 @@ func (c *Call) resolvePairs(pairs []pair) (map[pair]resolved, error) {
 				MemberScope: p.MemberScope, MemberOverrides: p.MemberOverrides, CreatedAt: p.CreatedAt,
 				MembershipActive: p.MembershipActive,
 			})
-		}
-		// Seat limits apply only to org paths on a Starter Tenant, and only
-		// in live mode: test-mode Users are never seats (Pricing → What
-		// "seat" means), so live seat counts never gate test traffic.
-		if r.Plan != nil && *r.Plan == "starter" && r.TenantID != nil && !c.testMode() && hasOrgPath(paths) {
-			ss, ok := seatCache[*r.TenantID]
-			if !ok {
-				if ss, err = c.seats(*r.TenantID); err != nil {
-					return nil, err
-				}
-				seatCache[*r.TenantID] = ss
-			}
-			if ss.atCap() && !ss.isSeat(r.UserID) {
-				for i := range paths {
-					if paths[i].IsOrg() {
-						paths[i].SeatLimited = true
-					}
-				}
-			}
 		}
 		res := access.Resolve(r.UserID, paths, c.now)
 		status := ""
@@ -128,103 +104,6 @@ func (c *Call) resolveOne(userID, appID string) (resolved, error) {
 		return resolved{}, err
 	}
 	return m[pair{userID, appID}], nil
-}
-
-func hasOrgPath(paths []access.Path) bool {
-	for _, p := range paths {
-		if p.IsOrg() {
-			return true
-		}
-	}
-	return false
-}
-
-// seatSet is a Starter Tenant's seat occupancy (Pricing → What "seat"
-// means): personal-path Users are always seats; org-only Users fill the
-// remaining capacity in membership order.
-type seatSet struct {
-	cap      int
-	personal []string
-	org      []string // org-path-only users, by (joined_at, user_id)
-}
-
-func (s *seatSet) count() int {
-	n := len(s.personal) + len(s.org)
-	if n > s.cap {
-		n = max(s.cap, len(s.personal))
-	}
-	return n
-}
-
-func (s *seatSet) atCap() bool { return len(s.personal)+len(s.org) >= s.cap }
-
-func (s *seatSet) isSeat(userID string) bool {
-	if slices.Contains(s.personal, userID) {
-		return true
-	}
-	room := s.cap - len(s.personal)
-	for i, u := range s.org {
-		if i >= room {
-			return false
-		}
-		if u == userID {
-			return true
-		}
-	}
-	return false
-}
-
-// seats computes a Tenant's seat occupancy from existing Entitlement and
-// membership rows, with no separate tracking primitive.
-func (c *Call) seats(tenantID string) (*seatSet, error) {
-	var r struct {
-		Personal []string `json:"personal"`
-		Org      []string `json:"org"`
-	}
-	err := db.One(c.ctx, c.q, &r, seatsSQL, db.Args{"t": tenantID})
-	if err != nil {
-		return nil, err
-	}
-	cap := 1 << 30
-	if t, err := c.loadTenant(tenantID); err == nil {
-		if l := plans[t.Plan].Seats; l != nil {
-			cap = *l
-		}
-	}
-	return &seatSet{cap: cap, personal: r.Personal, org: r.Org}, nil
-}
-
-// seatsSQL lists a Tenant's seat holders: live, active Users with an
-// active personal path, then org-only members included by an active org
-// grant (an Organization's suspension doesn't change its members' access).
-const seatsSQL = `with apps as (select id from applications where tenant_id = :t),
-	grants as (
-		select e.* from entitlements e
-		 where e.application_id in (select id from apps) and e.status = 'active' and not e.test_mode
-		   and e.starts_at <= now() and (e.ends_at is null or e.ends_at > now())),
-	personal as (
-		select distinct g.user_id as u from grants g join users u on u.id = g.user_id
-		 where g.user_id is not null and u.status = 'active' and not u.test_mode),
-	orgm as (
-		select m.user_id as u, min(m.joined_at) as j from grants g
-		  join organization_memberships m on m.organization_id = g.organization_id and m.status = 'active'
-		  join users u on u.id = m.user_id and u.status = 'active' and not u.test_mode
-		 where g.organization_id is not null
-		   and (coalesce(g.member_scope, 'all_members') = 'all_members'
-		        or (g.member_scope = 'allowlist' and m.user_id = any(g.member_overrides))
-		        or (g.member_scope = 'denylist' and not (m.user_id = any(coalesce(g.member_overrides, '{}')))))
-		 group by m.user_id)
-	select jsonb_build_object(
-		'personal', coalesce((select jsonb_agg(u order by u) from personal), '[]'::jsonb),
-		'org', coalesce((select jsonb_agg(u order by j, u) from orgm where u not in (select u from personal)), '[]'::jsonb))`
-
-// seatCount is the number of seats a Tenant currently uses.
-func (c *Call) seatCount(tenantID string) (int, error) {
-	ss, err := c.seats(tenantID)
-	if err != nil {
-		return 0, err
-	}
-	return ss.count(), nil
 }
 
 // appRolesFor loads the app-scoped Roles a User holds for an Application:

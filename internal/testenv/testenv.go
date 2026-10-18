@@ -84,39 +84,50 @@ func withDB(u, name string) string {
 	return p.String()
 }
 
+// newDatabase creates and migrates a fresh database.
+func newDatabase() (string, error) {
+	ctx := context.Background()
+	admin, err := pgx.Connect(ctx, baseURL())
+	if err != nil {
+		return "", fmt.Errorf("testenv: connect to %s (is `make up` running?): %w", baseURL(), err)
+	}
+	defer func() { _ = admin.Close(ctx) }()
+	b := make([]byte, 4)
+	_, _ = rand.Read(b)
+	name := "substratal_test_" + hex.EncodeToString(b)
+	if _, err := admin.Exec(ctx, "create database "+name); err != nil {
+		return "", err
+	}
+	u := withDB(baseURL(), name)
+	d, err := pg.Open(ctx, u)
+	if err != nil {
+		return "", err
+	}
+	defer d.Close()
+	all, err := migrate.Load(migrations.FS)
+	if err != nil {
+		return "", err
+	}
+	if _, err := migrate.Up(ctx, d, all); err != nil {
+		return "", err
+	}
+	return u, nil
+}
+
+func dropDatabase(u string) {
+	ctx := context.Background()
+	admin, err := pgx.Connect(ctx, baseURL())
+	if err != nil {
+		return
+	}
+	defer func() { _ = admin.Close(ctx) }()
+	p, _ := url.Parse(u)
+	_, _ = admin.Exec(ctx, "drop database if exists "+strings.TrimPrefix(p.Path, "/")+" with (force)")
+}
+
 // database creates and migrates this package's database, once.
 func database(t testing.TB) string {
-	pkgOnce.Do(func() {
-		ctx := context.Background()
-		admin, err := pgx.Connect(ctx, baseURL())
-		if err != nil {
-			pkgErr = fmt.Errorf("testenv: connect to %s (is `make up` running?): %w", baseURL(), err)
-			return
-		}
-		defer func() { _ = admin.Close(ctx) }()
-		b := make([]byte, 4)
-		_, _ = rand.Read(b)
-		name := "substratal_test_" + hex.EncodeToString(b)
-		if _, err := admin.Exec(ctx, "create database "+name); err != nil {
-			pkgErr = err
-			return
-		}
-		pkgDB = withDB(baseURL(), name)
-		d, err := pg.Open(ctx, pkgDB)
-		if err != nil {
-			pkgErr = err
-			return
-		}
-		defer d.Close()
-		all, err := migrate.Load(migrations.FS)
-		if err != nil {
-			pkgErr = err
-			return
-		}
-		if _, err := migrate.Up(ctx, d, all); err != nil {
-			pkgErr = err
-		}
-	})
+	pkgOnce.Do(func() { pkgDB, pkgErr = newDatabase() })
 	if pkgErr != nil {
 		t.Fatalf("%v", pkgErr)
 	}
@@ -125,17 +136,9 @@ func database(t testing.TB) string {
 
 // Drop removes this package's database; call it from TestMain.
 func Drop() {
-	if pkgDB == "" {
-		return
+	if pkgDB != "" {
+		dropDatabase(pkgDB)
 	}
-	ctx := context.Background()
-	admin, err := pgx.Connect(ctx, baseURL())
-	if err != nil {
-		return
-	}
-	defer func() { _ = admin.Close(ctx) }()
-	p, _ := url.Parse(pkgDB)
-	_, _ = admin.Exec(ctx, "drop database if exists "+strings.TrimPrefix(p.Path, "/")+" with (force)")
 }
 
 var (
@@ -178,7 +181,12 @@ func specValidator(t testing.TB) validator.Validator {
 
 // Options tune New.
 type Options struct {
-	RateLimits bool // run with the production rate limits on
+	RateLimits bool         // run with the production rate limits on
+	Billing    core.Billing // a fake Stripe; nil leaves billing unconfigured
+	// OwnDatabase gives the test a database of its own, for tests whose
+	// data would leak into others sharing the package database (a free
+	// Application, say, is granted to every User created afterwards).
+	OwnDatabase bool
 }
 
 // New starts an API for one test, with a fresh superadmin.
@@ -188,7 +196,18 @@ func New(t testing.TB) *Env { return NewWith(t, Options{}) }
 func NewWith(t testing.TB, opts Options) *Env {
 	t.Helper()
 	ctx := context.Background()
-	d, err := pg.Open(ctx, database(t))
+	dsn := ""
+	if opts.OwnDatabase {
+		u, err := newDatabase()
+		if err != nil {
+			t.Fatalf("%v", err)
+		}
+		t.Cleanup(func() { dropDatabase(u) })
+		dsn = u
+	} else {
+		dsn = database(t)
+	}
+	d, err := pg.Open(ctx, dsn)
 	if err != nil {
 		t.Fatalf("open db: %v", err)
 	}
@@ -204,7 +223,7 @@ func NewWith(t testing.TB, opts Options) *Env {
 	s := core.New(core.Deps{DB: d, Signer: signer(), Encrypter: enc, Email: mail,
 		Cursors: httpx.Cursors{Key: []byte("test-cursor-key")}, Log: log,
 		Issuer: "https://api.substratalapps.com", PublicBaseURL: "http://localhost", AuthorizeURL: "https://auth.substratalapps.com/authorize",
-		DashboardURL: "https://dashboard.test", DisableRateLimits: !opts.RateLimits})
+		DashboardURL: "https://dashboard.test", DisableRateLimits: !opts.RateLimits, Billing: opts.Billing})
 	srv := httptest.NewServer(s.Handler())
 	e := &Env{T: t, Server: srv, Core: s, DB: d, Mail: mail, Deliverer: deliverer, Signer: signer(), Validate: true,
 		validator: specValidator(t)}

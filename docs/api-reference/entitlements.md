@@ -103,7 +103,7 @@ Org-wide grants are created through [`POST /v1/organizations/{id}/entitlements`]
 }
 ```
 
-- Returns the user's **personal** rows, plus every **org-wide** row held by an Organization they're an `active` member of, each annotated with `granted_via`. Org rows that exclude this user (`member_decision: "excluded"` or `"seat_limit"`) are still listed, so the user can see why they don't have access; they're never an access path. See [Domain Model → Entitlements → Attribution](../../domain-model/entitlements/#attribution).
+- Returns the user's **personal** rows, plus every **org-wide** row held by an Organization they're an `active` member of, each annotated with `granted_via`. Org rows that exclude this user (`member_decision: "excluded"`) are still listed, so the user can see why they don't have access; they're never an access path. See [Domain Model → Entitlements → Attribution](../../domain-model/entitlements/#attribution).
 - `revoked` and `expired` rows are excluded by default. Pass `?status=revoked`, or `?include_inactive=true` for everything.
 - Filters: `application_id`, `status`, `source`.
 - An app-confined caller sees only rows for its own Application.
@@ -146,18 +146,14 @@ The question "does this user have access to app X right now?" is answered by [ef
 | Field | Rules |
 |---|---|
 | `application_id` | Required. The Application must be `approved` and visible to the caller (see [Applications](../applications/#who-can-see-an-application)); `internal` apps only accept grants from platform `entitlements.manage`. |
-| `source` | Required: `purchase`, `trial`, or `admin_grant`. `org_seat` is rejected here (`422 invalid_source`), because org grants go through Organizations. |
+| `source` | Required: `purchase`, `trial`, or `admin_grant`. `org_seat` is rejected here (`422 invalid_source`), because org grants go through Organizations, and so are `free` and `subscription`, which only the platform grants. |
 | `order_id` | Optional, up to 255 characters. Strongly recommended for `purchase`. |
 | `starts_at` | Optional, defaults to now. It may be in the future: the row is created `active`, but access doesn't resolve until `starts_at` passes (resolved status `scheduled`, then `access.granted` with `reason: entitlement_started`). Can't be more than 1 year ahead (`422 validation_failed`, `out_of_range`). |
 | `ends_at` | **Required** for `trial` (`422 ends_at_required`). Optional for the others. Must be after `starts_at`. |
 
 - Requires an `Idempotency-Key` header. A developer reflecting a purchase should key it on their own order or event id, so a retried billing webhook on their side never double-grants. See [Conventions → Idempotency](../conventions/#idempotency).
-- **One live personal row per (user, app):** if the user already has an `active` or `disabled` personal Entitlement to this Application, the call returns `409 entitlement_already_exists` with `details.existing_entitlement_id` and `details.status`. Re-enable the existing one with `PATCH` instead. An `expired` or `revoked` row doesn't block a new grant.
+- **One live personal row per (user, app):** if the user already has an `active` or `disabled` developer-granted personal Entitlement to this Application, the call returns `409 entitlement_already_exists` with `details.existing_entitlement_id` and `details.status`. Re-enable the existing one with `PATCH` instead. An `expired` or `revoked` row doesn't block a new grant, and neither does a [platform-managed](../../domain-model/entitlements/#platform-managed-entitlements) `free` or `subscription` row: the two coexist.
 - The user must exist and not be `deleted`. Granting to an `invited` user is allowed: access starts when they activate.
-{: .decision }
-**API changes awaiting review** ([DECISIONS.md #39](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#39-subscriber-billing-api)). #39 proposes removing the Starter seat cap below, and adding subscription-sourced Entitlements that the platform manages for Standard subscribers.
-
-- **Plan checks on the Application's Tenant** (independent of the caller's permission): a grant that would add a new seat beyond Starter's 1,000 returns `409 plan_limit_reached` (`resource: "seats"`). On a `restricted` Tenant, a grant that would add a new seat returns `402 subscription_required`. See [Pricing → Enforcement](../../pricing/#the-tiers).
 - Effects, in one transaction: writes Audit Event `entitlement.granted`, emits the `entitlement.granted` webhook, and emits `access.granted` if this flips the user's resolved access to the app on.
 
 ## `GET /v1/entitlements`
@@ -192,6 +188,8 @@ Filters: `application_id`, `status`, `user_id`, `organization_id`, `source`, `or
 Returns the Entitlement object. Self may fetch their own personal rows, plus org rows of Organizations they belong to (with `granted_via`). An org admin may fetch their Organization's rows.
 
 ## `PATCH /v1/entitlements/{id}` — the toggle
+
+**Platform-managed rows** (`source: free` or `subscription`) accept only `status` (`active` ⇄ `disabled`) and `disabled_reason`, from `entitlements.manage` or the Application's owner. Anything else returns `409 entitlement_platform_managed`, and so does `DELETE`. See [Platform-managed Entitlements](../../domain-model/entitlements/#platform-managed-entitlements).
 
 ```json
 // Request — turn off
@@ -288,15 +286,14 @@ Removes the record entirely. It's reserved for correcting a grant made by mistak
 | `entitlement_not_found` | 404 | `{id}` doesn't resolve, or isn't visible to the caller. |
 | `entitlement_already_exists` | 409 | A live (`active`/`disabled`) personal row already exists for this user and app. |
 | `invalid_status_transition` | 409 | See the transition table. |
-| `invalid_source` | 422 | `source: org_seat` on the personal grant endpoint. |
+| `invalid_source` | 422 | `source: org_seat`, `free`, or `subscription` on the personal grant endpoint. |
 | `ends_at_required` | 422 | A `trial` without `ends_at`. |
 | `disabled_reason_required` | 422 | `disabled`/`revoked` without a reason. |
 | `immutable_field` | 422 | Changing `source` (other than trial → purchase) or an existing `order_id`. |
 | `not_an_org_grant` | 422 | `member_scope`/`member_overrides` on a personal row. |
 | `member_override_not_a_member` | 422 | A `member_overrides` id isn't a current member. |
 | `application_not_available` | 409 | The Application isn't `approved`, or is `internal` and the caller isn't platform. |
-| `plan_limit_reached` | 409 | The grant would add a seat beyond the Application's Starter Tenant's cap; see [Conventions → Plan limit errors](../conventions/#plan-limit-errors). |
-| `subscription_required` | 402 | The grant would add a seat on a `restricted` Tenant. |
+| `entitlement_platform_managed` | 409 | `PATCH` on a `free` or `subscription` row that does anything but disable or re-enable it, or `DELETE` on one. See [Platform-managed Entitlements](../../domain-model/entitlements/#platform-managed-entitlements). |
 | `idempotency_key_required` | 400 | `POST` without an `Idempotency-Key`. |
 | `read_only_field` | 422 | `PATCH` touches `starts_at`, `user_id`, `organization_id`, or `application_id`. |
 | `tenant_suspended` | 403 | Any write when the Application's Tenant is suspended. |

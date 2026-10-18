@@ -1,8 +1,6 @@
 package core
 
 import (
-	"context"
-	"encoding/json"
 	"net/http"
 	"slices"
 	"strings"
@@ -20,11 +18,8 @@ type tenant struct {
 	OwnerUserID         *string   `json:"owner_user_id"`
 	OwnerOrganizationID *string   `json:"owner_organization_id"`
 	Tier                string    `json:"tier"`
-	Plan                string    `json:"plan"`
 	Region              string    `json:"region"`
 	Status              string    `json:"status"`
-	SubscriptionStatus  string    `json:"subscription_status"`
-	Restricted          bool      `json:"restricted"`
 	ApplicationCount    int       `json:"application_count"`
 	CreatedAt           time.Time `json:"created_at"`
 	UpdatedAt           time.Time `json:"updated_at"`
@@ -36,11 +31,10 @@ func (c *Call) tenantObject(t tenantRow) (tenant, error) {
 		return tenant{}, err
 	}
 	return tenant{ID: t.ID, OwnerType: t.OwnerType, OwnerUserID: t.OwnerUserID, OwnerOrganizationID: t.OwnerOrganizationID,
-		Tier: t.Tier, Plan: t.Plan, Region: t.Region, Status: t.Status, SubscriptionStatus: t.SubscriptionStatus,
-		Restricted: t.Restricted, ApplicationCount: n, CreatedAt: t.CreatedAt, UpdatedAt: t.UpdatedAt}, nil
+		Tier: t.Tier, Region: t.Region, Status: t.Status, ApplicationCount: n, CreatedAt: t.CreatedAt, UpdatedAt: t.UpdatedAt}, nil
 }
 
-// visibleTenant: owners, tenants.manage, and (where extra is set) billing.manage.
+// visibleTenant: owners, tenants.manage, and any extra permission given.
 func (c *Call) visibleTenant(id string, extra ...string) (tenantRow, bool, error) {
 	t, err := c.loadTenant(id)
 	if err != nil {
@@ -78,15 +72,10 @@ func (s *Server) TenantsList(w http.ResponseWriter, r *http.Request, params gen.
 					args[key] = *v
 				}
 			}
-			add("t.plan = :plan", "plan", enumStr(params.Plan))
 			add("t.tier = :tier", "tier", enumStr(params.Tier))
 			add("t.status = :st", "st", enumStr(params.Status))
 			add("t.owner_user_id = :ou", "ou", params.OwnerUserId)
 			add("t.owner_organization_id = :oo", "oo", params.OwnerOrganizationId)
-			if params.Restricted != nil {
-				where = append(where, "t.restricted = :rs")
-				args["rs"] = *params.Restricted
-			}
 		}
 		lim := httpx.Limit(params.Limit)
 		args["lim"] = int64(lim + 1)
@@ -120,7 +109,7 @@ func (s *Server) TenantsList(w http.ResponseWriter, r *http.Request, params gen.
 
 func (s *Server) TenantsGet(w http.ResponseWriter, r *http.Request, id string) {
 	s.serve(w, r, opts{op: "tenants.get"}, func(c *Call) error {
-		t, _, err := c.visibleTenant(id, "billing.manage")
+		t, _, err := c.visibleTenant(id)
 		if err != nil {
 			return err
 		}
@@ -245,9 +234,6 @@ func (s *Server) TenantsRequestTierChange(w http.ResponseWriter, r *http.Request
 			(in.RequestedTier == "dedicated_region" && t.Tier == "dedicated_region" && in.RequestedRegion != nil && *in.RequestedRegion != t.Region)
 		if !upgrade {
 			return httpx.Conflict("invalid_tier_transition", "A tier change must move up the ladder shared < isolated < dedicated_region.")
-		}
-		if t.Plan != "enterprise" {
-			return httpx.Conflict("plan_does_not_allow_tier", "isolated and dedicated_region require the Enterprise plan.")
 		}
 		switch in.RequestedTier {
 		case "dedicated_region":
@@ -416,265 +402,3 @@ func (c *Call) notifyTenantOwner(t tenantRow, subject, text string) {
 		c.notice(e, "tenant_notice", subject, text)
 	}
 }
-
-// ── Billing (API Reference → Billing) ──────────────────────────────────
-
-type usageLimit struct {
-	Limit    *int `json:"limit"`
-	Current  *int `json:"current,omitempty"`
-	Included *int `json:"included,omitempty"`
-}
-
-type usageCounts struct {
-	Applications, Seats, AppRolesMax, Webhooks int
-}
-
-func (c *Call) tenantUsage(t tenantRow) (usageCounts, error) {
-	var u usageCounts
-	var row struct {
-		Apps     int `json:"apps"`
-		RolesMax int `json:"roles_max"`
-		Webhooks int `json:"webhooks"`
-	}
-	if err := db.One(c.ctx, c.q, &row, `select jsonb_build_object(
-			'apps', (select count(*) from applications where tenant_id = :t),
-			'roles_max', coalesce((select max(cardinality(available_app_roles)) from applications where tenant_id = :t), 0),
-			'webhooks', (select count(*) from webhook_subscriptions w where w.tenant_id = :t))`, db.Args{"t": t.ID}); err != nil {
-		return u, err
-	}
-	seats, err := c.seatCount(t.ID)
-	if err != nil {
-		return u, err
-	}
-	return usageCounts{Applications: row.Apps, Seats: seats, AppRolesMax: row.RolesMax, Webhooks: row.Webhooks}, nil
-}
-
-// fitsPlans lists the plans the Tenant's current usage would fit.
-func fitsPlans(t tenantRow, u usageCounts) []string {
-	var out []string
-	for _, name := range []string{"starter", "team", "enterprise"} {
-		l := plans[name]
-		if name == "starter" && t.OwnerType != "user" {
-			continue
-		}
-		if name != "enterprise" && t.Tier != "shared" {
-			continue
-		}
-		fits := (l.Applications == nil || u.Applications <= *l.Applications) &&
-			(l.AppRoles == nil || u.AppRolesMax <= *l.AppRoles) &&
-			(l.Webhooks == nil || u.Webhooks <= *l.Webhooks) &&
-			(l.Seats == nil || u.Seats <= *l.Seats)
-		if fits {
-			out = append(out, name)
-		}
-	}
-	return out
-}
-
-func (s *Server) BillingGetUsage(w http.ResponseWriter, r *http.Request, id string) {
-	s.serve(w, r, opts{op: "billing.getUsage"}, func(c *Call) error {
-		t, _, err := c.visibleTenant(id, "billing.manage")
-		if err != nil {
-			return err
-		}
-		u, err := c.tenantUsage(t)
-		if err != nil {
-			return err
-		}
-		l := plans[t.Plan]
-		included := l.SeatsIncluded
-		return c.OK(map[string]any{
-			"tenant_id": t.ID, "plan": t.Plan,
-			"limits": map[string]usageLimit{
-				"applications":          {Limit: l.Applications, Current: &u.Applications},
-				"seats":                 {Limit: l.Seats, Current: &u.Seats, Included: &included},
-				"app_roles":             {Limit: l.AppRoles, Current: &u.AppRolesMax},
-				"webhooks":              {Limit: l.Webhooks, Current: &u.Webhooks},
-				"audit_hot_window_days": {Limit: l.AuditHotDays},
-			},
-			"fits_plans": fitsPlans(t, u),
-		})
-	})
-}
-
-func (s *Server) BillingGetSubscription(w http.ResponseWriter, r *http.Request, id string) {
-	s.serve(w, r, opts{op: "billing.getSubscription"}, func(c *Call) error {
-		t, owner, err := c.visibleTenant(id, "billing.manage")
-		if err != nil {
-			return err
-		}
-		if !owner && !c.can("billing.manage") {
-			return httpx.NotFoundResource("tenant")
-		}
-		seats, err := c.seatCount(t.ID)
-		if err != nil {
-			return err
-		}
-		included := plans[t.Plan].SeatsIncluded
-		billable := 0
-		if t.Plan != "starter" && t.SeatCountSynced != nil && *t.SeatCountSynced > included {
-			billable = *t.SeatCountSynced - included
-		}
-		addOns := []map[string]any{}
-		switch {
-		case t.Plan == "enterprise" && t.Tier == "isolated":
-			addOns = append(addOns, map[string]any{"code": "isolated_tenancy", "amount": 75000})
-		case t.Plan == "enterprise" && t.Tier == "dedicated_region":
-			addOns = append(addOns, map[string]any{"code": "dedicated_region_tenancy", "amount": 150000})
-		}
-		return c.OK(map[string]any{
-			"tenant_id": t.ID, "plan": t.Plan, "subscription_status": t.SubscriptionStatus, "restricted": t.Restricted,
-			"current_period_start": t.PeriodStart, "current_period_end": t.PeriodEnd,
-			"cancel_at_period_end": t.CancelAtPeriodEnd,
-			"seats": map[string]any{"current": seats, "included": included, "billable": billable,
-				"last_synced_at": t.SeatCountSyncedAt},
-			"add_ons": addOns, "currency": "usd",
-		})
-	})
-}
-
-func billingUnavailable() error {
-	return httpx.E(503, "billing_unavailable", "Billing is temporarily unavailable.").RetryAfter(30)
-}
-
-func (s *Server) BillingCreateCheckoutSession(w http.ResponseWriter, r *http.Request, id string, params gen.BillingCreateCheckoutSessionParams) {
-	s.serve(w, r, opts{op: "billing.createCheckoutSession", userOnly: true, idem: idemRequired}, func(c *Call) error {
-		t, owner, err := c.visibleTenant(id, "billing.manage")
-		if err != nil {
-			return err
-		}
-		if !owner {
-			return httpx.Forbidden("")
-		}
-		var in struct {
-			Plan       string `json:"plan"`
-			SuccessURL string `json:"success_url"`
-			CancelURL  string `json:"cancel_url"`
-		}
-		if err := c.Decode(&in); err != nil {
-			return err
-		}
-		if in.Plan == "enterprise" {
-			return httpx.E(422, "plan_requires_sales", "Enterprise is arranged through sales.")
-		}
-		var f httpx.Fields
-		if in.Plan != "team" {
-			f.Enum("plan", "team")
-		}
-		if !httpsURL(in.SuccessURL) {
-			f.Add("success_url", "invalid_format").Allowed = []string{"https"}
-		}
-		if !httpsURL(in.CancelURL) {
-			f.Add("cancel_url", "invalid_format").Allowed = []string{"https"}
-		}
-		if err := f.Err(); err != nil {
-			return err
-		}
-		if !slices.Contains([]string{"none", "canceled", "incomplete_expired", "unpaid"}, t.SubscriptionStatus) {
-			return httpx.Conflict("subscription_exists", "This Tenant already has a subscription; use the billing portal.")
-		}
-		if c.s.Billing == nil {
-			return billingUnavailable()
-		}
-		owners, err := db.All[string](c.ctx, c.q, `select to_jsonb(email::text) from users where id = :u`, db.Args{"u": c.p.UserID})
-		if err != nil {
-			return err
-		}
-		customer, err := c.s.ensureStripeCustomer(c.ctx, c, t, first(owners))
-		if err != nil {
-			return billingUnavailable()
-		}
-		seats, err := c.seatCount(t.ID)
-		if err != nil {
-			return err
-		}
-		url, expires, err := c.s.Billing.CheckoutSession(c.ctx, CheckoutInput{TenantID: t.ID, CustomerID: customer,
-			Seats: seats, SuccessURL: in.SuccessURL, CancelURL: in.CancelURL})
-		if err != nil {
-			c.s.Log.Error("stripe checkout failed", "tenant", t.ID, "err", err)
-			return billingUnavailable()
-		}
-		return c.Created(map[string]any{"url": url, "expires_at": expires.UTC().Format(time.RFC3339)})
-	})
-}
-
-func (s *Server) BillingCreatePortalSession(w http.ResponseWriter, r *http.Request, id string) {
-	s.serve(w, r, opts{op: "billing.createPortalSession", userOnly: true}, func(c *Call) error {
-		t, owner, err := c.visibleTenant(id, "billing.manage")
-		if err != nil {
-			return err
-		}
-		if !owner && !c.can("billing.manage") {
-			return httpx.Forbidden("billing.manage")
-		}
-		var in struct {
-			ReturnURL string `json:"return_url"`
-		}
-		if err := c.Decode(&in); err != nil {
-			return err
-		}
-		if !httpsURL(in.ReturnURL) {
-			var f httpx.Fields
-			f.Add("return_url", "invalid_format").Allowed = []string{"https"}
-			return f.Err()
-		}
-		if t.StripeCustomerID == nil || (t.SubscriptionStatus == "none" && t.StripeSubID == nil) {
-			return httpx.Conflict("no_billing_account", "This Tenant has no billing history to manage yet.")
-		}
-		if c.s.Billing == nil {
-			return billingUnavailable()
-		}
-		url, expires, err := c.s.Billing.PortalSession(c.ctx, *t.StripeCustomerID, in.ReturnURL)
-		if err != nil {
-			c.s.Log.Error("stripe portal failed", "tenant", t.ID, "err", err)
-			return billingUnavailable()
-		}
-		return c.Created(map[string]any{"url": url, "expires_at": expires.UTC().Format(time.RFC3339)})
-	})
-}
-
-func first(ss []string) string {
-	if len(ss) == 0 {
-		return ""
-	}
-	return ss[0]
-}
-
-// ensureStripeCustomer returns the Tenant's Stripe Customer, creating it
-// (and recording it) if the post-commit provisioning hasn't yet.
-func (s *Server) ensureStripeCustomer(ctx context.Context, c *Call, t tenantRow, email string) (string, error) {
-	if t.StripeCustomerID != nil {
-		return *t.StripeCustomerID, nil
-	}
-	id, err := s.Billing.EnsureCustomer(ctx, t.ID, email)
-	if err != nil {
-		return "", err
-	}
-	_, err = c.q.Exec(ctx, `update tenants set stripe_customer_id = :c where id = :t and stripe_customer_id is null`,
-		db.Args{"c": id, "t": t.ID})
-	return id, err
-}
-
-// provisionStripeCustomer creates the Stripe Customer just after a new
-// Tenant commits (DEPLOYMENT.md → Stripe Billing → Objects and mapping).
-// A failure is left for the scheduled retry job to fill in.
-func (s *Server) provisionStripeCustomer(ctx context.Context, tenantID string) {
-	if s.Billing == nil {
-		return
-	}
-	id, err := s.Billing.EnsureCustomer(ctx, tenantID, "")
-	if err != nil {
-		s.Log.Warn("stripe customer provisioning deferred to retry job", "tenant", tenantID, "err", err)
-		return
-	}
-	err = s.DB.Tx(ctx, db.Settings{AllModes: true}, func(q db.Querier) error {
-		_, err := q.Exec(ctx, `update tenants set stripe_customer_id = :c where id = :t and stripe_customer_id is null`,
-			db.Args{"c": id, "t": tenantID})
-		return err
-	})
-	if err != nil {
-		s.Log.Error("record stripe customer", "tenant", tenantID, "err", err)
-	}
-}
-
-var _ = json.Marshal

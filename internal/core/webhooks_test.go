@@ -166,12 +166,11 @@ func TestWebhookDelivery(t *testing.T) {
 	}
 	e.Patch("/v1/webhooks/"+sub.Str("id"), e.Admin, map[string]any{"status": "unhealthy"}).ExpectErr(409, "invalid_status_transition")
 	e.Patch("/v1/webhooks/"+sub.Str("id"), e.Admin, map[string]any{"status": "healthy"}).Expect(200)
-	// Starter plan limit: Substratal's Tenant is Enterprise, so use a Starter owner.
+	// An owner manages their own Application's subscriptions, with no plan cap.
 	owner := e.Signup()
 	ownApp := e.App(owner.ID, nil)
 	e.Post("/v1/webhooks", owner.Token, map[string]any{"scope": ownApp, "url": rcv.srv.URL, "events": []string{"*"}}).Expect(201)
-	e.Post("/v1/webhooks", owner.Token, map[string]any{"scope": ownApp, "url": rcv.srv.URL, "events": []string{"*"}}).
-		ExpectErr(409, "plan_limit_reached")
+	e.Post("/v1/webhooks", owner.Token, map[string]any{"scope": ownApp, "url": rcv.srv.URL, "events": []string{"*"}}).Expect(201)
 	e.Post("/v1/webhooks", owner.Token, map[string]any{"scope": "platform", "url": rcv.srv.URL, "events": []string{"*"}}).
 		ExpectErr(403, "forbidden")
 }
@@ -258,44 +257,29 @@ func TestAuditVisibility(t *testing.T) {
 	e.Get("/v1/audit-events/"+id, stranger.Token).ExpectErr(404, "audit_event_not_found")
 }
 
-func TestTenancyAndUsage(t *testing.T) {
+func TestTenancy(t *testing.T) {
 	e := testenv.New(t)
 	owner := e.Signup()
-	app := e.App(owner.ID, nil)
+	e.App(owner.ID, nil)
 	ts := e.Get("/v1/tenants", owner.Token).Expect(200).JSON()["data"].([]any)
 	if len(ts) != 1 {
 		t.Fatalf("owner tenants = %v", ts)
 	}
-	tid := ts[0].(map[string]any)["id"].(string)
-	if ts[0].(map[string]any)["plan"] != "starter" || ts[0].(map[string]any)["application_count"].(float64) != 1 {
-		t.Fatalf("tenant = %v", ts[0])
+	tenant := ts[0].(map[string]any)
+	tid := tenant["id"].(string)
+	if tenant["tier"] != "shared" || tenant["application_count"].(float64) != 1 {
+		t.Fatalf("tenant = %v", tenant)
+	}
+	if _, ok := tenant["plan"]; ok {
+		t.Fatalf("Tenants aren't billed and carry no plan: %v", tenant)
 	}
 	u := e.Signup()
-	e.Grant(owner.Token, u.ID, app) // the owner grants with their own User token
-	usage := e.Get("/v1/tenants/"+tid+"/usage", owner.Token).Expect(200).JSON()
-	limits := usage["limits"].(map[string]any)
-	if limits["seats"].(map[string]any)["current"].(float64) != 1 || limits["applications"].(map[string]any)["limit"].(float64) != 1 {
-		t.Fatalf("usage = %v", usage)
-	}
-	sub := e.Get("/v1/tenants/"+tid+"/subscription", owner.Token).Expect(200).JSON()
-	if sub["subscription_status"] != "none" || sub["currency"] != "usd" {
-		t.Fatalf("subscription = %v", sub)
-	}
 	e.Get("/v1/tenants/"+tid, u.Token).ExpectErr(404, "tenant_not_found")
-	// Checkout with no Stripe configured is billing_unavailable; Enterprise needs sales.
-	e.PostIdem("/v1/tenants/"+tid+"/billing/checkout-sessions", owner.Token, testenv.Unique(),
-		map[string]any{"plan": "enterprise", "success_url": "https://x.example.com", "cancel_url": "https://x.example.com"}).
-		ExpectErr(422, "plan_requires_sales")
-	e.PostIdem("/v1/tenants/"+tid+"/billing/checkout-sessions", owner.Token, testenv.Unique(),
-		map[string]any{"plan": "team", "success_url": "https://x.example.com", "cancel_url": "https://x.example.com"}).
-		ExpectErr(503, "billing_unavailable")
-	e.Post("/v1/tenants/"+tid+"/billing/portal-sessions", owner.Token, map[string]any{"return_url": "https://x.example.com"}).
-		ExpectErr(409, "no_billing_account")
-	// Tier changes: tenants.manage only, Enterprise only, up the ladder only.
+	// Tier changes: tenants.manage only, up the ladder only. No plan gates them.
 	e.Post("/v1/tenants/"+tid+"/tier-change-requests", owner.Token, map[string]any{"requested_tier": "isolated", "reason": "x"}).
 		ExpectErr(403, "forbidden")
 	e.Post("/v1/tenants/"+tid+"/tier-change-requests", e.Admin, map[string]any{"requested_tier": "isolated", "reason": "x"}).
-		ExpectErr(409, "plan_does_not_allow_tier")
+		Expect(201)
 	sys := "tnt_01JAG1SYSTEM00000000000000"
 	e.Post("/v1/tenants/"+sys+"/tier-change-requests", e.Admin, map[string]any{"requested_tier": "dedicated_region",
 		"requested_region": "mars-1", "reason": "x"}).ExpectErr(422, "unsupported_region")

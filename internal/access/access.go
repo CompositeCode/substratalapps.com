@@ -21,7 +21,7 @@ import (
 // Entitlement, or an org-wide grant through an Organization they belong to.
 type Path struct {
 	EntitlementID   string
-	Source          string // purchase | trial | admin_grant | org_seat
+	Source          string // purchase | trial | admin_grant | org_seat | free | subscription
 	Status          string // active | disabled | expired | revoked
 	OrganizationID  *string
 	StartsAt        time.Time
@@ -35,17 +35,13 @@ type Path struct {
 	// are: suspension freezes the Organization's admin actions but doesn't
 	// touch members' access (Organizations → PATCH, "What it doesn't do").
 	MembershipActive bool
-	// SeatLimited: the Application is on a Starter Tenant at its seat cap
-	// and this User isn't already one of its seats (Pricing → Enforcement).
-	SeatLimited bool
 }
 
 // Decisions an org path can produce for one member (Entitlements →
 // Attribution).
 const (
-	Included  = "included"
-	Excluded  = "excluded"
-	SeatLimit = "seat_limit"
+	Included = "included"
+	Excluded = "excluded"
 )
 
 // IsOrg reports whether p is an org-wide grant.
@@ -69,14 +65,10 @@ func MemberIncluded(p Path, userID string) bool {
 
 // MemberDecision is granted_via.member_decision for an org path.
 func MemberDecision(p Path, userID string) string {
-	switch {
-	case !MemberIncluded(p, userID):
+	if !MemberIncluded(p, userID) {
 		return Excluded
-	case p.SeatLimited:
-		return SeatLimit
-	default:
-		return Included
 	}
+	return Included
 }
 
 // EffectiveStatus is a row's status as of now: an active or disabled row
@@ -96,7 +88,7 @@ func pathActive(p Path, now time.Time) bool {
 
 // counts reports whether p is a path for userID at all: personal paths
 // always are; org paths only through an active membership whose grant
-// includes the member and isn't seat-limited.
+// includes the member.
 func counts(p Path, userID string) bool {
 	if !p.IsOrg() {
 		return true
