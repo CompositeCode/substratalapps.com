@@ -45,7 +45,7 @@ Platform-scoped keys (fixed, built in, with descriptions summarized from the aut
     { "key": "applications.manage", "scope": "platform", "description": "Create and edit Application catalog entries." },
     { "key": "roles.manage", "scope": "platform", "description": "Define Roles and assign/remove them on any user. On an app-scoped key, confined to that Application's Roles." },
     { "key": "organizations.manage", "scope": "platform", "description": "Manage any Organization: suspend/reactivate, membership, and member scope." },
-    { "key": "billing.manage", "scope": "platform", "description": "View any Tenant's platform subscription and usage, and open its billing portal." },
+    { "key": "billing.manage", "scope": "platform", "description": "View any User's or Organization's subscription, and open its billing portal." },
     { "key": "billing.refund", "scope": "platform", "description": "Issue platform-subscription refunds and credits." },
     { "key": "audit.view", "scope": "platform", "description": "Query the Audit log for any user. On an app-scoped key, confined to that Application's events." },
     { "key": "webhooks.manage", "scope": "platform", "description": "Manage any webhook subscription, and create platform-scoped ones." },
@@ -240,7 +240,7 @@ The live introspection check described throughout [Trust Model](../../trust-mode
 - `entitlement_status` is the *resolved* status across every path (see [Access Control](../../access-control/#the-algorithm)). It's `"none"` if the user has no path at all, and `"scheduled"` if their only live path is a grant whose `starts_at` is still in the future.
 - `roles` lists the user's explicit assignments for this Application, plus the implicit `default_app_role` **only while `allowed` is true**, since the default Role is held by "every user with active access". In the second example the user has no explicit Roles and no active access, so it's empty.
 - `effective_permissions` is **always empty when `allowed` is false**. When `allowed` is true, it contains only this Application's `app.<slug>.*` keys, from explicit and `default_app_role` assignments. Platform permissions never appear here.
-- `access_paths` lists every path, including org grants with their `organization_id` and `member_decision` (`included`, `excluded`, or `seat_limit`), and future-dated grants with their `starts_at`, so a support agent can see *why*. Each entry has `source`, `entitlement_id`, and the row's own `status`; see [Domain Model → Entitlements → Worked example](../../domain-model/entitlements/#worked-example-who-gets-access-through-one-org-grant).
+- `access_paths` lists every path, including org grants with their `organization_id` and `member_decision` (`included` or `excluded`), and future-dated grants with their `starts_at`, so a support agent can see *why*. Each entry has `source`, `entitlement_id`, and the row's own `status`; see [Domain Model → Entitlements → Worked example](../../domain-model/entitlements/#worked-example-who-gets-access-through-one-org-grant).
 - This always returns `200` with the current state, never `403`. It's an introspection query ("what's true right now"), not an attempted action. The caller enforcing access decides what to do with `allowed: false`.
 - Rate limit is 300/min per key (see [Non-Functional Requirements → Rate limiting](../../non-functional-requirements/#rate-limiting)). Apps on a hot path should prefer the app token, and call this before sensitive actions.
 
@@ -257,4 +257,3 @@ The live introspection check described throughout [Trust Model](../../trust-mode
 | `seed_role_immutable` | 403 | `PATCH`/`DELETE` on a seed Role. |
 | `role_in_use` | 409 | `DELETE` on a Role with assignments. |
 | `member_role_required` | 409 | Removing a user's `member` platform Role. |
-| `plan_limit_reached` | 409 | Exceeding the AppRoles cap — see [Pricing → Enforcement](../../pricing/#the-tiers). |

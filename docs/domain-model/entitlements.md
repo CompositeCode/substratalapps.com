@@ -25,21 +25,22 @@ The join between a User (or Organization) and an Application: does this party ow
 | Field | Type | Notes |
 |---|---|---|
 | `id` | string | `ent_` prefix. |
-| `user_id` | string, nullable | Set unless this is an org-wide seat grant. |
-| `organization_id` | string, nullable | Set for an org-wide grant — see [`source: org_seat`](#source) below. |
+| `user_id` | string, nullable | Set unless this is an org-wide grant. |
+| `organization_id` | string, nullable | Set for an org-wide grant: `source: org_seat`, or an Organization's `source: subscription` row. See [`source`](#source) below. |
 | `application_id` | string | |
 | `status` | enum | `active` \| `disabled` \| `expired` \| `revoked`. See [Access Control → Step 1](../../access-control/#step-1-entitlement-status). |
-| `source` | enum | `purchase` \| `trial` \| `admin_grant` \| `org_seat`. |
+| `source` | enum | `purchase` \| `trial` \| `admin_grant` \| `org_seat` \| `free` \| `subscription`. The last two are [platform-managed](#platform-managed-entitlements). |
 | `order_id` | string, nullable | An opaque reference into the *developer's own* billing system, typically set when `source: purchase`. Up to 255 characters. It isn't a resource of this API; see [Orders & Audit → Order](../orders-and-audit/#order). It can be set once and is then immutable. |
+| `subscription_id` | string, nullable | Set on `source: subscription` rows: the [Subscription](../../api-reference/billing/#the-subscription-object) that grants them. Read-only. |
 | `starts_at` | timestamp | May be in the future (up to 1 year). Until it passes, the row is `active` but isn't an access path yet; the resolved status for a User whose only path hasn't started is `scheduled`. |
 | `ends_at` | timestamp, nullable | Set for trials and fixed-term subscriptions. |
 | `disabled_reason` | string, nullable | Why the row last left `active`. It's required on any transition to `disabled` or `revoked` (for example `billing_dispute`, `refunded`, `chargeback`, `tos_violation`), and cleared automatically on re-enable. |
-| `member_scope` | enum, nullable | Only meaningful when `source: org_seat`. `all_members` (default) \| `allowlist` \| `denylist`. See [Org-wide entitlements: scoping members in or out](#org-wide-entitlements-scoping-members-in-or-out). |
+| `member_scope` | enum, nullable | Only meaningful on an org-wide row. On an Organization's `subscription` row it mirrors the Subscription's own `member_scope`. `all_members` (default) \| `allowlist` \| `denylist`. See [Org-wide entitlements: scoping members in or out](#org-wide-entitlements-scoping-members-in-or-out). |
 | `member_overrides` | array, nullable | Only meaningful when `member_scope` is `allowlist` or `denylist`. Array of `user_id`s (up to 1,000, all current `active` members) this org-wide grant's default is flipped for. Removing someone from the Organization removes them from this list too. A soft-deleted User stays listed, so a restore brings back the same standing; the erasure cascade removes them. |
 | `test_mode` | boolean | Created by a test-mode key. |
 | `created_at`, `updated_at` | timestamp | `updated_at` changes on every write. Webhook consumers use it to discard out-of-order events. |
 
-**Uniqueness:** at most one *live* (`active` or `disabled`) personal row per (user, Application), and one live org row per (Organization, Application). `expired` and `revoked` rows are history and don't block a new grant.
+**Uniqueness:** at most one *live* (`active` or `disabled`) developer-granted personal row per (user, Application), and one live developer-granted org row per (Organization, Application). Separately, at most one live platform-managed row per holder, Application, and source. A developer grant and a platform-managed row can coexist, and either one alone gives access. `expired` and `revoked` rows are history and don't block a new grant.
 
 ### `source`
 
@@ -49,9 +50,25 @@ The join between a User (or Organization) and an Application: does this party ow
 | `trial` | Time-boxed access, no payment yet. `ends_at` drives the transition to `expired`. |
 | `admin_grant` | Support/sales gave access directly — comped account, early access, internal testing. Usually no `order_id`. |
 | `org_seat` | Granted to an Organization as a whole. Members get access through it because they belong to that Organization, which *holds a grant* to the app. It doesn't have to own the app. `user_id` is null — the grant is modeled at the org level and resolved per-member at read time, per [member_scope](#org-wide-entitlements-scoping-members-in-or-out) below. |
+| `free` | Platform-managed. Every User's access to each Application whose [`access_tier`](../applications/#fields) is `free`. Always personal. |
+| `subscription` | Platform-managed. Granted while a Standard [Subscription](../../api-reference/billing/#the-subscription-object) covers its holder, to each `standard` Application: personal for an individual subscription, org-wide for an Organization's. |
 
-{: .decision }
-**API changes awaiting review** ([DECISIONS.md #39](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#39-subscriber-billing-api)). #39 proposes a `subscription` source for Entitlements granted by a Standard subscription, and retiring `member_decision: seat_limit` along with the Starter seat cap.
+## Platform-managed Entitlements
+
+`free` and `subscription` rows implement [Pricing](../../pricing/). The platform creates and ends them; no API call does:
+
+| When | What the platform does |
+|---|---|
+| A User is created | Grants them a `free` row to each free Application. |
+| A Subscription starts covering its holder (`active`, `trialing`, or `past_due`) | Grants a `subscription` row to each standard Application: personal for a User, org-wide with the Subscription's `member_scope` for an Organization. |
+| A Subscription stops covering (`canceled`, `unpaid`, `incomplete_expired`, `paused`) | Sets `ends_at` to now on its rows, which expires them. Resubscribing revives the same row while it's still live, or grants a new one. |
+| An org admin changes the Subscription's covered members | Updates `member_scope` / `member_overrides` on the Organization's rows. |
+| An Application is created, or its `access_tier` changes | Grants or ends rows for that Application to match. |
+| Hourly | Repairs anything that drifted (`subscription-access` job). |
+
+Each change writes the usual Audit Event with actor `system`, fires the matching `entitlement.*` webhook, and fires `access.granted` / `access.revoked` for every User whose resolved access actually changed.
+
+People can do exactly one thing to a platform-managed row: someone with `entitlements.manage` (or the Application's owner) can `disable` it with a `disabled_reason`, and re-enable it. The platform never re-enables a row an admin disabled. Every other change (revoke, `ends_at`, `member_scope`, delete) returns `409 entitlement_platform_managed`, and granting one through the API returns `422 invalid_source`.
 
 ## Org-wide entitlements: scoping members in or out
 
@@ -88,7 +105,7 @@ Reading a member's own entitlements (`GET /v1/users/{id}/entitlements`) surfaces
 
 `granted_via` is computed per member at read time (it's not stored — `member_scope` + `member_overrides` on the org-wide row is the source of truth) and only appears when the caller is asking about a specific member's resolved standing, e.g. via `GET /v1/users/{id}/entitlements`, rather than the raw org-wide grant itself.
 
-`member_decision` is `included`, `excluded` (left out by `member_scope`/`member_overrides`), or `seat_limit` (included by scope, but the Application's Starter Tenant is at its seat cap; see [Pricing → Enforcement](../../pricing/#the-tiers)). Rows with `excluded` or `seat_limit` **are** listed, so a member can see why they don't have access, but they're never an access path. Note that `status` above is the org-wide grant's own status (`active`), not this member's access; their resolved access comes from [effective-permissions](../../api-reference/roles-and-permissions/#get-v1usersidappsappideffective-permissions).
+`member_decision` is `included` or `excluded` (left out by `member_scope`/`member_overrides`). Rows with `excluded` **are** listed, so a member can see why they don't have access, but they're never an access path. Note that `status` above is the org-wide grant's own status (`active`), not this member's access; their resolved access comes from [effective-permissions](../../api-reference/roles-and-permissions/#get-v1usersidappsappideffective-permissions).
 
 ### Worked example: who gets access through one org grant
 

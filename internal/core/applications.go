@@ -32,6 +32,7 @@ type application struct {
 	AvailableAppRoles   []string        `json:"available_app_roles"`
 	DefaultAppRole      *string         `json:"default_app_role"`
 	Visibility          string          `json:"visibility"`
+	AccessTier          string          `json:"access_tier"`
 	OwnerUserID         *string         `json:"owner_user_id"`
 	OwnerOrganizationID *string         `json:"owner_organization_id"`
 	ReviewStatus        string          `json:"review_status"`
@@ -49,6 +50,7 @@ type appSummary struct {
 	Description  *string `json:"description"`
 	IconURL      *string `json:"icon_url"`
 	Visibility   string  `json:"visibility"`
+	AccessTier   string  `json:"access_tier"`
 	ReviewStatus string  `json:"review_status"`
 }
 
@@ -65,7 +67,7 @@ func (a appRow) full(stats map[string]int) application {
 		EmailFromName: a.EmailFromName, SettingsSchema: a.SettingsSchema,
 		SettingsSchemaStats: map[string]any{"stale_override_counts": stats}, Permissions: perms,
 		AvailableAppRoles: nonNil(a.AvailableAppRoles), DefaultAppRole: a.DefaultAppRole, Visibility: a.Visibility,
-		OwnerUserID: a.OwnerUserID, OwnerOrganizationID: a.OwnerOrganizationID, ReviewStatus: a.ReviewStatus,
+		AccessTier: a.AccessTier, OwnerUserID: a.OwnerUserID, OwnerOrganizationID: a.OwnerOrganizationID, ReviewStatus: a.ReviewStatus,
 		ReviewNotes: a.ReviewNotes, TenantID: a.TenantID, TestMode: a.TestMode, CreatedAt: a.CreatedAt, UpdatedAt: a.UpdatedAt}
 }
 
@@ -127,6 +129,10 @@ func (s *Server) ApplicationsList(w http.ResponseWriter, r *http.Request, params
 			where = append(where, "a.visibility = :vis")
 			args["vis"] = string(*params.Visibility)
 		}
+		if params.AccessTier != nil {
+			where = append(where, "a.access_tier = :tier")
+			args["tier"] = string(*params.AccessTier)
+		}
 		queue := false
 		if params.ReviewStatus != nil {
 			where = append(where, "a.review_status = :rs")
@@ -183,7 +189,7 @@ func (s *Server) ApplicationsList(w http.ResponseWriter, r *http.Request, params
 			} else if !ok {
 				continue
 			}
-			out = append(out, appSummary{a.ID, a.Slug, a.Name, a.Description, a.IconURL, a.Visibility, a.ReviewStatus})
+			out = append(out, appSummary{a.ID, a.Slug, a.Name, a.Description, a.IconURL, a.Visibility, a.AccessTier, a.ReviewStatus})
 			keys = append(keys, a)
 			if len(out) > lim {
 				break
@@ -322,6 +328,11 @@ func validateAppFields(p httpx.Patch, slug string, testMode bool, f *httpx.Field
 			f.Enum("visibility", "public", "invite_only", "internal")
 		}
 	}
+	if v, present := p.String("access_tier", f); present {
+		if v == nil || (*v != "free" && *v != "standard") {
+			f.Enum("access_tier", "free", "standard")
+		}
+	}
 	if v, present := p.String("review_status", f); present {
 		if v == nil || !slices.Contains([]string{"approved", "pending_review", "rejected", "suspended"}, *v) {
 			f.Enum("review_status", "approved", "pending_review", "rejected", "suspended")
@@ -400,6 +411,7 @@ func (s *Server) ApplicationsCreate(w http.ResponseWriter, r *http.Request, para
 			AvailableAppRoles []string        `json:"available_app_roles"`
 			DefaultAppRole    *string         `json:"default_app_role"`
 			Visibility        *string         `json:"visibility"`
+			AccessTier        *string         `json:"access_tier"`
 			ReviewStatus      *string         `json:"review_status"`
 			ReviewNotes       *string         `json:"review_notes"`
 		}
@@ -418,6 +430,10 @@ func (s *Server) ApplicationsCreate(w http.ResponseWriter, r *http.Request, para
 		visibility := "public"
 		if in.Visibility != nil {
 			visibility = *in.Visibility
+		}
+		accessTier := "standard"
+		if in.AccessTier != nil {
+			accessTier = *in.AccessTier
 		}
 		review := "approved"
 		if in.ReviewStatus != nil {
@@ -443,23 +459,6 @@ func (s *Server) ApplicationsCreate(w http.ResponseWriter, r *http.Request, para
 		if err := tenantWritable(t); err != nil {
 			return err
 		}
-		if t.Restricted {
-			return subscriptionRequired(t)
-		}
-		lim := plans[t.Plan]
-		if lim.Applications != nil {
-			var n int
-			if err := db.One(c.ctx, c.q, &n, `select to_jsonb(count(*)) from applications where tenant_id = :t`,
-				db.Args{"t": t.ID}); err != nil {
-				return err
-			}
-			if n >= *lim.Applications {
-				return planLimitErr("applications", *lim.Applications, n, t)
-			}
-		}
-		if lim.AppRoles != nil && len(roles) > *lim.AppRoles {
-			return planLimitErr("app_roles", *lim.AppRoles, len(roles), t)
-		}
 		perms := in.Permissions
 		if perms == nil {
 			perms = []appPermission{}
@@ -467,14 +466,14 @@ func (s *Server) ApplicationsCreate(w http.ResponseWriter, r *http.Request, para
 		id := "app_" + slug
 		if _, err := c.q.Exec(c.ctx, `insert into applications (id, slug, name, description, icon_url, launch_url,
 				redirect_uris, support_url, email_from_name, settings_schema, permissions, available_app_roles,
-				default_app_role, visibility, owner_user_id, owner_organization_id, review_status, review_notes,
+				default_app_role, visibility, access_tier, owner_user_id, owner_organization_id, review_status, review_notes,
 				tenant_id, test_mode)
 			values (:id, :slug, :name, :desc, :icon, :launch, :redir::text[], :support, :from, :schema::jsonb,
-				:perms::jsonb, :roles::text[], :defrole, :vis, :ou, :oo, :rs, :rn, :t, :tm)`,
+				:perms::jsonb, :roles::text[], :defrole, :vis, :tier, :ou, :oo, :rs, :rn, :t, :tm)`,
 			db.Args{"id": id, "slug": slug, "name": in.Name, "desc": in.Description, "icon": in.IconURL,
 				"launch": in.LaunchURL, "redir": db.TextArray(in.RedirectURIs), "support": in.SupportURL,
 				"from": in.EmailFromName, "schema": string(in.SettingsSchema), "perms": db.JSON(perms),
-				"roles": db.TextArray(roles), "defrole": in.DefaultAppRole, "vis": visibility, "ou": ownerUser,
+				"roles": db.TextArray(roles), "defrole": in.DefaultAppRole, "vis": visibility, "tier": accessTier, "ou": ownerUser,
 				"oo": ownerOrg, "rs": review, "rn": in.ReviewNotes, "t": t.ID, "tm": c.testMode()}); err != nil {
 			if _, ok := db.UniqueViolation(err); ok {
 				return httpx.Conflict("slug_taken", "An Application with this slug already exists.")
@@ -490,6 +489,9 @@ func (s *Server) ApplicationsCreate(w http.ResponseWriter, r *http.Request, para
 		}
 		if err := c.audit(Audit{Action: "application.created", TargetType: "application", TargetID: id,
 			ApplicationID: &id, TenantID: &t.ID, After: a.full(nil)}); err != nil {
+			return err
+		}
+		if err := c.reconcileAccess(accessScope{AppID: id}); err != nil {
 			return err
 		}
 		c.After(func(ctx contextT) { c.s.rebuildSettingsProjection(ctx, id) })
@@ -514,7 +516,7 @@ func (c *Call) seedAppRoles(appID string, names []string) error {
 
 var ownerFields = []string{"name", "description", "icon_url", "launch_url", "redirect_uris", "support_url",
 	"email_from_name", "settings_schema", "permissions", "available_app_roles", "default_app_role"}
-var moderationFields = []string{"visibility", "review_status", "review_notes", "owner_user_id", "owner_organization_id"}
+var moderationFields = []string{"visibility", "access_tier", "review_status", "review_notes", "owner_user_id", "owner_organization_id"}
 
 func (s *Server) ApplicationsUpdate(w http.ResponseWriter, r *http.Request, id string, params gen.ApplicationsUpdateParams) {
 	s.serve(w, r, opts{op: "applications.update"}, func(c *Call) error {
@@ -549,7 +551,7 @@ func (s *Server) ApplicationsUpdate(w http.ResponseWriter, r *http.Request, id s
 		}
 		var f httpx.Fields
 		p.RequireNonNull(&f, "name", "launch_url", "redirect_uris", "settings_schema", "permissions",
-			"available_app_roles", "visibility", "review_status")
+			"available_app_roles", "visibility", "access_tier", "review_status")
 		if _, err := validateAppFields(p, a.Slug, a.TestMode, &f); err != nil {
 			return err
 		}
@@ -592,6 +594,9 @@ func (s *Server) ApplicationsUpdate(w http.ResponseWriter, r *http.Request, id s
 		}
 		if v, present := p.String("visibility", &f); present && v != nil {
 			next.Visibility = *v
+		}
+		if v, present := p.String("access_tier", &f); present && v != nil {
+			next.AccessTier = *v
 		}
 		ownerChange := p.Has("owner_user_id") || p.Has("owner_organization_id")
 		if ownerChange {
@@ -652,14 +657,6 @@ func (s *Server) ApplicationsUpdate(w http.ResponseWriter, r *http.Request, id s
 			return err
 		}
 		addedRoles := minus(next.AvailableAppRoles, a.AvailableAppRoles)
-		if len(addedRoles) > 0 {
-			if t.Restricted && !c.testMode() {
-				return subscriptionRequired(t)
-			}
-			if l := plans[t.Plan].AppRoles; l != nil && len(next.AvailableAppRoles) > *l {
-				return planLimitErr("app_roles", *l, len(next.AvailableAppRoles), t)
-			}
-		}
 		for _, name := range removedRoles {
 			var n int
 			if err := db.One(c.ctx, c.q, &n, `select to_jsonb(count(*)) from user_role_assignments where role_id = :r`,
@@ -698,14 +695,14 @@ func (s *Server) ApplicationsUpdate(w http.ResponseWriter, r *http.Request, id s
 		if _, err := c.q.Exec(c.ctx, `update applications set name = :name, description = :desc, icon_url = :icon,
 				launch_url = :launch, redirect_uris = :redir::text[], support_url = :support, email_from_name = :from,
 				settings_schema = :schema::jsonb, permissions = :perms::jsonb, available_app_roles = :roles::text[],
-				default_app_role = :defrole, visibility = :vis, owner_user_id = :ou, owner_organization_id = :oo,
+				default_app_role = :defrole, visibility = :vis, access_tier = :tier, owner_user_id = :ou, owner_organization_id = :oo,
 				review_status = :rs, review_notes = :rn, tenant_id = :t
 			where id = :id`,
 			db.Args{"name": next.Name, "desc": next.Description, "icon": next.IconURL, "launch": next.LaunchURL,
 				"redir": db.TextArray(next.RedirectURIs), "support": next.SupportURL, "from": next.EmailFromName,
 				"schema": string(next.SettingsSchema), "perms": db.JSON(next.Permissions),
 				"roles": db.TextArray(next.AvailableAppRoles), "defrole": next.DefaultAppRole, "vis": next.Visibility,
-				"ou": next.OwnerUserID, "oo": next.OwnerOrganizationID, "rs": next.ReviewStatus, "rn": next.ReviewNotes,
+				"tier": next.AccessTier, "ou": next.OwnerUserID, "oo": next.OwnerOrganizationID, "rs": next.ReviewStatus, "rn": next.ReviewNotes,
 				"t": newTenant, "id": a.ID}); err != nil {
 			return err
 		}
@@ -745,6 +742,11 @@ func (s *Server) ApplicationsUpdate(w http.ResponseWriter, r *http.Request, id s
 			}
 			if err := c.emit("application.review_status_changed", &a.ID, map[string]any{"application_id": a.ID,
 				"review_status": after.ReviewStatus, "review_notes": after.ReviewNotes}); err != nil {
+				return err
+			}
+		}
+		if next.AccessTier != a.AccessTier {
+			if err := c.reconcileAccess(accessScope{AppID: a.ID}); err != nil {
 				return err
 			}
 		}

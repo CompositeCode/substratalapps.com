@@ -174,11 +174,11 @@ func TestApplications(t *testing.T) {
 	e.Post("/v1/applications", e.Admin, map[string]any{"slug": slug, "name": "dup", "launch_url": "https://x.example.com",
 		"owner_user_id": system}).ExpectErr(409, "slug_taken")
 	e.Get("/v1/roles/role_"+slug+"_admin", e.Admin).Expect(200)
-	// The owner's Starter Tenant caps Applications at 1 and AppRoles at 3.
+	// No plan caps Applications or AppRoles: owners aren't billed for them.
 	e.Post("/v1/applications", e.Admin, map[string]any{"slug": "second-" + testenv.Unique(), "name": "x",
-		"launch_url": "https://x.example.com", "owner_user_id": owner.ID}).ExpectErr(409, "plan_limit_reached")
-	e.Patch("/v1/applications/"+app, owner.Token, map[string]any{"available_app_roles": []string{"a1", "a2", "a3", "a4"}}).
-		ExpectErr(409, "plan_limit_reached")
+		"launch_url": "https://x.example.com", "owner_user_id": owner.ID}).Expect(201)
+	e.Patch("/v1/applications/"+app, owner.Token, map[string]any{"available_app_roles": []string{"admin", "member", "a1", "a2"}}).
+		Expect(200)
 	// Owner may configure, not moderate.
 	e.Patch("/v1/applications/"+app, owner.Token, map[string]any{"name": "Invoicer 2"}).Expect(200)
 	e.Patch("/v1/applications/"+app, owner.Token, map[string]any{"visibility": "internal"}).ExpectErr(403, "moderation_field_forbidden")

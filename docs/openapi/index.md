@@ -27,8 +27,8 @@ The complete Platform API contract as an [OpenAPI 3.1](https://spec.openapis.org
 | Base URL | `https://api.substratalapps.com/v1` |
 | Authentication | `Authorization: Bearer <token>`: a user access token or an API Key (`bearerAuth`) |
 | Content type | `application/json; charset=utf-8` |
-| Operations | 115, every one with a stable `operationId` |
-| Schemas | 104 reusable components under `components.schemas` |
+| Operations | 118, every one with a stable `operationId` |
+| Schemas | 109 reusable components under `components.schemas` |
 
 The prose pages under [API Reference](../api-reference/) are authoritative. `openapi.yaml` is kept in sync with them by hand, and the implementation's contract tests validate every response against it, so a drift between the two fails CI rather than reaching a client. See [Conventions → Machine-readable](../api-reference/conventions/#machine-readable).
 
@@ -56,14 +56,11 @@ Operations are grouped by tag, and each tag matches an API Reference page that e
 | Roles & Permissions | 10 | [Roles & Permissions](../api-reference/roles-and-permissions/) |
 | Organizations | 11 | [Organizations](../api-reference/organizations/) |
 | Tenancy | 6 | [Tenancy](../api-reference/tenancy/) |
-| Billing | 4 | [Billing](../api-reference/billing/) |
+| Billing | 7 | [Billing](../api-reference/billing/) |
 | Audit | 2 | [Audit](../api-reference/audit/) |
 | Webhooks | 9 | [Webhooks](../api-reference/webhooks/) |
 | Notifications | 17 | [Push Notifications](../api-reference/notifications/) |
 | API Keys | 6 | [API Keys](../api-reference/api-keys/) |
-
-{: .decision }
-**Billing is being reworked** ([DECISIONS.md #39](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#39-subscriber-billing-api)). The four Billing operations still describe the previous Tenant-billed plans. [Pricing](../pricing/) now has two tiers, Free and Standard. Avoid building against the Billing tag until #39 is applied.
 
 {: .note }
 **Notifications are specified, not built yet.** The 17 operations under the Notifications tag are the target contract for [Push Notifications](../api-reference/notifications/). Until the reference implementation builds them, each one returns `501 not_implemented`, so build clients against the shapes, not against a live server.
@@ -93,7 +90,7 @@ A `satk_test_…` key works against the same base URL but only ever sees test-mo
 Each operation in the document follows the same conventions, so you only need to learn them once:
 
 - **`operationId`** is stable and namespaced (`entitlements.grant`, `users.get`). Generated clients use it for method names, and the MCP server uses it for tool names. Renaming one counts as a breaking change.
-- **Errors** all share one shape (`{"error": {"code", "message", "details"}}`, with the request id in the `X-Request-Id` header) through the shared responses `BadRequest`, `Unauthorized`, `PaymentRequired`, `Forbidden`, `NotFound`, `Conflict`, `Unprocessable`, `TooManyRequests`, and `ServiceUnavailable`. Branch on `error.code`, never on `message`. See [Conventions → Errors](../api-reference/conventions/#errors).
+- **Errors** all share one shape (`{"error": {"code", "message", "details"}}`, with the request id in the `X-Request-Id` header) through the shared responses `BadRequest`, `Unauthorized`, `Forbidden`, `NotFound`, `Conflict`, `Unprocessable`, `TooManyRequests`, and `ServiceUnavailable`. Branch on `error.code`, never on `message`. See [Conventions → Errors](../api-reference/conventions/#errors).
 - **Pagination** uses the shared `Limit` and `Cursor` parameters (`limit` 1–100, default 25). See [Conventions → Pagination](../api-reference/conventions/#pagination).
 - **Idempotency.** Operations that create something take the `Idempotency-Key` header. Some require it, and their descriptions say which. See [Conventions → Idempotency](../api-reference/conventions/#idempotency).
 - **Concurrency.** Single-resource responses carry an `ETag` header. Send it back as `If-Match` on `PATCH` to avoid overwriting someone else's change. See [Conventions → Concurrency](../api-reference/conventions/#concurrency-etag--if-match).

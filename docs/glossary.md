@@ -15,6 +15,9 @@ Precise definitions for every term used across this site. If a page uses a capit
 #### Access path
 One way a User reaches an Application: their own personal [Entitlement](#entitlement), or an org-wide grant from an [Organization](#organization) that includes them. Resolved access is the union of every active path. See [Access Control](../access-control/#the-algorithm).
 
+#### Access tier
+Which [Pricing](../pricing/) tier unlocks an [Application](#application): `free` (every User) or `standard` (Users covered by a [Subscription](#subscription)). See [Applications](../domain-model/applications/#fields).
+
 #### API Key
 A long-lived service credential (`satk_live_…`/`satk_test_…`), scoped to the platform or to one Application. An app-scoped key can only ever touch its own Application's rows. See [API Keys](../api-reference/api-keys/).
 
@@ -93,8 +96,11 @@ One successful login (`ses_…`). Every refresh token and app token minted from 
 #### Settings
 Global, cross-app configuration for a User — locale, timezone, notification preferences. Distinct from [AppSettings](#appsettings).
 
+#### Subscription
+A User's or an Organization's Standard subscription (`sbs_…`), billed through Stripe at $6 per covered user per month. While it covers its holder, the platform grants `subscription` [Entitlements](#entitlement) to every standard Application. See [API Reference → Billing](../api-reference/billing/).
+
 #### Tenant
-The infrastructure-placement and data-isolation boundary for one of Substratal's own paying customers — the owner of an Application's catalog entry. `shared` (default), `isolated`, or `dedicated_region`. Not the same thing as [Organization](#organization) — see [Tenant vs. Organization](../domain-model/tenancy/#tenant-vs-organization). See [Domain Model → Tenancy](../domain-model/tenancy/).
+The infrastructure-placement and data-isolation boundary for an Application's data — it belongs to the owner of the Application's catalog entry, and isn't billed. `shared` (default), `isolated`, or `dedicated_region`. Not the same thing as [Organization](#organization) — see [Tenant vs. Organization](../domain-model/tenancy/#tenant-vs-organization). See [Domain Model → Tenancy](../domain-model/tenancy/).
 
 #### Tier
 Where a [Tenant](#tenant)'s data physically lives: `shared`, `isolated`, or `dedicated_region`. Independent of [Plan](#plan). The non-`shared` tiers are reserved for business and enterprise pricing, which isn't offered yet.

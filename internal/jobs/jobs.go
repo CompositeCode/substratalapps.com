@@ -62,7 +62,9 @@ func (r *Runner) Jobs() map[string]func(context.Context) error {
 			r.Base.Log.Info("webhook health", "disabled", n)
 			return err
 		},
-		"stripe-customers": r.stripeCustomers,
+		// the safety net under inline reconciles: free and subscription
+		// Entitlements match access tiers and subscriptions
+		"subscription-access": func(ctx context.Context) error { return r.Core.ReconcileAllAccess(ctx) },
 		// every 10 minutes: events whose first processing failed
 		"stripe-events": r.stripeEvents,
 		// daily 00:15 UTC
@@ -107,20 +109,6 @@ func errString(err error) string {
 	return err.Error()
 }
 
-func (r *Runner) stripeCustomers(ctx context.Context) error {
-	if r.Stripe == nil {
-		return nil
-	}
-	ids, err := r.Core.TenantsMissingCustomer(ctx)
-	if err != nil {
-		return err
-	}
-	for _, id := range ids {
-		r.Core.ProvisionStripeCustomer(ctx, id)
-	}
-	return nil
-}
-
 // stripeEvents reprocesses recorded events that failed the first time, by
 // re-fetching each from Stripe (processing is idempotent: it always reads
 // the Subscription's current state).
@@ -146,34 +134,35 @@ func (r *Runner) stripeEvents(ctx context.Context) error {
 	return nil
 }
 
-// seatSync writes each paid Tenant's seat count to Stripe once a day,
-// with no proration (Pricing → Stripe catalog).
+// seatSync writes each Organization subscription's covered-member count
+// to Stripe once a day, with no proration (Pricing → Stripe catalog).
+// Individual subscriptions are always quantity 1.
 func (r *Runner) seatSync(ctx context.Context) error {
 	if r.Stripe == nil {
 		return nil
 	}
-	targets, err := r.Core.PaidTenantSeats(ctx)
+	targets, err := r.Core.OrganizationQuantities(ctx)
 	if err != nil {
 		return err
 	}
 	day := time.Now().UTC().Format("2006-01-02")
 	for _, t := range targets {
-		if t.LastSynced != nil && *t.LastSynced == t.Seats {
+		if t.LastSynced != nil && *t.LastSynced == t.Quantity {
 			continue
 		}
-		sub, err := r.Stripe.Subscription(ctx, t.SubscriptionID)
+		sub, err := r.Stripe.Subscription(ctx, t.StripeSubscriptionID)
 		if err != nil {
-			r.Base.Log.Error("seat sync: read subscription", "tenant", t.TenantID, "err", err)
+			r.Base.Log.Error("seat sync: read subscription", "subscription", t.SubscriptionID, "err", err)
 			continue
 		}
-		if sub.SeatItemID == "" {
-			continue // Enterprise contracts without a seat item
-		}
-		if err := r.Stripe.SetSeats(ctx, t.TenantID, sub.SeatItemID, t.Seats, day); err != nil {
-			r.Base.Log.Error("seat sync: write", "tenant", t.TenantID, "err", err)
+		if sub.ItemID == "" {
 			continue
 		}
-		if err := r.Core.RecordSeatSync(ctx, t.TenantID, t.Seats); err != nil {
+		if err := r.Stripe.SetQuantity(ctx, t.SubscriptionID, sub.ItemID, t.Quantity, day); err != nil {
+			r.Base.Log.Error("seat sync: write", "subscription", t.SubscriptionID, "err", err)
+			continue
+		}
+		if err := r.Core.RecordQuantitySync(ctx, t.SubscriptionID, t.Quantity); err != nil {
 			return err
 		}
 	}

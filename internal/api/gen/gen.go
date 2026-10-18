@@ -277,6 +277,24 @@ func (e AppTokenClaimsIss) Valid() bool {
 	}
 }
 
+// Defines values for ApplicationAccessTier.
+const (
+	ApplicationAccessTierFree     ApplicationAccessTier = "free"
+	ApplicationAccessTierStandard ApplicationAccessTier = "standard"
+)
+
+// Valid indicates whether the value is a known member of the ApplicationAccessTier enum.
+func (e ApplicationAccessTier) Valid() bool {
+	switch e {
+	case ApplicationAccessTierFree:
+		return true
+	case ApplicationAccessTierStandard:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ApplicationReviewStatus.
 const (
 	ApplicationReviewStatusApproved      ApplicationReviewStatus = "approved"
@@ -356,8 +374,9 @@ const (
 	AuditActionRoleRemoved                       AuditAction = "role.removed"
 	AuditActionRoleUpdated                       AuditAction = "role.updated"
 	AuditActionSettingsUpdated                   AuditAction = "settings.updated"
-	AuditActionTenantPlanChanged                 AuditAction = "tenant.plan_changed"
-	AuditActionTenantSubscriptionStatusChanged   AuditAction = "tenant.subscription_status_changed"
+	AuditActionSubscriptionCreated               AuditAction = "subscription.created"
+	AuditActionSubscriptionMembersChanged        AuditAction = "subscription.members_changed"
+	AuditActionSubscriptionStatusChanged         AuditAction = "subscription.status_changed"
 	AuditActionTenantTierChangeRequestUpdated    AuditAction = "tenant.tier_change_request_updated"
 	AuditActionTenantTierChangeRequested         AuditAction = "tenant.tier_change_requested"
 	AuditActionTenantTierChanged                 AuditAction = "tenant.tier_changed"
@@ -448,9 +467,11 @@ func (e AuditAction) Valid() bool {
 		return true
 	case AuditActionSettingsUpdated:
 		return true
-	case AuditActionTenantPlanChanged:
+	case AuditActionSubscriptionCreated:
 		return true
-	case AuditActionTenantSubscriptionStatusChanged:
+	case AuditActionSubscriptionMembersChanged:
+		return true
+	case AuditActionSubscriptionStatusChanged:
 		return true
 	case AuditActionTenantTierChangeRequestUpdated:
 		return true
@@ -509,6 +530,7 @@ const (
 	AuditTargetTypePushCredential    AuditTargetType = "push_credential"
 	AuditTargetTypeRole              AuditTargetType = "role"
 	AuditTargetTypeRoleAssignment    AuditTargetType = "role_assignment"
+	AuditTargetTypeSubscription      AuditTargetType = "subscription"
 	AuditTargetTypeTenant            AuditTargetType = "tenant"
 	AuditTargetTypeTierChangeRequest AuditTargetType = "tier_change_request"
 	AuditTargetTypeUser              AuditTargetType = "user"
@@ -534,6 +556,8 @@ func (e AuditTargetType) Valid() bool {
 		return true
 	case AuditTargetTypeRoleAssignment:
 		return true
+	case AuditTargetTypeSubscription:
+		return true
 	case AuditTargetTypeTenant:
 		return true
 	case AuditTargetTypeTierChangeRequest:
@@ -556,6 +580,27 @@ const (
 func (e AuthSessionTokenType) Valid() bool {
 	switch e {
 	case AuthSessionTokenTypeBearer:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CheckoutSessionCreatePlan.
+const (
+	CheckoutSessionCreatePlanBusiness   CheckoutSessionCreatePlan = "business"
+	CheckoutSessionCreatePlanEnterprise CheckoutSessionCreatePlan = "enterprise"
+	CheckoutSessionCreatePlanStandard   CheckoutSessionCreatePlan = "standard"
+)
+
+// Valid indicates whether the value is a known member of the CheckoutSessionCreatePlan enum.
+func (e CheckoutSessionCreatePlan) Valid() bool {
+	switch e {
+	case CheckoutSessionCreatePlanBusiness:
+		return true
+	case CheckoutSessionCreatePlanEnterprise:
+		return true
+	case CheckoutSessionCreatePlanStandard:
 		return true
 	default:
 		return false
@@ -693,7 +738,6 @@ const (
 	EffectivePermissionsAccessPathsMemberDecisionExcluded    EffectivePermissionsAccessPathsMemberDecision = "excluded"
 	EffectivePermissionsAccessPathsMemberDecisionIncluded    EffectivePermissionsAccessPathsMemberDecision = "included"
 	EffectivePermissionsAccessPathsMemberDecisionLessThannil EffectivePermissionsAccessPathsMemberDecision = "<nil>"
-	EffectivePermissionsAccessPathsMemberDecisionSeatLimit   EffectivePermissionsAccessPathsMemberDecision = "seat_limit"
 )
 
 // Valid indicates whether the value is a known member of the EffectivePermissionsAccessPathsMemberDecision enum.
@@ -705,8 +749,6 @@ func (e EffectivePermissionsAccessPathsMemberDecision) Valid() bool {
 		return true
 	case EffectivePermissionsAccessPathsMemberDecisionLessThannil:
 		return true
-	case EffectivePermissionsAccessPathsMemberDecisionSeatLimit:
-		return true
 	default:
 		return false
 	}
@@ -714,9 +756,8 @@ func (e EffectivePermissionsAccessPathsMemberDecision) Valid() bool {
 
 // Defines values for EntitlementGrantedViaMemberDecision.
 const (
-	EntitlementGrantedViaMemberDecisionExcluded  EntitlementGrantedViaMemberDecision = "excluded"
-	EntitlementGrantedViaMemberDecisionIncluded  EntitlementGrantedViaMemberDecision = "included"
-	EntitlementGrantedViaMemberDecisionSeatLimit EntitlementGrantedViaMemberDecision = "seat_limit"
+	EntitlementGrantedViaMemberDecisionExcluded EntitlementGrantedViaMemberDecision = "excluded"
+	EntitlementGrantedViaMemberDecisionIncluded EntitlementGrantedViaMemberDecision = "included"
 )
 
 // Valid indicates whether the value is a known member of the EntitlementGrantedViaMemberDecision enum.
@@ -725,8 +766,6 @@ func (e EntitlementGrantedViaMemberDecision) Valid() bool {
 	case EntitlementGrantedViaMemberDecisionExcluded:
 		return true
 	case EntitlementGrantedViaMemberDecisionIncluded:
-		return true
-	case EntitlementGrantedViaMemberDecisionSeatLimit:
 		return true
 	default:
 		return false
@@ -756,10 +795,12 @@ func (e EntitlementMemberScope) Valid() bool {
 
 // Defines values for EntitlementSource.
 const (
-	EntitlementSourceAdminGrant EntitlementSource = "admin_grant"
-	EntitlementSourceOrgSeat    EntitlementSource = "org_seat"
-	EntitlementSourcePurchase   EntitlementSource = "purchase"
-	EntitlementSourceTrial      EntitlementSource = "trial"
+	EntitlementSourceAdminGrant   EntitlementSource = "admin_grant"
+	EntitlementSourceFree         EntitlementSource = "free"
+	EntitlementSourceOrgSeat      EntitlementSource = "org_seat"
+	EntitlementSourcePurchase     EntitlementSource = "purchase"
+	EntitlementSourceSubscription EntitlementSource = "subscription"
+	EntitlementSourceTrial        EntitlementSource = "trial"
 )
 
 // Valid indicates whether the value is a known member of the EntitlementSource enum.
@@ -767,9 +808,13 @@ func (e EntitlementSource) Valid() bool {
 	switch e {
 	case EntitlementSourceAdminGrant:
 		return true
+	case EntitlementSourceFree:
+		return true
 	case EntitlementSourceOrgSeat:
 		return true
 	case EntitlementSourcePurchase:
+		return true
+	case EntitlementSourceSubscription:
 		return true
 	case EntitlementSourceTrial:
 		return true
@@ -1150,6 +1195,42 @@ func (e OrganizationMembershipStatus) Valid() bool {
 	}
 }
 
+// Defines values for Plan.
+const (
+	PlanFree     Plan = "free"
+	PlanStandard Plan = "standard"
+)
+
+// Valid indicates whether the value is a known member of the Plan enum.
+func (e Plan) Valid() bool {
+	switch e {
+	case PlanFree:
+		return true
+	case PlanStandard:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PlanSourceType.
+const (
+	PlanSourceTypeOrganization PlanSourceType = "organization"
+	PlanSourceTypeUser         PlanSourceType = "user"
+)
+
+// Valid indicates whether the value is a known member of the PlanSourceType enum.
+func (e PlanSourceType) Valid() bool {
+	switch e {
+	case PlanSourceTypeOrganization:
+		return true
+	case PlanSourceTypeUser:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for PushCredentialStatus.
 const (
 	PushCredentialStatusActive PushCredentialStatus = "active"
@@ -1306,24 +1387,6 @@ func (e SettingsWriteTheme) Valid() bool {
 	}
 }
 
-// Defines values for SubscriptionAddOnsCode.
-const (
-	DedicatedRegionTenancy SubscriptionAddOnsCode = "dedicated_region_tenancy"
-	IsolatedTenancy        SubscriptionAddOnsCode = "isolated_tenancy"
-)
-
-// Valid indicates whether the value is a known member of the SubscriptionAddOnsCode enum.
-func (e SubscriptionAddOnsCode) Valid() bool {
-	switch e {
-	case DedicatedRegionTenancy:
-		return true
-	case IsolatedTenancy:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for SubscriptionCurrency.
 const (
 	Usd SubscriptionCurrency = "usd"
@@ -1339,13 +1402,45 @@ func (e SubscriptionCurrency) Valid() bool {
 	}
 }
 
+// Defines values for SubscriptionPlan.
+const (
+	SubscriptionPlanStandard SubscriptionPlan = "standard"
+)
+
+// Valid indicates whether the value is a known member of the SubscriptionPlan enum.
+func (e SubscriptionPlan) Valid() bool {
+	switch e {
+	case SubscriptionPlanStandard:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SubscriptionSubscriberType.
+const (
+	SubscriptionSubscriberTypeOrganization SubscriptionSubscriberType = "organization"
+	SubscriptionSubscriberTypeUser         SubscriptionSubscriberType = "user"
+)
+
+// Valid indicates whether the value is a known member of the SubscriptionSubscriberType enum.
+func (e SubscriptionSubscriberType) Valid() bool {
+	switch e {
+	case SubscriptionSubscriberTypeOrganization:
+		return true
+	case SubscriptionSubscriberTypeUser:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for SubscriptionStatus.
 const (
 	SubscriptionStatusActive            SubscriptionStatus = "active"
 	SubscriptionStatusCanceled          SubscriptionStatus = "canceled"
 	SubscriptionStatusIncomplete        SubscriptionStatus = "incomplete"
 	SubscriptionStatusIncompleteExpired SubscriptionStatus = "incomplete_expired"
-	SubscriptionStatusNone              SubscriptionStatus = "none"
 	SubscriptionStatusPastDue           SubscriptionStatus = "past_due"
 	SubscriptionStatusPaused            SubscriptionStatus = "paused"
 	SubscriptionStatusTrialing          SubscriptionStatus = "trialing"
@@ -1362,8 +1457,6 @@ func (e SubscriptionStatus) Valid() bool {
 	case SubscriptionStatusIncomplete:
 		return true
 	case SubscriptionStatusIncompleteExpired:
-		return true
-	case SubscriptionStatusNone:
 		return true
 	case SubscriptionStatusPastDue:
 		return true
@@ -1390,27 +1483,6 @@ func (e TenantOwnerType) Valid() bool {
 	case TenantOwnerTypeOrganization:
 		return true
 	case TenantOwnerTypeUser:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for TenantPlan.
-const (
-	TenantPlanEnterprise TenantPlan = "enterprise"
-	TenantPlanStarter    TenantPlan = "starter"
-	TenantPlanTeam       TenantPlan = "team"
-)
-
-// Valid indicates whether the value is a known member of the TenantPlan enum.
-func (e TenantPlan) Valid() bool {
-	switch e {
-	case TenantPlanEnterprise:
-		return true
-	case TenantPlanStarter:
-		return true
-	case TenantPlanTeam:
 		return true
 	default:
 		return false
@@ -1825,15 +1897,21 @@ func (e OrganizationsUpdateJSONBodyStatus) Valid() bool {
 	}
 }
 
-// Defines values for BillingCreateCheckoutSessionJSONBodyPlan.
+// Defines values for BillingCreateOrganizationCheckoutSessionJSONBodyPlan.
 const (
-	BillingCreateCheckoutSessionJSONBodyPlanTeam BillingCreateCheckoutSessionJSONBodyPlan = "team"
+	BillingCreateOrganizationCheckoutSessionJSONBodyPlanBusiness   BillingCreateOrganizationCheckoutSessionJSONBodyPlan = "business"
+	BillingCreateOrganizationCheckoutSessionJSONBodyPlanEnterprise BillingCreateOrganizationCheckoutSessionJSONBodyPlan = "enterprise"
+	BillingCreateOrganizationCheckoutSessionJSONBodyPlanStandard   BillingCreateOrganizationCheckoutSessionJSONBodyPlan = "standard"
 )
 
-// Valid indicates whether the value is a known member of the BillingCreateCheckoutSessionJSONBodyPlan enum.
-func (e BillingCreateCheckoutSessionJSONBodyPlan) Valid() bool {
+// Valid indicates whether the value is a known member of the BillingCreateOrganizationCheckoutSessionJSONBodyPlan enum.
+func (e BillingCreateOrganizationCheckoutSessionJSONBodyPlan) Valid() bool {
 	switch e {
-	case BillingCreateCheckoutSessionJSONBodyPlanTeam:
+	case BillingCreateOrganizationCheckoutSessionJSONBodyPlanBusiness:
+		return true
+	case BillingCreateOrganizationCheckoutSessionJSONBodyPlanEnterprise:
+		return true
+	case BillingCreateOrganizationCheckoutSessionJSONBodyPlanStandard:
 		return true
 	default:
 		return false
@@ -2196,6 +2274,8 @@ type AppTokenClaimsIss string
 
 // Application defines model for Application.
 type Application struct {
+	// AccessTier Which plan unlocks the Application: free for every User, standard for Users covered by a Standard subscription. Set by applications.manage; defaults to standard.
+	AccessTier          *ApplicationAccessTier   `json:"access_tier,omitempty"`
 	AvailableAppRoles   *[]string                `json:"available_app_roles,omitempty"`
 	CreatedAt           *time.Time               `json:"created_at,omitempty"`
 	DefaultAppRole      *string                  `json:"default_app_role,omitempty"`
@@ -2230,6 +2310,9 @@ type Application struct {
 	Visibility *ApplicationVisibility `json:"visibility,omitempty"`
 }
 
+// ApplicationAccessTier Which plan unlocks the Application: free for every User, standard for Users covered by a Standard subscription. Set by applications.manage; defaults to standard.
+type ApplicationAccessTier string
+
 // ApplicationPermission defines model for ApplicationPermission.
 type ApplicationPermission struct {
 	Description *string `json:"description,omitempty"`
@@ -2241,6 +2324,8 @@ type ApplicationReviewStatus string
 
 // ApplicationSummary defines model for ApplicationSummary.
 type ApplicationSummary struct {
+	// AccessTier Which plan unlocks the Application: free for every User, standard for Users covered by a Standard subscription. Set by applications.manage; defaults to standard.
+	AccessTier   *ApplicationAccessTier   `json:"access_tier,omitempty"`
 	Description  *string                  `json:"description,omitempty"`
 	IconUrl      *string                  `json:"icon_url,omitempty"`
 	Id           *string                  `json:"id,omitempty"`
@@ -2261,6 +2346,8 @@ type ApplicationVisibility string
 
 // ApplicationWrite defines model for ApplicationWrite.
 type ApplicationWrite struct {
+	// AccessTier Which plan unlocks the Application: free for every User, standard for Users covered by a Standard subscription. Set by applications.manage; defaults to standard.
+	AccessTier          *ApplicationAccessTier   `json:"access_tier,omitempty"`
 	AvailableAppRoles   *[]string                `json:"available_app_roles,omitempty"`
 	DefaultAppRole      *string                  `json:"default_app_role,omitempty"`
 	Description         *string                  `json:"description,omitempty"`
@@ -2332,6 +2419,18 @@ type AuthSession struct {
 
 // AuthSessionTokenType defines model for AuthSession.TokenType.
 type AuthSessionTokenType string
+
+// CheckoutSessionCreate defines model for CheckoutSessionCreate.
+type CheckoutSessionCreate struct {
+	CancelUrl string `json:"cancel_url"`
+
+	// Plan Only standard is self-service; business and enterprise return 422 plan_requires_sales.
+	Plan       CheckoutSessionCreatePlan `json:"plan"`
+	SuccessUrl string                    `json:"success_url"`
+}
+
+// CheckoutSessionCreatePlan Only standard is self-service; business and enterprise return 422 plan_requires_sales.
+type CheckoutSessionCreatePlan string
 
 // Device defines model for Device.
 type Device struct {
@@ -2430,8 +2529,10 @@ type EffectivePermissions struct {
 		EntitlementId  *string                                        `json:"entitlement_id,omitempty"`
 		MemberDecision *EffectivePermissionsAccessPathsMemberDecision `json:"member_decision,omitempty"`
 		OrganizationId *string                                        `json:"organization_id,omitempty"`
-		Source         *EntitlementSource                             `json:"source,omitempty"`
-		Status         *EntitlementStatus                             `json:"status,omitempty"`
+
+		// Source free and subscription rows are platform-managed: granted and ended by the platform from the Application's access_tier and the holder's subscription. An admin may disable and re-enable one; nothing else about it can be changed.
+		Source *EntitlementSource `json:"source,omitempty"`
+		Status *EntitlementStatus `json:"status,omitempty"`
 	} `json:"access_paths,omitempty"`
 	Allowed              bool       `json:"allowed"`
 	ApplicationId        string     `json:"application_id"`
@@ -2463,14 +2564,19 @@ type Entitlement struct {
 	MemberScope         *EntitlementMemberScope `json:"member_scope,omitempty"`
 
 	// OrderId Opaque developer-supplied billing reference
-	OrderId        *string            `json:"order_id,omitempty"`
-	OrganizationId *string            `json:"organization_id,omitempty"`
-	Source         *EntitlementSource `json:"source,omitempty"`
-	StartsAt       *time.Time         `json:"starts_at,omitempty"`
-	Status         *EntitlementStatus `json:"status,omitempty"`
-	TestMode       *bool              `json:"test_mode,omitempty"`
-	UpdatedAt      *time.Time         `json:"updated_at,omitempty"`
-	UserId         *string            `json:"user_id,omitempty"`
+	OrderId        *string `json:"order_id,omitempty"`
+	OrganizationId *string `json:"organization_id,omitempty"`
+
+	// Source free and subscription rows are platform-managed: granted and ended by the platform from the Application's access_tier and the holder's subscription. An admin may disable and re-enable one; nothing else about it can be changed.
+	Source   *EntitlementSource `json:"source,omitempty"`
+	StartsAt *time.Time         `json:"starts_at,omitempty"`
+	Status   *EntitlementStatus `json:"status,omitempty"`
+
+	// SubscriptionId The subscription a source: subscription row comes from.
+	SubscriptionId *string    `json:"subscription_id,omitempty"`
+	TestMode       *bool      `json:"test_mode,omitempty"`
+	UpdatedAt      *time.Time `json:"updated_at,omitempty"`
+	UserId         *string    `json:"user_id,omitempty"`
 }
 
 // EntitlementGrantedVia Computed per member at read time; present only when reading a specific member's view of an org-wide grant.
@@ -2491,7 +2597,7 @@ type EntitlementPage struct {
 	Page PageInfo      `json:"page"`
 }
 
-// EntitlementSource defines model for EntitlementSource.
+// EntitlementSource free and subscription rows are platform-managed: granted and ended by the platform from the Application's access_tier and the holder's subscription. An admin may disable and re-enable one; nothing else about it can be changed.
 type EntitlementSource string
 
 // EntitlementStatus defines model for EntitlementStatus.
@@ -2773,6 +2879,15 @@ type OrganizationPage struct {
 	Page PageInfo       `json:"page"`
 }
 
+// OrganizationSubscription defines model for OrganizationSubscription.
+type OrganizationSubscription struct {
+	OrganizationId *string `json:"organization_id,omitempty"`
+
+	// Plan Business and enterprise plans come later.
+	Plan         *Plan         `json:"plan,omitempty"`
+	Subscription *Subscription `json:"subscription,omitempty"`
+}
+
 // PageEnvelope defines model for PageEnvelope.
 type PageEnvelope struct {
 	Page PageInfo `json:"page"`
@@ -2795,6 +2910,24 @@ type Permission struct {
 type PermissionPage struct {
 	Data []Permission `json:"data"`
 	Page PageInfo     `json:"page"`
+}
+
+// Plan Business and enterprise plans come later.
+type Plan string
+
+// PlanSource defines model for PlanSource.
+type PlanSource struct {
+	// Id The User (an individual subscription) or the Organization whose subscription covers this User.
+	Id   string         `json:"id"`
+	Type PlanSourceType `json:"type"`
+}
+
+// PlanSourceType defines model for PlanSource.Type.
+type PlanSourceType string
+
+// PortalSessionCreate defines model for PortalSessionCreate.
+type PortalSessionCreate struct {
+	ReturnUrl string `json:"return_url"`
 }
 
 // Profile defines model for Profile.
@@ -2988,36 +3121,49 @@ type SettingsWriteTheme string
 
 // Subscription defines model for Subscription.
 type Subscription struct {
-	AddOns *[]struct {
-		// Amount Cents per month
-		Amount *int                    `json:"amount,omitempty"`
-		Code   *SubscriptionAddOnsCode `json:"code,omitempty"`
-	} `json:"add_ons,omitempty"`
 	CancelAtPeriodEnd  *bool                 `json:"cancel_at_period_end,omitempty"`
+	CreatedAt          *time.Time            `json:"created_at,omitempty"`
 	Currency           *SubscriptionCurrency `json:"currency,omitempty"`
 	CurrentPeriodEnd   *time.Time            `json:"current_period_end,omitempty"`
 	CurrentPeriodStart *time.Time            `json:"current_period_start,omitempty"`
 
-	// Plan Commercial plan, independent of tier. isolated/dedicated_region require enterprise; starter requires a user owner.
-	Plan       *TenantPlan `json:"plan,omitempty"`
-	Restricted *bool       `json:"restricted,omitempty"`
-	Seats      *struct {
-		Billable     *int       `json:"billable,omitempty"`
-		Current      *int       `json:"current,omitempty"`
-		Included     *int       `json:"included,omitempty"`
-		LastSyncedAt *time.Time `json:"last_synced_at,omitempty"`
-	} `json:"seats,omitempty"`
-	SubscriptionStatus *SubscriptionStatus `json:"subscription_status,omitempty"`
-	TenantId           *string             `json:"tenant_id,omitempty"`
-}
+	// Id sbs_ prefix
+	Id              *string   `json:"id,omitempty"`
+	MemberOverrides *[]string `json:"member_overrides,omitempty"`
 
-// SubscriptionAddOnsCode defines model for Subscription.AddOns.Code.
-type SubscriptionAddOnsCode string
+	// MemberScope Organization subscriptions only.
+	MemberScope    *EntitlementMemberScope `json:"member_scope,omitempty"`
+	OrganizationId *string                 `json:"organization_id,omitempty"`
+	Plan           *SubscriptionPlan       `json:"plan,omitempty"`
+
+	// Quantity Users billed. Always 1 for an individual subscription; for an Organization, covered members.
+	Quantity *struct {
+		Current      *int       `json:"current,omitempty"`
+		LastSynced   *int       `json:"last_synced,omitempty"`
+		LastSyncedAt *time.Time `json:"last_synced_at,omitempty"`
+	} `json:"quantity,omitempty"`
+
+	// Status Mirrors Stripe. active, trialing, and past_due cover their users with Standard; the rest don't.
+	Status         *SubscriptionStatus         `json:"status,omitempty"`
+	SubscriberType *SubscriptionSubscriberType `json:"subscriber_type,omitempty"`
+	TestMode       *bool                       `json:"test_mode,omitempty"`
+
+	// UnitAmount Cents per user per month (600).
+	UnitAmount *int       `json:"unit_amount,omitempty"`
+	UpdatedAt  *time.Time `json:"updated_at,omitempty"`
+	UserId     *string    `json:"user_id,omitempty"`
+}
 
 // SubscriptionCurrency defines model for Subscription.Currency.
 type SubscriptionCurrency string
 
-// SubscriptionStatus defines model for SubscriptionStatus.
+// SubscriptionPlan defines model for Subscription.Plan.
+type SubscriptionPlan string
+
+// SubscriptionSubscriberType defines model for Subscription.SubscriberType.
+type SubscriptionSubscriberType string
+
+// SubscriptionStatus Mirrors Stripe. active, trialing, and past_due cover their users with Standard; the rest don't.
 type SubscriptionStatus string
 
 // Tenant defines model for Tenant.
@@ -3028,15 +3174,10 @@ type Tenant struct {
 	OwnerOrganizationId *string          `json:"owner_organization_id,omitempty"`
 	OwnerType           *TenantOwnerType `json:"owner_type,omitempty"`
 	OwnerUserId         *string          `json:"owner_user_id,omitempty"`
-
-	// Plan Commercial plan, independent of tier. isolated/dedicated_region require enterprise; starter requires a user owner.
-	Plan               *TenantPlan         `json:"plan,omitempty"`
-	Region             *Region             `json:"region,omitempty"`
-	Restricted         *bool               `json:"restricted,omitempty"`
-	Status             *TenantStatus       `json:"status,omitempty"`
-	SubscriptionStatus *SubscriptionStatus `json:"subscription_status,omitempty"`
-	Tier               *TenantTier         `json:"tier,omitempty"`
-	UpdatedAt          *time.Time          `json:"updated_at,omitempty"`
+	Region              *Region          `json:"region,omitempty"`
+	Status              *TenantStatus    `json:"status,omitempty"`
+	Tier                *TenantTier      `json:"tier,omitempty"`
+	UpdatedAt           *time.Time       `json:"updated_at,omitempty"`
 }
 
 // TenantOwnerType defines model for TenantOwnerType.
@@ -3047,9 +3188,6 @@ type TenantPage struct {
 	Data []Tenant `json:"data"`
 	Page PageInfo `json:"page"`
 }
-
-// TenantPlan Commercial plan, independent of tier. isolated/dedicated_region require enterprise; starter requires a user owner.
-type TenantPlan string
 
 // TenantStatus defines model for TenantStatus.
 type TenantStatus string
@@ -3084,35 +3222,25 @@ type TenantTierChangeRequestPage struct {
 // TenantTierChangeRequestStatus defines model for TenantTierChangeRequestStatus.
 type TenantTierChangeRequestStatus string
 
-// TenantUsage defines model for TenantUsage.
-type TenantUsage struct {
-	FitsPlans *[]TenantPlan `json:"fits_plans,omitempty"`
-
-	// Limits Keys: applications, seats, app_roles (current = highest count on any one Application), webhooks, audit_hot_window_days. The same names as plan_limit_reached's details.resource.
-	Limits *map[string]struct {
-		Current  *int `json:"current,omitempty"`
-		Included *int `json:"included,omitempty"`
-		Limit    *int `json:"limit,omitempty"`
-	} `json:"limits,omitempty"`
-
-	// Plan Commercial plan, independent of tier. isolated/dedicated_region require enterprise; starter requires a user owner.
-	Plan     *TenantPlan `json:"plan,omitempty"`
-	TenantId *string     `json:"tenant_id,omitempty"`
-}
-
 // User defines model for User.
 type User struct {
-	CreatedAt           *time.Time           `json:"created_at,omitempty"`
-	Email               *openapi_types.Email `json:"email,omitempty"`
-	EmailVerified       *bool                `json:"email_verified,omitempty"`
-	Id                  *string              `json:"id,omitempty"`
-	LastLoginAt         *time.Time           `json:"last_login_at,omitempty"`
-	MfaEnabled          *bool                `json:"mfa_enabled,omitempty"`
-	PendingEmail        *openapi_types.Email `json:"pending_email,omitempty"`
-	SignupApplicationId *string              `json:"signup_application_id,omitempty"`
-	Status              *UserStatus          `json:"status,omitempty"`
-	TestMode            *bool                `json:"test_mode,omitempty"`
-	UpdatedAt           *time.Time           `json:"updated_at,omitempty"`
+	CreatedAt     *time.Time           `json:"created_at,omitempty"`
+	Email         *openapi_types.Email `json:"email,omitempty"`
+	EmailVerified *bool                `json:"email_verified,omitempty"`
+	Id            *string              `json:"id,omitempty"`
+	LastLoginAt   *time.Time           `json:"last_login_at,omitempty"`
+	MfaEnabled    *bool                `json:"mfa_enabled,omitempty"`
+	PendingEmail  *openapi_types.Email `json:"pending_email,omitempty"`
+
+	// Plan Business and enterprise plans come later.
+	Plan *Plan `json:"plan,omitempty"`
+
+	// PlanSources What gives this User Standard: their own subscription, an Organization's, or both. Empty on Free.
+	PlanSources         *[]PlanSource `json:"plan_sources,omitempty"`
+	SignupApplicationId *string       `json:"signup_application_id,omitempty"`
+	Status              *UserStatus   `json:"status,omitempty"`
+	TestMode            *bool         `json:"test_mode,omitempty"`
+	UpdatedAt           *time.Time    `json:"updated_at,omitempty"`
 }
 
 // UserExport Reads from the same tables the hard-delete cascade writes to — deliberately symmetric with it.
@@ -3181,6 +3309,17 @@ type UserRoleAssignmentPage struct {
 
 // UserStatus defines model for UserStatus.
 type UserStatus string
+
+// UserSubscription defines model for UserSubscription.
+type UserSubscription struct {
+	// Plan Business and enterprise plans come later.
+	Plan        *Plan         `json:"plan,omitempty"`
+	PlanSources *[]PlanSource `json:"plan_sources,omitempty"`
+
+	// Subscription The User's own individual subscription, if they've ever started one.
+	Subscription *Subscription `json:"subscription,omitempty"`
+	UserId       *string       `json:"user_id,omitempty"`
+}
 
 // WebPushSubscription The PushSubscription from PushManager.subscribe(), as JSON.
 type WebPushSubscription struct {
@@ -3306,9 +3445,6 @@ type Forbidden = Error
 // NotFound defines model for NotFound.
 type NotFound = Error
 
-// PaymentRequired defines model for PaymentRequired.
-type PaymentRequired = Error
-
 // ServiceUnavailable defines model for ServiceUnavailable.
 type ServiceUnavailable = Error
 
@@ -3352,6 +3488,7 @@ type ApplicationsListParams struct {
 	Cursor              *Cursor                  `form:"cursor,omitempty" json:"cursor,omitempty"`
 	Visibility          *ApplicationVisibility   `form:"visibility,omitempty" json:"visibility,omitempty"`
 	ReviewStatus        *ApplicationReviewStatus `form:"review_status,omitempty" json:"review_status,omitempty"`
+	AccessTier          *ApplicationAccessTier   `form:"access_tier,omitempty" json:"access_tier,omitempty"`
 	Owned               *bool                    `form:"owned,omitempty" json:"owned,omitempty"`
 	TenantId            *string                  `form:"tenant_id,omitempty" json:"tenant_id,omitempty"`
 	OwnerUserId         *string                  `form:"owner_user_id,omitempty" json:"owner_user_id,omitempty"`
@@ -3360,6 +3497,8 @@ type ApplicationsListParams struct {
 
 // ApplicationsCreateJSONBody defines parameters for ApplicationsCreate.
 type ApplicationsCreateJSONBody struct {
+	// AccessTier Which plan unlocks the Application: free for every User, standard for Users covered by a Standard subscription. Set by applications.manage; defaults to standard.
+	AccessTier          *ApplicationAccessTier   `json:"access_tier,omitempty"`
 	AvailableAppRoles   *[]string                `json:"available_app_roles,omitempty"`
 	DefaultAppRole      *string                  `json:"default_app_role,omitempty"`
 	Description         *string                  `json:"description,omitempty"`
@@ -3601,6 +3740,26 @@ type OrganizationsUpdateParams struct {
 // OrganizationsUpdateJSONBodyStatus defines parameters for OrganizationsUpdate.
 type OrganizationsUpdateJSONBodyStatus string
 
+// BillingCreateOrganizationCheckoutSessionJSONBody defines parameters for BillingCreateOrganizationCheckoutSession.
+type BillingCreateOrganizationCheckoutSessionJSONBody struct {
+	CancelUrl       string                  `json:"cancel_url"`
+	MemberOverrides *[]string               `json:"member_overrides,omitempty"`
+	MemberScope     *EntitlementMemberScope `json:"member_scope,omitempty"`
+
+	// Plan Only standard is self-service; business and enterprise return 422 plan_requires_sales.
+	Plan       BillingCreateOrganizationCheckoutSessionJSONBodyPlan `json:"plan"`
+	SuccessUrl string                                               `json:"success_url"`
+}
+
+// BillingCreateOrganizationCheckoutSessionParams defines parameters for BillingCreateOrganizationCheckoutSession.
+type BillingCreateOrganizationCheckoutSessionParams struct {
+	// IdempotencyKey Client-generated, 1–255 characters; a UUID v4 is recommended. Remembered 24 hours per caller.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// BillingCreateOrganizationCheckoutSessionJSONBodyPlan defines parameters for BillingCreateOrganizationCheckoutSession.
+type BillingCreateOrganizationCheckoutSessionJSONBodyPlan string
+
 // OrganizationsListEntitlementsParams defines parameters for OrganizationsListEntitlements.
 type OrganizationsListEntitlementsParams struct {
 	Limit           *Limit             `form:"limit,omitempty" json:"limit,omitempty"`
@@ -3656,6 +3815,18 @@ type OrganizationsUpdateMemberJSONBody struct {
 	Role OrganizationMemberRole `json:"role"`
 }
 
+// BillingUpdateOrganizationSubscriptionJSONBody defines parameters for BillingUpdateOrganizationSubscription.
+type BillingUpdateOrganizationSubscriptionJSONBody struct {
+	MemberOverrides *[]string               `json:"member_overrides,omitempty"`
+	MemberScope     *EntitlementMemberScope `json:"member_scope,omitempty"`
+}
+
+// BillingUpdateOrganizationSubscriptionParams defines parameters for BillingUpdateOrganizationSubscription.
+type BillingUpdateOrganizationSubscriptionParams struct {
+	// IfMatch The ETag from a prior read. A mismatch returns 409 version_conflict.
+	IfMatch *IfMatch `json:"If-Match,omitempty"`
+}
+
 // PermissionsListParams defines parameters for PermissionsList.
 type PermissionsListParams struct {
 	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
@@ -3690,33 +3861,10 @@ type RolesUpdateParams struct {
 type TenantsListParams struct {
 	Limit               *Limit        `form:"limit,omitempty" json:"limit,omitempty"`
 	Cursor              *Cursor       `form:"cursor,omitempty" json:"cursor,omitempty"`
-	Plan                *TenantPlan   `form:"plan,omitempty" json:"plan,omitempty"`
 	Tier                *TenantTier   `form:"tier,omitempty" json:"tier,omitempty"`
 	Status              *TenantStatus `form:"status,omitempty" json:"status,omitempty"`
-	Restricted          *bool         `form:"restricted,omitempty" json:"restricted,omitempty"`
 	OwnerUserId         *string       `form:"owner_user_id,omitempty" json:"owner_user_id,omitempty"`
 	OwnerOrganizationId *string       `form:"owner_organization_id,omitempty" json:"owner_organization_id,omitempty"`
-}
-
-// BillingCreateCheckoutSessionJSONBody defines parameters for BillingCreateCheckoutSession.
-type BillingCreateCheckoutSessionJSONBody struct {
-	CancelUrl  string                                   `json:"cancel_url"`
-	Plan       BillingCreateCheckoutSessionJSONBodyPlan `json:"plan"`
-	SuccessUrl string                                   `json:"success_url"`
-}
-
-// BillingCreateCheckoutSessionParams defines parameters for BillingCreateCheckoutSession.
-type BillingCreateCheckoutSessionParams struct {
-	// IdempotencyKey Client-generated, 1–255 characters; a UUID v4 is recommended. Remembered 24 hours per caller.
-	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
-}
-
-// BillingCreateCheckoutSessionJSONBodyPlan defines parameters for BillingCreateCheckoutSession.
-type BillingCreateCheckoutSessionJSONBodyPlan string
-
-// BillingCreatePortalSessionJSONBody defines parameters for BillingCreatePortalSession.
-type BillingCreatePortalSessionJSONBody struct {
-	ReturnUrl string `json:"return_url"`
 }
 
 // TenantsListTierChangeRequestsParams defines parameters for TenantsListTierChangeRequests.
@@ -3784,6 +3932,12 @@ type UsersCreateParams struct {
 
 // UsersCreateJSONBodyStatus defines parameters for UsersCreate.
 type UsersCreateJSONBodyStatus string
+
+// BillingCreateUserCheckoutSessionParams defines parameters for BillingCreateUserCheckoutSession.
+type BillingCreateUserCheckoutSessionParams struct {
+	// IdempotencyKey Client-generated, 1–255 characters; a UUID v4 is recommended. Remembered 24 hours per caller.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
 
 // UsersUpdateJSONBody defines parameters for UsersUpdate.
 type UsersUpdateJSONBody struct {
@@ -4093,6 +4247,12 @@ type OrganizationsCreateJSONRequestBody OrganizationsCreateJSONBody
 // OrganizationsUpdateJSONRequestBody defines body for OrganizationsUpdate for application/json ContentType.
 type OrganizationsUpdateJSONRequestBody OrganizationsUpdateJSONBody
 
+// BillingCreateOrganizationCheckoutSessionJSONRequestBody defines body for BillingCreateOrganizationCheckoutSession for application/json ContentType.
+type BillingCreateOrganizationCheckoutSessionJSONRequestBody BillingCreateOrganizationCheckoutSessionJSONBody
+
+// BillingCreateOrganizationPortalSessionJSONRequestBody defines body for BillingCreateOrganizationPortalSession for application/json ContentType.
+type BillingCreateOrganizationPortalSessionJSONRequestBody = PortalSessionCreate
+
 // OrganizationsGrantEntitlementJSONRequestBody defines body for OrganizationsGrantEntitlement for application/json ContentType.
 type OrganizationsGrantEntitlementJSONRequestBody OrganizationsGrantEntitlementJSONBody
 
@@ -4102,17 +4262,14 @@ type OrganizationsAddMemberJSONRequestBody OrganizationsAddMemberJSONBody
 // OrganizationsUpdateMemberJSONRequestBody defines body for OrganizationsUpdateMember for application/json ContentType.
 type OrganizationsUpdateMemberJSONRequestBody OrganizationsUpdateMemberJSONBody
 
+// BillingUpdateOrganizationSubscriptionJSONRequestBody defines body for BillingUpdateOrganizationSubscription for application/json ContentType.
+type BillingUpdateOrganizationSubscriptionJSONRequestBody BillingUpdateOrganizationSubscriptionJSONBody
+
 // RolesCreateJSONRequestBody defines body for RolesCreate for application/json ContentType.
 type RolesCreateJSONRequestBody = RoleCreate
 
 // RolesUpdateJSONRequestBody defines body for RolesUpdate for application/json ContentType.
 type RolesUpdateJSONRequestBody RolesUpdateJSONBody
-
-// BillingCreateCheckoutSessionJSONRequestBody defines body for BillingCreateCheckoutSession for application/json ContentType.
-type BillingCreateCheckoutSessionJSONRequestBody BillingCreateCheckoutSessionJSONBody
-
-// BillingCreatePortalSessionJSONRequestBody defines body for BillingCreatePortalSession for application/json ContentType.
-type BillingCreatePortalSessionJSONRequestBody BillingCreatePortalSessionJSONBody
 
 // TenantsRequestTierChangeJSONRequestBody defines body for TenantsRequestTierChange for application/json ContentType.
 type TenantsRequestTierChangeJSONRequestBody TenantsRequestTierChangeJSONBody
@@ -4122,6 +4279,12 @@ type TenantsUpdateTierChangeRequestJSONRequestBody TenantsUpdateTierChangeReques
 
 // UsersCreateJSONRequestBody defines body for UsersCreate for application/json ContentType.
 type UsersCreateJSONRequestBody UsersCreateJSONBody
+
+// BillingCreateUserCheckoutSessionJSONRequestBody defines body for BillingCreateUserCheckoutSession for application/json ContentType.
+type BillingCreateUserCheckoutSessionJSONRequestBody = CheckoutSessionCreate
+
+// BillingCreateUserPortalSessionJSONRequestBody defines body for BillingCreateUserPortalSession for application/json ContentType.
+type BillingCreateUserPortalSessionJSONRequestBody = PortalSessionCreate
 
 // UsersUpdateJSONRequestBody defines body for UsersUpdate for application/json ContentType.
 type UsersUpdateJSONRequestBody UsersUpdateJSONBody
@@ -4618,6 +4781,12 @@ type ServerInterface interface {
 	// OrganizationsUpdate Rename (org admin), or suspend/reactivate (organizations.manage)
 	// (PATCH /organizations/{id})
 	OrganizationsUpdate(w http.ResponseWriter, r *http.Request, id string, params OrganizationsUpdateParams)
+	// BillingCreateOrganizationCheckoutSession Start a Stripe Checkout to subscribe the Organization to Standard (org admin, User token)
+	// (POST /organizations/{id}/billing/checkout-sessions)
+	BillingCreateOrganizationCheckoutSession(w http.ResponseWriter, r *http.Request, id string, params BillingCreateOrganizationCheckoutSessionParams)
+	// BillingCreateOrganizationPortalSession Open the Stripe Customer Portal for the Organization's subscription (org admin or billing.manage, User token)
+	// (POST /organizations/{id}/billing/portal-sessions)
+	BillingCreateOrganizationPortalSession(w http.ResponseWriter, r *http.Request, id string)
 	// OrganizationsListEntitlements List org-wide (seat) grants
 	// (GET /organizations/{id}/entitlements)
 	OrganizationsListEntitlements(w http.ResponseWriter, r *http.Request, id string, params OrganizationsListEntitlementsParams)
@@ -4639,6 +4808,12 @@ type ServerInterface interface {
 	// OrganizationsUpdateMember Change a member's role
 	// (PATCH /organizations/{id}/members/{userId})
 	OrganizationsUpdateMember(w http.ResponseWriter, r *http.Request, id string, userId string)
+	// BillingGetOrganizationSubscription An Organization's plan and Standard subscription (org admin or billing.manage)
+	// (GET /organizations/{id}/subscription)
+	BillingGetOrganizationSubscription(w http.ResponseWriter, r *http.Request, id string)
+	// BillingUpdateOrganizationSubscription Choose which members the Organization's subscription covers (org admin)
+	// (PATCH /organizations/{id}/subscription)
+	BillingUpdateOrganizationSubscription(w http.ResponseWriter, r *http.Request, id string, params BillingUpdateOrganizationSubscriptionParams)
 	// PermissionsList List every Permission key the caller can see
 	// (GET /permissions)
 	PermissionsList(w http.ResponseWriter, r *http.Request, params PermissionsListParams)
@@ -4663,15 +4838,6 @@ type ServerInterface interface {
 	// TenantsGet Fetch one Tenant
 	// (GET /tenants/{id})
 	TenantsGet(w http.ResponseWriter, r *http.Request, id string)
-	// BillingCreateCheckoutSession Start a Stripe Checkout to subscribe to Team (owner)
-	// (POST /tenants/{id}/billing/checkout-sessions)
-	BillingCreateCheckoutSession(w http.ResponseWriter, r *http.Request, id string, params BillingCreateCheckoutSessionParams)
-	// BillingCreatePortalSession Open the Stripe Customer Portal (owner or billing.manage)
-	// (POST /tenants/{id}/billing/portal-sessions)
-	BillingCreatePortalSession(w http.ResponseWriter, r *http.Request, id string)
-	// BillingGetSubscription Current plan, subscription status, period, and seats
-	// (GET /tenants/{id}/subscription)
-	BillingGetSubscription(w http.ResponseWriter, r *http.Request, id string)
 	// TenantsListTierChangeRequests List tier-change requests for a Tenant
 	// (GET /tenants/{id}/tier-change-requests)
 	TenantsListTierChangeRequests(w http.ResponseWriter, r *http.Request, id string, params TenantsListTierChangeRequestsParams)
@@ -4684,15 +4850,18 @@ type ServerInterface interface {
 	// TenantsUpdateTierChangeRequest Schedule, start, complete, or cancel a tier-change request (tenants.manage)
 	// (PATCH /tenants/{id}/tier-change-requests/{requestId})
 	TenantsUpdateTierChangeRequest(w http.ResponseWriter, r *http.Request, id string, requestId string, params TenantsUpdateTierChangeRequestParams)
-	// BillingGetUsage Usage against every plan limit
-	// (GET /tenants/{id}/usage)
-	BillingGetUsage(w http.ResponseWriter, r *http.Request, id string)
 	// UsersList List or search users
 	// (GET /users)
 	UsersList(w http.ResponseWriter, r *http.Request, params UsersListParams)
 	// UsersCreate Create (invite) a user
 	// (POST /users)
 	UsersCreate(w http.ResponseWriter, r *http.Request, params UsersCreateParams)
+	// BillingCreateUserCheckoutSession Start a Stripe Checkout to subscribe yourself to Standard (User token)
+	// (POST /users/me/billing/checkout-sessions)
+	BillingCreateUserCheckoutSession(w http.ResponseWriter, r *http.Request, params BillingCreateUserCheckoutSessionParams)
+	// BillingCreateUserPortalSession Open the Stripe Customer Portal for your own subscription (User token)
+	// (POST /users/me/billing/portal-sessions)
+	BillingCreateUserPortalSession(w http.ResponseWriter, r *http.Request)
 	// UsersDelete Soft-delete a user (self or users.manage)
 	// (DELETE /users/{id})
 	UsersDelete(w http.ResponseWriter, r *http.Request, id UserIdOrMe)
@@ -4813,6 +4982,9 @@ type ServerInterface interface {
 	// SettingsUpdate Update global Settings (self or users.manage)
 	// (PATCH /users/{id}/settings)
 	SettingsUpdate(w http.ResponseWriter, r *http.Request, id UserIdOrMe, params SettingsUpdateParams)
+	// BillingGetUserSubscription A User's plan, what covers it, and their own subscription (self or billing.manage)
+	// (GET /users/{id}/subscription)
+	BillingGetUserSubscription(w http.ResponseWriter, r *http.Request, id UserIdOrMe)
 	// UsersSuspend Suspend a user (users.manage)
 	// (POST /users/{id}/suspend)
 	UsersSuspend(w http.ResponseWriter, r *http.Request, id UserIdOrMe)
@@ -5127,6 +5299,19 @@ func (siw *ServerInterfaceWrapper) ApplicationsList(w http.ResponseWriter, r *ht
 			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "review_status"})
 		} else {
 			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "review_status", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "access_tier" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "access_tier", r.URL.Query(), &params.AccessTier, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "access_tier"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "access_tier", Err: err})
 		}
 		return
 	}
@@ -6394,6 +6579,86 @@ func (siw *ServerInterfaceWrapper) OrganizationsUpdate(w http.ResponseWriter, r 
 	handler.ServeHTTP(w, r)
 }
 
+// BillingCreateOrganizationCheckoutSession operation middleware
+func (siw *ServerInterfaceWrapper) BillingCreateOrganizationCheckoutSession(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params BillingCreateOrganizationCheckoutSessionParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.BillingCreateOrganizationCheckoutSession(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// BillingCreateOrganizationPortalSession operation middleware
+func (siw *ServerInterfaceWrapper) BillingCreateOrganizationPortalSession(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.BillingCreateOrganizationPortalSession(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // OrganizationsListEntitlements operation middleware
 func (siw *ServerInterfaceWrapper) OrganizationsListEntitlements(w http.ResponseWriter, r *http.Request) {
 
@@ -6784,6 +7049,82 @@ func (siw *ServerInterfaceWrapper) OrganizationsUpdateMember(w http.ResponseWrit
 	handler.ServeHTTP(w, r)
 }
 
+// BillingGetOrganizationSubscription operation middleware
+func (siw *ServerInterfaceWrapper) BillingGetOrganizationSubscription(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.BillingGetOrganizationSubscription(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// BillingUpdateOrganizationSubscription operation middleware
+func (siw *ServerInterfaceWrapper) BillingUpdateOrganizationSubscription(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params BillingUpdateOrganizationSubscriptionParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = &IfMatch
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.BillingUpdateOrganizationSubscription(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // PermissionsList operation middleware
 func (siw *ServerInterfaceWrapper) PermissionsList(w http.ResponseWriter, r *http.Request) {
 
@@ -7053,19 +7394,6 @@ func (siw *ServerInterfaceWrapper) TenantsList(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	// ------------- Optional query parameter "plan" -------------
-
-	err = runtime.BindQueryParameterWithOptions("form", true, false, "plan", r.URL.Query(), &params.Plan, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
-	if err != nil {
-		var requiredError *runtime.RequiredParameterError
-		if errors.As(err, &requiredError) {
-			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "plan"})
-		} else {
-			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "plan", Err: err})
-		}
-		return
-	}
-
 	// ------------- Optional query parameter "tier" -------------
 
 	err = runtime.BindQueryParameterWithOptions("form", true, false, "tier", r.URL.Query(), &params.Tier, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
@@ -7088,19 +7416,6 @@ func (siw *ServerInterfaceWrapper) TenantsList(w http.ResponseWriter, r *http.Re
 			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
 		} else {
 			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
-		}
-		return
-	}
-
-	// ------------- Optional query parameter "restricted" -------------
-
-	err = runtime.BindQueryParameterWithOptions("form", true, false, "restricted", r.URL.Query(), &params.Restricted, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
-	if err != nil {
-		var requiredError *runtime.RequiredParameterError
-		if errors.As(err, &requiredError) {
-			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "restricted"})
-		} else {
-			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "restricted", Err: err})
 		}
 		return
 	}
@@ -7159,112 +7474,6 @@ func (siw *ServerInterfaceWrapper) TenantsGet(w http.ResponseWriter, r *http.Req
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.TenantsGet(w, r, id)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// BillingCreateCheckoutSession operation middleware
-func (siw *ServerInterfaceWrapper) BillingCreateCheckoutSession(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-	_ = err
-
-	// ------------- Path parameter "id" -------------
-	var id string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
-		return
-	}
-
-	// Parameter object where we will unmarshal all parameters from the context
-	var params BillingCreateCheckoutSessionParams
-
-	headers := r.Header
-
-	// ------------- Required header parameter "Idempotency-Key" -------------
-	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
-		var IdempotencyKey IdempotencyKey
-		n := len(valueList)
-		if n != 1 {
-			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
-			return
-		}
-
-		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
-		if err != nil {
-			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
-			return
-		}
-
-		params.IdempotencyKey = IdempotencyKey
-
-	} else {
-		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
-		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
-		return
-	}
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.BillingCreateCheckoutSession(w, r, id, params)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// BillingCreatePortalSession operation middleware
-func (siw *ServerInterfaceWrapper) BillingCreatePortalSession(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-	_ = err
-
-	// ------------- Path parameter "id" -------------
-	var id string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
-		return
-	}
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.BillingCreatePortalSession(w, r, id)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// BillingGetSubscription operation middleware
-func (siw *ServerInterfaceWrapper) BillingGetSubscription(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-	_ = err
-
-	// ------------- Path parameter "id" -------------
-	var id string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
-		return
-	}
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.BillingGetSubscription(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -7449,32 +7658,6 @@ func (siw *ServerInterfaceWrapper) TenantsUpdateTierChangeRequest(w http.Respons
 	handler.ServeHTTP(w, r)
 }
 
-// BillingGetUsage operation middleware
-func (siw *ServerInterfaceWrapper) BillingGetUsage(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-	_ = err
-
-	// ------------- Path parameter "id" -------------
-	var id string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
-		return
-	}
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.BillingGetUsage(w, r, id)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
 // UsersList operation middleware
 func (siw *ServerInterfaceWrapper) UsersList(w http.ResponseWriter, r *http.Request) {
 
@@ -7644,6 +7827,65 @@ func (siw *ServerInterfaceWrapper) UsersCreate(w http.ResponseWriter, r *http.Re
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UsersCreate(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// BillingCreateUserCheckoutSession operation middleware
+func (siw *ServerInterfaceWrapper) BillingCreateUserCheckoutSession(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params BillingCreateUserCheckoutSessionParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.BillingCreateUserCheckoutSession(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// BillingCreateUserPortalSession operation middleware
+func (siw *ServerInterfaceWrapper) BillingCreateUserPortalSession(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.BillingCreateUserPortalSession(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -9434,6 +9676,32 @@ func (siw *ServerInterfaceWrapper) SettingsUpdate(w http.ResponseWriter, r *http
 	handler.ServeHTTP(w, r)
 }
 
+// BillingGetUserSubscription operation middleware
+func (siw *ServerInterfaceWrapper) BillingGetUserSubscription(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id UserIdOrMe
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.BillingGetUserSubscription(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // UsersSuspend operation middleware
 func (siw *ServerInterfaceWrapper) UsersSuspend(w http.ResponseWriter, r *http.Request) {
 
@@ -9989,10 +10257,13 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/tenants/{id}/tier-change-requests", wrapper.TenantsRequestTierChange)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/tenants/{id}/tier-change-requests/{requestId}", wrapper.TenantsGetTierChangeRequest)
 	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/tenants/{id}/tier-change-requests/{requestId}", wrapper.TenantsUpdateTierChangeRequest)
-	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/tenants/{id}/subscription", wrapper.BillingGetSubscription)
-	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/tenants/{id}/usage", wrapper.BillingGetUsage)
-	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/tenants/{id}/billing/checkout-sessions", wrapper.BillingCreateCheckoutSession)
-	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/tenants/{id}/billing/portal-sessions", wrapper.BillingCreatePortalSession)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/users/{id}/subscription", wrapper.BillingGetUserSubscription)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/users/me/billing/checkout-sessions", wrapper.BillingCreateUserCheckoutSession)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/users/me/billing/portal-sessions", wrapper.BillingCreateUserPortalSession)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/organizations/{id}/subscription", wrapper.BillingGetOrganizationSubscription)
+	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/organizations/{id}/subscription", wrapper.BillingUpdateOrganizationSubscription)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/organizations/{id}/billing/checkout-sessions", wrapper.BillingCreateOrganizationCheckoutSession)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/organizations/{id}/billing/portal-sessions", wrapper.BillingCreateOrganizationPortalSession)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/audit-events", wrapper.AuditList)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/audit-events/{id}", wrapper.AuditGet)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/webhooks", wrapper.WebhooksList)

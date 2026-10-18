@@ -84,7 +84,8 @@ func TestMFA(t *testing.T) {
 		t.Fatalf("uri = %s", enroll.Str("otpauth_uri"))
 	}
 	e.Post("/v1/users/me/mfa/totp/confirm", u.Token, map[string]any{"code": "000000"}).ExpectErr(401, "invalid_mfa_code")
-	conf := e.Post("/v1/users/me/mfa/totp/confirm", u.Token, map[string]any{"code": auth.TOTPCode(secret, time.Now())}).Expect(200)
+	confirmCode := auth.TOTPCode(secret, time.Now())
+	conf := e.Post("/v1/users/me/mfa/totp/confirm", u.Token, map[string]any{"code": confirmCode}).Expect(200)
 	codes := toStrings(conf.JSON()["recovery_codes"])
 	if len(codes) != 10 {
 		t.Fatalf("recovery codes = %d", len(codes))
@@ -98,9 +99,10 @@ func TestMFA(t *testing.T) {
 	if ch.JSON()["mfa_required"] != true || ch.Token() != "" {
 		t.Fatalf("challenge = %s", ch.Body)
 	}
-	// The code used at confirm can't be reused in its window.
+	// The code used at confirm can't be reused. (Reuse the exact code, not a
+	// fresh one: a fresh one is valid again if a 30-second step has passed.)
 	e.Post("/v1/auth/mfa/verify", "", map[string]any{"mfa_token": ch.Str("mfa_token"),
-		"code": auth.TOTPCode(secret, time.Now())}).ExpectErr(401, "invalid_mfa_code")
+		"code": confirmCode}).ExpectErr(401, "invalid_mfa_code")
 	sess := e.Post("/v1/auth/mfa/verify", "", map[string]any{"mfa_token": ch.Str("mfa_token"), "recovery_code": codes[0]}).Expect(200)
 	e.Get("/v1/users/me", sess.Token()).Expect(200)
 	// The challenge is single-use.

@@ -42,10 +42,7 @@ Every subscription has a **scope**, fixed at creation, and the scope decides whi
 
 The request's `scope` field picks it. An app-scoped key may omit `scope` (it defaults to the key's own Application) or pass that same id; anything else is `403 forbidden`. An owner's User token must pass their Application's id. A `webhooks.manage` caller passes `"platform"` or any `application_id`.
 
-A subscription is managed by its scope's owners (the app's own keys, the app's owner) and by `webhooks.manage`. Anyone else gets `404`. `POST` is rejected with `409 plan_limit_reached` if the Application's Tenant is at its plan's cap (1/10/unlimited on Starter/Team/Enterprise, counted per Tenant across all its Applications), and with `402 subscription_required` if the Tenant is restricted. Test-mode keys create test-mode subscriptions, which only ever receive test-mode events; live subscriptions never receive test traffic.
-
-{: .decision }
-**API changes awaiting review** ([DECISIONS.md #39](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#39-subscriber-billing-api)). #39 proposes removing the per-plan webhook-subscription cap.
+A subscription is managed by its scope's owners (the app's own keys, the app's owner) and by `webhooks.manage`. Anyone else gets `404`. Test-mode keys create test-mode subscriptions, which only ever receive test-mode events; live subscriptions never receive test traffic.
 
 ## `POST /v1/webhooks`
 
@@ -319,8 +316,6 @@ A webhook tells an app "something changed". It's how an app reacts almost immedi
 | `invalid_webhook_url` | 422 | Not https, private or loopback IP, credentials in the URL, or doesn't resolve. |
 | `unknown_event_type` | 422 | An entry in `events` isn't a known type. |
 | `delivery_not_found` | 404 | `{deliveryId}` doesn't exist or is past the 30-day log. |
-| `plan_limit_reached` | 409 | Over the plan's webhook-subscription cap (`details.resource: "webhooks"`). |
-| `subscription_required` | 402 | `POST` on a `restricted` Tenant. |
 | `forbidden` | 403 | `scope` names an Application the caller can't manage, or `"platform"` without `webhooks.manage`. |
 | `read_only_field` | 422 | `PATCH` touches `scope`, `test_mode`, `id`, or `created_at`. |
 | `invalid_status_transition` | 409 | `PATCH status` anything other than `disabled → healthy`. |

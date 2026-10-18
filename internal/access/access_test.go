@@ -140,13 +140,19 @@ func TestOrgPathRequiresActiveMembership(t *testing.T) {
 	if s := Resolve("u", []Path{g}, now).Status; s != "none" {
 		t.Fatalf("pending membership = %s, want none", s)
 	}
-	g = org("org_a", "active", "all_members")
-	g.SeatLimited = true
-	if MemberDecision(g, "u") != SeatLimit {
-		t.Fatal("seat-limited decision")
+}
+
+// A platform-managed subscription row and a developer grant are separate
+// paths: an admin disabling one leaves the other in force.
+func TestSubscriptionPathIsIndependentOfDeveloperGrant(t *testing.T) {
+	sub := personal("disabled")
+	sub.Source = "subscription"
+	grant := personal("active")
+	if s := Resolve("u", []Path{sub, grant}, now).Status; s != "active" {
+		t.Fatalf("disabled subscription + active grant = %s, want active", s)
 	}
-	if s := Resolve("u", []Path{g}, now).Status; s != "none" {
-		t.Fatalf("seat-limited = %s, want none", s)
+	if s := Resolve("u", []Path{sub}, now).Status; s != "disabled" {
+		t.Fatalf("disabled subscription alone = %s, want disabled", s)
 	}
 }
 

@@ -62,11 +62,9 @@ type Config struct {
 }
 
 // StripePrices are the Stripe Price ids the catalog sync script creates.
+// Optional: without them, prices resolve by lookup key.
 type StripePrices struct {
-	TeamBase       string
-	TeamSeat       string
-	IsolatedAddOn  string
-	DedicatedAddOn string
+	Standard string
 }
 
 // Load reads Config from the environment, applying local defaults.
@@ -97,10 +95,7 @@ func Load() (Config, error) {
 		StripeSecretKey:     os.Getenv("STRIPE_SECRET_KEY"),
 		StripeWebhookSecret: os.Getenv("STRIPE_WEBHOOK_SECRET"),
 		StripePrices: StripePrices{
-			TeamBase:       os.Getenv("STRIPE_PRICE_TEAM_BASE"),
-			TeamSeat:       os.Getenv("STRIPE_PRICE_TEAM_SEAT"),
-			IsolatedAddOn:  os.Getenv("STRIPE_PRICE_ISOLATED"),
-			DedicatedAddOn: os.Getenv("STRIPE_PRICE_DEDICATED_REGION"),
+			Standard: os.Getenv("STRIPE_PRICE_STANDARD"),
 		},
 		AppSecretARN:   os.Getenv("APP_SECRET_ARN"),
 		RequestTimeout: duration("REQUEST_TIMEOUT", 25*time.Second),

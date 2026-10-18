@@ -39,183 +39,6 @@ func eachMode(fn func(testMode bool) error) error {
 	return nil
 }
 
-// ── Stripe sync (DEPLOYMENT.md → Webhook handling) ─────────────────────
-
-// StripeSubscription is the subscription state the sync applies, read
-// fresh from Stripe by the billing package.
-type StripeSubscription struct {
-	ID                string
-	TenantID          string
-	Status            string
-	Plan              string // from the product's metadata.substratal_plan
-	PeriodStart       *time.Time
-	PeriodEnd         *time.Time
-	CancelAtPeriodEnd bool
-	SeatItemID        string
-}
-
-// RecordStripeEvent inserts the event id (insert-or-skip) and reports
-// whether it's new.
-func (s *Server) RecordStripeEvent(ctx context.Context, id, typ string) (bool, error) {
-	var fresh bool
-	err := s.system(ctx, false, db.Settings{}, func(c *Call) error {
-		n, err := c.q.Exec(ctx, `insert into stripe_events (id, type) values (:id, :t) on conflict (id) do nothing`,
-			db.Args{"id": id, "t": typ})
-		fresh = n == 1
-		return err
-	})
-	return fresh, err
-}
-
-// MarkStripeEventProcessed records a successfully handled event.
-func (s *Server) MarkStripeEventProcessed(ctx context.Context, id, tenantID string) error {
-	return s.system(ctx, false, db.Settings{}, func(c *Call) error {
-		var t any
-		if tenantID != "" {
-			t = tenantID
-		}
-		_, err := c.q.Exec(ctx, `update stripe_events set processed_at = now(),
-			tenant_id = coalesce(tenant_id, (select id from tenants where id = :t)) where id = :id`, db.Args{"id": id, "t": t})
-		return err
-	})
-}
-
-var lapsed = map[string]bool{"canceled": true, "unpaid": true, "incomplete_expired": true, "paused": true}
-
-// ApplyStripeSubscription is the subscription sync: Stripe is the only
-// writer of plan after a Tenant is created. A lapse drops a user-owned
-// Tenant that fits Starter back to Starter; anything else becomes
-// restricted. No end user ever loses access over billing.
-func (s *Server) ApplyStripeSubscription(ctx context.Context, sub StripeSubscription) error {
-	return s.system(ctx, false, db.Settings{}, func(c *Call) error {
-		var t tenantRow
-		err := db.One(ctx, c.q, &t, `select to_jsonb(t) from tenants t where id = :id or stripe_subscription_id = :sub
-			order by (id = :id) desc limit 1`, db.Args{"id": sub.TenantID, "sub": sub.ID})
-		if err != nil {
-			return errf("stripe sync: no tenant for subscription %s: %w", sub.ID, err)
-		}
-		before := t
-		next := t
-		next.SubscriptionStatus = sub.Status
-		next.PeriodStart, next.PeriodEnd, next.CancelAtPeriodEnd = sub.PeriodStart, sub.PeriodEnd, sub.CancelAtPeriodEnd
-		subID := &sub.ID
-		switch {
-		case lapsed[sub.Status]:
-			u, err := c.tenantUsage(t)
-			if err != nil {
-				return err
-			}
-			fitsStarter := false
-			for _, p := range fitsPlans(t, u) {
-				fitsStarter = fitsStarter || p == "starter"
-			}
-			if t.OwnerType == "user" && fitsStarter && t.Tier == "shared" {
-				next.Plan, next.Restricted, subID = "starter", false, nil
-				next.SubscriptionStatus = "canceled"
-			} else {
-				next.Restricted = true
-			}
-		default:
-			if sub.Plan == "team" || sub.Plan == "enterprise" {
-				next.Plan = sub.Plan
-			}
-			if sub.Status == "active" || sub.Status == "trialing" || sub.Status == "past_due" {
-				next.Restricted = false
-			}
-		}
-		if _, err := c.q.Exec(ctx, `update tenants set plan = :plan, subscription_status = :st, stripe_subscription_id = :sub,
-				current_period_start = :ps::timestamptz, current_period_end = :pe::timestamptz,
-				cancel_at_period_end = :cap, restricted = :r where id = :id`,
-			db.Args{"plan": next.Plan, "st": next.SubscriptionStatus, "sub": db.NullString(subID),
-				"ps": db.NullTime(next.PeriodStart), "pe": db.NullTime(next.PeriodEnd), "cap": next.CancelAtPeriodEnd,
-				"r": next.Restricted, "id": t.ID}); err != nil {
-			return err
-		}
-		if before.Plan != next.Plan {
-			if err := c.audit(Audit{Action: "tenant.plan_changed", TargetType: "tenant", TargetID: t.ID, TenantID: &t.ID,
-				Before: map[string]any{"plan": before.Plan}, After: map[string]any{"plan": next.Plan}}); err != nil {
-				return err
-			}
-		}
-		if before.SubscriptionStatus != next.SubscriptionStatus || before.Restricted != next.Restricted {
-			if err := c.audit(Audit{Action: "tenant.subscription_status_changed", TargetType: "tenant", TargetID: t.ID,
-				TenantID: &t.ID, Before: map[string]any{"subscription_status": before.SubscriptionStatus, "restricted": before.Restricted},
-				After: map[string]any{"subscription_status": next.SubscriptionStatus, "restricted": next.Restricted}}); err != nil {
-				return err
-			}
-		}
-		return nil
-	})
-}
-
-// UnprocessedStripeEvents lists recorded Stripe events still unprocessed
-// five minutes after arrival, for the retry job.
-func (s *Server) UnprocessedStripeEvents(ctx context.Context) ([]string, error) {
-	var out []string
-	err := s.system(ctx, false, db.Settings{}, func(c *Call) error {
-		var err error
-		out, err = db.All[string](ctx, c.q, `select to_jsonb(id) from stripe_events where processed_at is null
-			and received_at < now() - interval '5 minutes' order by received_at limit 100`, nil)
-		return err
-	})
-	return out, err
-}
-
-// SeatTarget is one paid Tenant's seat count for the daily seat sync.
-type SeatTarget struct {
-	TenantID       string
-	SubscriptionID string
-	Seats          int
-	LastSynced     *int
-}
-
-// PaidTenantSeats lists every Team/Enterprise Tenant's current seat count.
-func (s *Server) PaidTenantSeats(ctx context.Context) ([]SeatTarget, error) {
-	var out []SeatTarget
-	err := s.system(ctx, false, db.Settings{}, func(c *Call) error {
-		ts, err := db.All[tenantRow](ctx, c.q, `select to_jsonb(t) from tenants t
-			where plan in ('team','enterprise') and stripe_subscription_id is not null`, nil)
-		if err != nil {
-			return err
-		}
-		for _, t := range ts {
-			n, err := c.seatCount(t.ID)
-			if err != nil {
-				return err
-			}
-			out = append(out, SeatTarget{TenantID: t.ID, SubscriptionID: deref(t.StripeSubID), Seats: n, LastSynced: t.SeatCountSynced})
-		}
-		return nil
-	})
-	return out, err
-}
-
-// RecordSeatSync stores the quantity last written to Stripe.
-func (s *Server) RecordSeatSync(ctx context.Context, tenantID string, seats int) error {
-	return s.system(ctx, false, db.Settings{}, func(c *Call) error {
-		_, err := c.q.Exec(ctx, `update tenants set seat_count_synced = :n, seat_count_synced_at = now() where id = :t`,
-			db.Args{"n": int64(seats), "t": tenantID})
-		return err
-	})
-}
-
-// TenantsMissingCustomer lists Tenants whose Stripe Customer creation failed.
-func (s *Server) TenantsMissingCustomer(ctx context.Context) ([]string, error) {
-	var out []string
-	err := s.system(ctx, false, db.Settings{}, func(c *Call) error {
-		var err error
-		out, err = db.All[string](ctx, c.q, `select to_jsonb(id) from tenants where stripe_customer_id is null
-			and created_at < now() - interval '1 minute' order by created_at limit 100`, nil)
-		return err
-	})
-	return out, err
-}
-
-// ProvisionStripeCustomer is the retry path for one Tenant.
-func (s *Server) ProvisionStripeCustomer(ctx context.Context, tenantID string) {
-	s.provisionStripeCustomer(ctx, tenantID)
-}
-
 // ── Entitlement sweep (every 5 minutes) ────────────────────────────────
 
 // SweepEntitlements expires rows past ends_at and fires access.granted
@@ -412,6 +235,10 @@ func (s *Server) erase(ctx context.Context, tm bool, uid string) error {
 				where :u = any(member_overrides)`, db.Args{"u": uid}); err != nil {
 				return err
 			}
+			if _, err := c.q.Exec(ctx, `update subscriptions set member_overrides = array_remove(member_overrides, :u)
+				where :u = any(member_overrides)`, db.Args{"u": uid}); err != nil {
+				return err
+			}
 			_, err = c.q.Exec(ctx, `update users set email = 'erased+' || id || '@invalid.substratal', pending_email = null,
 				status = 'deleted', deleted_at = coalesce(deleted_at, now()) where id = :u`, db.Args{"u": uid})
 			return err
@@ -458,10 +285,12 @@ type ArchivedEvent struct {
 // Deep Archive in AWS; a local directory otherwise).
 type Archiver func(ctx context.Context, batch []ArchivedEvent) error
 
-// ArchiveAudit moves events older than their Tenant's hot window to cold
-// storage, shape only, and deletes them from the hot table. Events with no
-// Tenant use the longest non-negotiated window (Team's 1 year); Enterprise
-// windows are negotiated and kept until set per contract.
+// AuditHotWindowDays is how long an Audit Event stays in hot storage, the
+// same for every Tenant (NFR → Audit log lifecycle).
+const AuditHotWindowDays = 365
+
+// ArchiveAudit moves events older than the hot window to cold storage,
+// shape only, and deletes them from the hot table.
 func (s *Server) ArchiveAudit(ctx context.Context, archive Archiver) (int, error) {
 	total := 0
 	err := eachMode(func(tm bool) error {
@@ -470,11 +299,8 @@ func (s *Server) ArchiveAudit(ctx context.Context, archive Archiver) (int, error
 			err := s.system(ctx, tm, db.Settings{AuditMaintenance: true}, func(c *Call) error {
 				var err error
 				batch, err = db.All[ArchivedEvent](ctx, c.q, `select to_jsonb(a) - 'before' - 'after' from audit_events a
-					left join tenants t on t.id = a.tenant_id
-					where a.timestamp < now() - (case coalesce(t.plan, 'team')
-						when 'starter' then interval '30 days' when 'team' then interval '365 days'
-						else interval '100 years' end)
-					order by a.timestamp limit 1000 for update of a skip locked`, nil)
+					where a.timestamp < now() - make_interval(days => :days)
+					order by a.timestamp limit 1000 for update of a skip locked`, db.Args{"days": int64(AuditHotWindowDays)})
 				if err != nil || len(batch) == 0 {
 					return err
 				}
@@ -543,6 +369,8 @@ func (s *Server) PurgeTestData(ctx context.Context) error {
 			`delete from app_profiles where ` + old,
 			`delete from user_role_assignments where test_mode and assigned_at < now() - interval '30 days'`,
 			`delete from entitlements where ` + old,
+			`update stripe_events set subscription_id = null where subscription_id in (select id from subscriptions where ` + old + `)`,
+			`delete from subscriptions where ` + old,
 			`delete from organization_memberships where test_mode and invited_at < now() - interval '30 days'`,
 			`delete from roles where ` + old + ` and not exists (select 1 from user_role_assignments a where a.role_id = roles.id)`,
 			`delete from api_keys where ` + old,
@@ -564,12 +392,14 @@ func (s *Server) PurgeTestData(ctx context.Context) error {
 			`delete from organizations o where ` + old + ` and not exists (select 1 from organization_memberships m where m.organization_id = o.id)
 				and not exists (select 1 from entitlements e where e.organization_id = o.id)
 				and not exists (select 1 from applications a where a.owner_organization_id = o.id)
-				and not exists (select 1 from tenants t where t.owner_organization_id = o.id)`,
+				and not exists (select 1 from tenants t where t.owner_organization_id = o.id)
+				and not exists (select 1 from subscriptions s where s.organization_id = o.id)`,
 			`delete from users u where ` + old + ` and not exists (select 1 from organization_memberships m where m.user_id = u.id)
 				and not exists (select 1 from entitlements e where e.user_id = u.id)
 				and not exists (select 1 from applications a where a.owner_user_id = u.id)
 				and not exists (select 1 from tenants t where t.owner_user_id = u.id)
-				and not exists (select 1 from organizations o where o.created_by = u.id)`,
+				and not exists (select 1 from organizations o where o.created_by = u.id)
+				and not exists (select 1 from subscriptions s where s.user_id = u.id)`,
 		} {
 			if _, err := c.q.Exec(ctx, q, nil); err != nil {
 				return err

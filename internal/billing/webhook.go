@@ -61,23 +61,23 @@ func (h *Webhook) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // Process applies one Stripe event.
 func (h *Webhook) Process(ctx context.Context, ev stripe.Event) error {
-	var subID, tenantID string
+	var stripeSubID, subscriptionID string
 	switch ev.Type {
 	case "checkout.session.completed":
 		var s stripe.CheckoutSession
 		if err := json.Unmarshal(ev.Data.Raw, &s); err != nil {
 			return err
 		}
-		tenantID = s.ClientReferenceID
+		subscriptionID = s.ClientReferenceID
 		if s.Subscription != nil {
-			subID = s.Subscription.ID
+			stripeSubID = s.Subscription.ID
 		}
 	case "customer.subscription.created", "customer.subscription.updated", "customer.subscription.deleted":
 		var s stripe.Subscription
 		if err := json.Unmarshal(ev.Data.Raw, &s); err != nil {
 			return err
 		}
-		subID, tenantID = s.ID, s.Metadata["tenant_id"]
+		stripeSubID, subscriptionID = s.ID, s.Metadata["subscription_id"]
 	case "invoice.paid", "invoice.payment_failed":
 		var inv struct {
 			Parent *struct {
@@ -90,25 +90,26 @@ func (h *Webhook) Process(ctx context.Context, ev stripe.Event) error {
 		if err := json.Unmarshal(ev.Data.Raw, &inv); err != nil {
 			return err
 		}
-		subID = inv.Subscription
-		if subID == "" && inv.Parent != nil && inv.Parent.SubscriptionDetails != nil {
-			subID = inv.Parent.SubscriptionDetails.Subscription
+		stripeSubID = inv.Subscription
+		if stripeSubID == "" && inv.Parent != nil && inv.Parent.SubscriptionDetails != nil {
+			stripeSubID = inv.Parent.SubscriptionDetails.Subscription
 		}
 	default:
 		return h.Core.MarkStripeEventProcessed(ctx, ev.ID, "")
 	}
-	if subID == "" {
-		return h.Core.MarkStripeEventProcessed(ctx, ev.ID, tenantID)
+	if stripeSubID == "" {
+		return h.Core.MarkStripeEventProcessed(ctx, ev.ID, subscriptionID)
 	}
-	sub, err := h.Stripe.Subscription(ctx, subID)
+	sub, err := h.Stripe.Subscription(ctx, stripeSubID)
 	if err != nil {
 		return err
 	}
-	if sub.TenantID == "" {
-		sub.TenantID = tenantID
+	if sub.SubscriptionID == "" {
+		sub.SubscriptionID = subscriptionID
 	}
-	if err := h.Core.ApplyStripeSubscription(ctx, sub); err != nil {
+	id, err := h.Core.ApplyStripeSubscription(ctx, sub)
+	if err != nil {
 		return err
 	}
-	return h.Core.MarkStripeEventProcessed(ctx, ev.ID, sub.TenantID)
+	return h.Core.MarkStripeEventProcessed(ctx, ev.ID, id)
 }

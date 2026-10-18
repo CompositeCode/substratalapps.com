@@ -15,9 +15,6 @@ Two subscription tiers, **Free** and **Standard**. The customer is the person us
 
 ---
 
-{: .decision }
-**API changes awaiting review** ([DECISIONS.md #39](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#39-subscriber-billing-api)). This page states the pricing model, which is decided ([#38](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#resolved)). The endpoints, fields, and Stripe wiring that implement it are proposed in #39. Until #39 is applied, [API Reference → Billing](../api-reference/billing/) and `openapi.yaml` still describe the previous, developer-billed Starter/Team/Enterprise model.
-
 ## The tiers
 
 For most people, Free or Standard is all they'll ever need.
@@ -44,7 +41,7 @@ There are two ways to be covered by Standard:
 - **Individual subscription.** A User subscribes for themselves: one user, $6 a month.
 - **Organization subscription.** An Organization subscribes for its members and pays $6 a month for each covered member (see [What a "user" means for an Organization](#what-a-user-means-for-an-organization)). An org admin chooses which members are covered, with the same `all_members` / `allowlist` / `denylist` choice that [org-wide Entitlements](../domain-model/entitlements/#org-wide-entitlements-scoping-members-in-or-out) already use.
 
-A User covered either way has Standard access. When a third-party marketplace ships, its Applications will carry their own developers' pricing and billing. This subscription covers Substratal's own catalog only (see [Orders & Audit → Billing system of record](../domain-model/orders-and-audit/#billing-system-of-record)).
+A User covered either way has Standard access. Someone covered by an Organization can still subscribe individually. Both subscriptions are billed, and the User's `plan_sources` lists both so a client can suggest cancelling one; nothing is refunded automatically. When a third-party marketplace ships, its Applications will carry their own developers' pricing and billing. This subscription covers Substratal's own catalog only (see [Orders & Audit → Billing system of record](../domain-model/orders-and-audit/#billing-system-of-record)).
 
 ## What a "user" means for an Organization
 
@@ -54,7 +51,7 @@ The count is **provisioned, not activity-based**. It counts who is covered, not 
 
 The count syncs to Stripe once a day with no mid-period proration. Each invoice charges for the count on the day before it's issued. Real-time sync with prorations was considered and not chosen: it's more accurate, but noisier for customers and means more Stripe API calls.
 
-Test-mode Users are never counted, so integration tests can't consume paid seats ([DECISIONS.md #36](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#36-test-mode-and-seats)).
+A live subscription never counts test-mode Users, so integration tests can't consume paid seats. A test-mode subscription runs in Stripe test mode and counts only test-mode members.
 
 ## How access follows the tier
 
@@ -63,7 +60,13 @@ Every [Application](../domain-model/applications/) is designated either **free**
 - A **free** Application is available to every active User.
 - A **standard** Application is available to every User covered by Standard, through their own subscription or an Organization's.
 
-Access is still enforced through [Entitlements](../domain-model/entitlements/) and the [access-control algorithm](../access-control/#the-algorithm), exactly as for any other grant. The subscription determines which Entitlements a User has. An admin can still disable or revoke one person's access to one Application, whatever their tier. How a subscription becomes Entitlements is part of [DECISIONS.md #39](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#39-subscriber-billing-api).
+Access is still enforced through [Entitlements](../domain-model/entitlements/) and the [access-control algorithm](../access-control/#the-algorithm), exactly as for any other grant. The platform keeps them in step with each Application's tier and each subscription (see [Platform-managed Entitlements](../domain-model/entitlements/#platform-managed-entitlements)):
+
+- Every User gets a `free` Entitlement to each free Application at signup.
+- A subscription that covers someone gives them a `subscription` Entitlement to each standard Application: a personal one for an individual subscription, or one org-wide grant per Application for an Organization's.
+- When an Application changes tier, or a new one is published, the platform grants or ends these Entitlements to match. An hourly job repairs anything that drifted.
+
+An admin can still disable, and later re-enable, one person's access to one Application, whatever their tier. Applications hear about every change through the usual [`access.granted` / `access.revoked`](../api-reference/webhooks/#event-types) webhooks.
 
 ## When a subscription lapses
 
@@ -84,9 +87,9 @@ The Products and Prices configured in Stripe. Lookup keys are what the code refe
 
 | Product | Price lookup key | Amount | Shape |
 |---|---|---|---|
-| Substratal Standard | `standard_monthly_usd` | $6.00 per user | Licensed (not metered), `billing_scheme: per_unit`, monthly. `quantity: 1` for an individual subscription. For an Organization, `quantity` is the covered-member count from the daily sync. |
+| Substratal Standard | `standard_monthly_usd` | $6.00 per user | Licensed (not metered), `billing_scheme: per_unit`, monthly. `quantity: 1` for an individual subscription. For an Organization, `quantity` is the covered-member count from the daily sync, at least 1. |
 
-- **Free has no Stripe Subscription**, and no Stripe Customer until the first Checkout. That avoids $0 subscriptions that would need cancelling and replacing on upgrade.
+- **Free has no Stripe Subscription**, and a User or Organization has no Stripe Customer until its first Checkout. That avoids $0 subscriptions that would need cancelling and replacing on upgrade.
 - **Monthly, USD, tax-exclusive** (Stripe Tax enabled) at launch. Annual plans and a Standard trial are open questions ([DECISIONS.md #31](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#31-published-prices-and-billing-options)). They don't block the build.
 - **Organization quantity** is written to the subscription item by a daily job (00:15 UTC) with `proration_behavior: none`.
 - Business and Enterprise prices will be created per customer when those tiers ship.

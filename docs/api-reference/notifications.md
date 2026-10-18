@@ -17,7 +17,7 @@ How alerts and other updates reach a User: on their devices through Apple Push N
 ---
 
 {: .note }
-**Implementation status.** Specified 2026-10-17 ([Changelog](../../changelog/)). Until the reference implementation builds it, every operation on this page returns `501 not_implemented`. The proposed defaults it rests on are listed for confirmation in [DECISIONS.md #40](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#40-push-notification-defaults). None of them changes an endpoint's shape.
+**Implementation status.** Specified 2026-10-17 ([Changelog](../../changelog/)). Until the reference implementation builds it, every operation on this page returns `501 not_implemented`. Its defaults are settled: platform alerts push only through Applications that opt in, sending is one User per call (no broadcast yet), each recipient gets at most 60 notifications per Application per hour, the inbox keeps 90 days, the `notifications.push` channel is the only preference, and the push providers are sub-processors.
 
 ## How it fits together
 
@@ -490,7 +490,7 @@ The platform raises a small, fixed set of notifications itself, about the User's
 | `account.organization_invitation` | `normal` | A `pending` membership is created for an existing User ([Organizations → Adding members](../organizations/#post-v1organizationsidmembers)). | `organization_id`, `invited_by` |
 | `account.access_granted` | `normal` | The User gains resolved access to an Application (the same moment `access.granted` fires). Not raised for access granted in the transaction that creates the User, or within 60 seconds of signup, so a new account isn't greeted with one alert per app it starts with. | `application_id` |
 
-`billing.` categories are reserved for subscription alerts, such as a failed payment. They're defined with the subscriber billing API ([DECISIONS.md #39](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#39-subscriber-billing-api)).
+`billing.` categories are reserved for [subscription](../billing/) alerts, such as a failed payment. None are sent yet; Stripe emails the customer directly.
 
 These run alongside the emails the platform already sends for the same events, and don't replace them. A User who has never registered a device still gets the email.
 

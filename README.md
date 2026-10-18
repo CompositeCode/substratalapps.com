@@ -30,7 +30,7 @@ Deliberately **staying** on the docs site despite being borderline: `compliance.
 
 ## Status
 
-**Implemented; not yet deployed.** Every operation in [`docs/openapi.yaml`](docs/openapi.yaml) is implemented in Go (see [Technology stack](#technology-stack)), along with the webhook worker, Stripe billing sync, scheduled jobs, the MCP server, CI/CD, and Terraform for AWS. The integration suite runs against real Postgres and validates every response against `openapi.yaml`. Production doesn't exist yet: the [one-time setup](#one-time-setup-phase-0) hasn't been run, so `deploy.yml` skips with a notice until it is. Day-to-day work happens on the `dev` branch (see [Branches, CI, and deployment](#branches-ci-and-deployment)). See [DECISIONS.md](DECISIONS.md) for questions the build surfaced; none of them blocks the build.
+**Implemented; not yet deployed.** Every operation in [`docs/openapi.yaml`](docs/openapi.yaml) is implemented in Go (see [Technology stack](#technology-stack)), along with the webhook worker, Stripe billing sync, scheduled jobs, the MCP server, CI/CD, and Terraform for AWS. The integration suite runs against real Postgres and validates every response against `openapi.yaml`. Production doesn't exist yet: the [one-time setup](#one-time-setup-phase-0) hasn't been run, so `deploy.yml` skips with a notice until it is. Day-to-day work happens on the `dev` branch (see [Branches, CI, and deployment](#branches-ci-and-deployment)). Every decision the build surfaced is resolved and written into the spec; [DECISIONS.md](DECISIONS.md) holds the one open business question (billing options), which blocks nothing.
 
 ## Technology stack
 
@@ -167,6 +167,8 @@ The old code is still running when migrations apply, and it may run again after 
 - **Contract** (a *later* release, after nothing uses the old shape): drop columns, tighten constraints, rename by copy-then-drop.
 
 Migrations are forward-only. There are no down migrations, because a rollback is a code rollback against an expanded schema, not a schema rewind. CI applies every migration from zero on every run, so a migration that can't apply cleanly never reaches `main`.
+
+The one exception so far is `0002_subscriptions.sql`, which expands and contracts in the same file (it drops the Tenant billing columns it replaces). That's safe only because no release has ever run against `0001` in production; once one has, contract steps go in a later release.
 
 ### Rollback
 

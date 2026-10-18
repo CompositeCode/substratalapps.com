@@ -139,11 +139,7 @@ func (s *Server) AuditList(w http.ResponseWriter, r *http.Request, params gen.Au
 			return err
 		}
 		if params.TenantId != nil {
-			if t, err := c.loadTenant(*params.TenantId); err == nil {
-				if days := plans[t.Plan].AuditHotDays; days != nil {
-					c.headers.Set("Audit-Hot-Window-Start", c.now.AddDate(0, 0, -*days).Format(time.RFC3339))
-				}
-			}
+			c.headers.Set("Audit-Hot-Window-Start", c.now.AddDate(0, 0, -AuditHotWindowDays).Format(time.RFC3339))
 		}
 		return c.OK(httpx.Paginate(c.s.Cursors, rows, lim, filters, func(x auditEvent) (string, string) {
 			return httpx.TimeKey(x.Timestamp), x.ID

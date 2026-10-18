@@ -103,15 +103,12 @@ The "kill switch": a support agent or admin disabling one user's access to one a
 3. The user accepts the invitation ([`POST /v1/auth/invitations/accept`](../api-reference/auth/#post-v1authinvitationsaccept)), setting a password, and is signed in.
 4. The first time the app reads the user's AppProfile or AppSettings, it gets defaults. The first write creates the row. There's no "provision this user in this app" step to orchestrate.
 
-{: .decision }
-**API changes awaiting review** ([DECISIONS.md #39](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#39-subscriber-billing-api)). Step 4 of the next workflow and the "Developer upgrades their own plan" workflow describe the previous developer billing. #39 proposes replacing them with "A User subscribes to Standard" and "An Organization subscribes to Standard".
-
 ## Team purchase (org-wide grant)
 
 1. A customer creates an [Organization](../api-reference/organizations/#post-v1organizations) (self-service) and invites members by email. Each invitation is a `pending` membership until the person accepts it.
 2. The customer pays the developer for a team plan. The developer's backend calls `POST /v1/organizations/{id}/entitlements` with its app key: `order_id`, and optionally `member_scope`.
 3. Every included member gets access. `access.granted` fires once per member. New members are included automatically under `all_members`/`denylist` once they accept their invitation (a `pending` membership grants nothing).
-4. Seat changes on the customer's side need no API call unless the developer limits seats with `member_scope: allowlist`. Billing per member is the developer's business; each included member counts as one *Substratal* seat for the developer's own plan (see [Pricing](../pricing/#what-a-user-means-for-an-organization)).
+4. Membership changes on the customer's side need no API call unless the developer limits seats with `member_scope: allowlist`. Billing per member is the developer's business.
 
 ## An org admin narrows who an org-wide grant reaches
 
@@ -119,18 +116,28 @@ The "kill switch": a support agent or admin disabling one user's access to one a
 2. The hub writes an [Audit Event](../domain-model/orders-and-audit/#audit-event) (`entitlement.member_scope_changed`). It's not `entitlement.disabled`/`entitlement.granted`, since the grant's own `status` didn't change.
 3. Every affected member's resolved access is recomputed. Nothing is backfilled, because there's no per-member row to update. `access.revoked` (reason `org_grant_changed`) fires for each member who lost their only path, and `access.granted` for each who gained one. A member excluded this way keeps any separate, personally-sourced Entitlement to the same app. See [Access Control → Organization vs. User precedence](../access-control/#organization-vs-user-precedence).
 
-## Developer upgrades their own plan (Starter → Team)
+## A User subscribes to Standard
 
-1. The Application owner calls [`POST /v1/tenants/{id}/billing/checkout-sessions`](../api-reference/billing/#post-v1tenantsidbillingcheckout-sessions) with `plan: team` and is sent to Stripe Checkout.
-2. They pay. Stripe sends `checkout.session.completed` and `customer.subscription.created` to the hub's Stripe webhook.
-3. The hub sets `plan: team` and `subscription_status: active` on the Tenant and writes `tenant.plan_changed`. Limits rise immediately.
-4. The owner's client polls `GET /v1/tenants/{id}/subscription` until `plan` is `team`.
+1. On Free, the User already has every free Application. A standard one shows up in the catalog (`access_tier: standard`) but doesn't resolve to access.
+2. Their client calls [`POST /v1/users/me/billing/checkout-sessions`](../api-reference/billing/#checkout) with `plan: standard` and the User's token, and sends them to the returned Stripe Checkout URL. The hub creates their [Subscription](../api-reference/billing/#the-subscription-object) as `incomplete` and writes `subscription.created`.
+3. They pay. Stripe sends `checkout.session.completed` and `customer.subscription.created` to the hub's Stripe webhook. The hub re-reads the subscription from Stripe, sets it `active`, and writes `subscription.status_changed`.
+4. In the same transaction, the platform grants the User a `source: subscription` Entitlement to each standard Application. Each writes `entitlement.granted` (actor `system`), and `access.granted` fires for every Application the User didn't already have.
+5. The client polls [`GET /v1/users/me/subscription`](../api-reference/billing/#get-v1usersidsubscription) until `plan` is `standard`.
+6. Later, they cancel in the Stripe Customer Portal. At period end Stripe reports `canceled`; the platform ends those Entitlements, `access.revoked` fires for each Application they no longer reach some other way, and the User is back on Free with their data intact.
+
+## An Organization subscribes to Standard for its members
+
+1. An org admin calls [`POST /v1/organizations/{id}/billing/checkout-sessions`](../api-reference/billing/#checkout) with `plan: standard` and a `member_scope`: `all_members`, or an `allowlist` / `denylist` with `member_overrides`. Checkout's quantity is the current covered-member count.
+2. When Stripe reports the subscription active, the platform grants the Organization one org-wide `source: subscription` Entitlement per standard Application, with the subscription's member selection. `access.granted` fires once per covered member per Application.
+3. Members who join later (once they accept) are covered automatically under `all_members` / `denylist`. Members who leave lose access through it at once.
+4. To change who's covered, the org admin calls [`PATCH /v1/organizations/{id}/subscription`](../api-reference/billing/#patch-v1organizationsidsubscription). The platform updates the org-wide rows, `access.*` fires for whoever gained or lost access, and `subscription.members_changed` is written.
+5. Every day at 00:15 UTC the covered-member count is written to Stripe with no proration, so each invoice bills $6 per member covered the day before.
 
 ## A customer needs dedicated or regional infrastructure
 
 Support-run today. See [Tenancy → How a tier change happens today](../domain-model/tenancy/#how-a-tier-change-happens-today) for why this isn't self-service yet.
 
-1. A customer (an Application owner on the Enterprise plan) asks support for dedicated infrastructure, or a specific region for data residency.
+1. A customer (an Application owner, on business or enterprise terms arranged with Substratal) asks support for dedicated infrastructure, or a specific region for data residency.
 2. Support calls `POST /v1/tenants/{id}/tier-change-requests`. See [API Reference → Tenancy](../api-reference/tenancy/).
 3. Support agrees a window with the customer and `PATCH`es the request to `scheduled`. At the window, it `PATCH`es to `in_progress`, which flips the [Tenant](../domain-model/tenancy/)'s `status` to `migrating` and makes writes return `503` with `Retry-After`. Then it runs the snapshot/restore cutover described in [Deployment Architecture → Tenancy tiers](https://github.com/CompositeCode/substratalapps.com/blob/main/DEPLOYMENT.md). Every [Entitlement](../domain-model/entitlements/), [AppProfile](../domain-model/profiles/#appprofile), [AppSettings](../domain-model/settings/#appsettings), and Audit Event row carrying that `tenant_id` moves to the new infrastructure.
 4. `PATCH` to `completed` updates `tier`/`region` and returns `status` to `active`, and an [Audit Event](../domain-model/orders-and-audit/#audit-event) (`tenant.tier_changed`) records it.

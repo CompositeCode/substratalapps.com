@@ -73,7 +73,7 @@ GET /v1/audit-events?target_user_id=usr_01JAG3Z9X8QS3F6K2M4N5P6R7S&since=2026-09
 | Any User, with `target_user_id=me` | Their own trail. Seeing the history of changes made *to* your own account is a self-service right, not an admin privilege. Calling without that filter and without `audit.view` returns `403`. |
 | A Tenant owner, with `tenant_id=<their tenant>` | Events for their own Applications. That's the developer's view of what happened in their apps, including what support did. |
 
-**Hot window only.** The API returns only events still in hot storage: 30 days on Starter, 1 year on Team, and negotiated on Enterprise. Older events are archived in a shape-only form and are retrievable through support, not through this endpoint. A `since` earlier than the window is allowed and simply returns nothing older. The response header `Audit-Hot-Window-Start` gives the earliest timestamp available for the caller's scope. See [Non-Functional Requirements → Audit log lifecycle](../../non-functional-requirements/#audit-log-lifecycle).
+**Hot window only.** The API returns only events still in hot storage, which is one year for every Tenant. Older events are archived in a shape-only form and are retrievable through support, not through this endpoint. A `since` earlier than the window is allowed and simply returns nothing older. The response header `Audit-Hot-Window-Start` gives the earliest timestamp available for the caller's scope. See [Non-Functional Requirements → Audit log lifecycle](../../non-functional-requirements/#audit-log-lifecycle).
 
 ## `GET /v1/audit-events/{id}`
 

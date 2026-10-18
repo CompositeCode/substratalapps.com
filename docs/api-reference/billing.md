@@ -8,7 +8,7 @@ nav_order: 10.5
 # Billing
 {: .no_toc }
 
-The Application owner's **platform subscription**: what Substratal charges the developer (Starter / Team / Enterprise), processed by Stripe. See [Pricing](../../pricing/) for the plans, limits, and rules. This page has nothing to do with how a developer bills *their own* end users, which never touches this API (see [Orders & Audit → Billing system of record](../../domain-model/orders-and-audit/#billing-system-of-record)).
+The Free/Standard subscription: a User subscribing to Standard for themselves, or an Organization subscribing for the members it covers, processed by Stripe. See [Pricing](../../pricing/) for the tiers and rules. A third-party developer's billing of their own users never touches this API (see [Orders & Audit → Billing system of record](../../domain-model/orders-and-audit/#billing-system-of-record)).
 {: .fs-6 .fw-300 }
 
 1. TOC
@@ -16,101 +16,117 @@ The Application owner's **platform subscription**: what Substratal charges the d
 
 ---
 
-{: .decision }
-**API changes awaiting review** ([DECISIONS.md #39](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#39-subscriber-billing-api)). This page still describes the previous model, where Substratal billed the Application owner's Tenant for Starter/Team/Enterprise. [Pricing](../../pricing/) now has two tiers, Free and Standard ($6 per user per month), billed to individual Users and Organizations. #39 proposes replacing these Tenant billing endpoints with User and Organization subscription endpoints.
-
 ## How it fits together
 
-- Every [Tenant](../tenancy/) has one Stripe Customer, created when the Tenant is created.
-- A **Starter** Tenant has no Stripe Subscription. Starter is simply the absence of a paid plan.
-- **Upgrading to Team** sends the owner through Stripe Checkout, using a URL from this API.
+- **Free needs nothing.** Every User is on Free from signup and has a [platform-managed Entitlement](../../domain-model/entitlements/#platform-managed-entitlements) to each free Application.
+- **Subscribing** sends the person through Stripe Checkout, using a URL from this API. A User subscribes for themselves; an org admin subscribes their Organization.
 - **Payment methods, invoices, and cancellation** are handled in the Stripe Customer Portal, again through a URL from this API.
-- **Enterprise** is sales-led. Staff create the subscription in Stripe, usually from a Quote, and it syncs in.
+- **A Stripe Customer** is created for a User or Organization the first time they check out, not at signup.
+- **Access follows the subscription.** While a subscription covers someone, the platform keeps a `source: subscription` Entitlement for them to each standard Application. When it stops covering them, those Entitlements end. Applications hear about every change through the usual [`access.granted` / `access.revoked`](../webhooks/#event-types) webhooks.
+- **Business and Enterprise** plans aren't offered yet. Checkout for either returns `422 plan_requires_sales`.
 
-Stripe tells this API about every change through its webhook. This API never takes card data, and the Tenant's `plan` and `subscription_status` only change in response to Stripe events. The handler is documented in [root `DEPLOYMENT.md` → Stripe Billing](https://github.com/CompositeCode/substratalapps.com/blob/main/DEPLOYMENT.md#stripe-billing).
+Stripe tells this API about every change through its webhook. This API never takes card data, and a subscription's `status` only changes in response to Stripe events. The handler is documented in [root `DEPLOYMENT.md` → Stripe Billing](https://github.com/CompositeCode/substratalapps.com/blob/main/DEPLOYMENT.md#stripe-billing).
 
 ## Endpoints
 
 | Method | Path | Requires | Purpose |
 |---|---|---|---|
-| `GET` | `/v1/tenants/{id}/subscription` | owner or `billing.manage` | Current plan, status, period, and seat count. |
-| `GET` | `/v1/tenants/{id}/usage` | owner, `billing.manage`, or `tenants.manage` | Usage against every plan limit. |
-| `POST` | `/v1/tenants/{id}/billing/checkout-sessions` | owner | Start a Stripe Checkout to subscribe to Team. |
-| `POST` | `/v1/tenants/{id}/billing/portal-sessions` | owner or `billing.manage` | Open the Stripe Customer Portal. |
+| `GET` | `/v1/users/{id}/subscription` | self, or `billing.manage` | A User's plan, what covers it, and their own subscription. |
+| `POST` | `/v1/users/me/billing/checkout-sessions` | self, User token | Start a Stripe Checkout to subscribe yourself to Standard. |
+| `POST` | `/v1/users/me/billing/portal-sessions` | self, User token | Open the Stripe Customer Portal for your own subscription. |
+| `GET` | `/v1/organizations/{id}/subscription` | `org_admin`, or `billing.manage` | The Organization's plan and subscription. |
+| `PATCH` | `/v1/organizations/{id}/subscription` | `org_admin` | Choose which members the subscription covers. |
+| `POST` | `/v1/organizations/{id}/billing/checkout-sessions` | `org_admin`, User token | Start a Stripe Checkout to subscribe the Organization to Standard. |
+| `POST` | `/v1/organizations/{id}/billing/portal-sessions` | `org_admin` or `billing.manage`, User token | Open the Stripe Customer Portal for the Organization's subscription. |
 
-"Owner" means the same thing as on [Tenancy](../tenancy/#who-counts-as-a-tenants-owner). These endpoints act for a person, so they need a User token, not an API Key (`400 user_token_required`).
+Checkout and Portal act for a person, so they need a User token, not an API Key (`400 user_token_required`). An active member of the Organization who isn't an `org_admin` gets `403`; anyone else gets `404 organization_not_found`.
 
-## `GET /v1/tenants/{id}/subscription`
+## The Subscription object
+
+One row per subscriber, kept across lapses and resubscribes.
 
 ```json
-// Response — 200, a Team Tenant
 {
-  "tenant_id": "tnt_01JAGC3D4E5F6G7H8J9K011M2N",
-  "plan": "team",
-  "subscription_status": "active",
-  "restricted": false,
+  "id": "sbs_01JAGC3D4E5F6G7H8J9K011M2N",
+  "subscriber_type": "organization",
+  "user_id": null,
+  "organization_id": "org_01JAGB2C3D4E5F6G7H8J9K0L1M",
+  "plan": "standard",
+  "status": "active",
   "current_period_start": "2026-10-01T00:00:00Z",
   "current_period_end": "2026-11-01T00:00:00Z",
   "cancel_at_period_end": false,
-  "seats": { "current": 31, "included": 25, "billable": 6, "last_synced_at": "2026-10-05T00:15:03Z" },
-  "add_ons": [],
-  "currency": "usd"
-}
-```
-```json
-// Response — 200, a Starter Tenant
-{
-  "tenant_id": "tnt_01JAG2STARTER0000000000000",
-  "plan": "starter",
-  "subscription_status": "none",
-  "restricted": false,
-  "current_period_start": null,
-  "current_period_end": null,
-  "cancel_at_period_end": false,
-  "seats": { "current": 212, "included": 1000, "billable": 0, "last_synced_at": null },
-  "add_ons": [],
-  "currency": "usd"
+  "member_scope": "all_members",
+  "member_overrides": null,
+  "quantity": { "current": 31, "last_synced": 30, "last_synced_at": "2026-10-17T00:15:03Z" },
+  "unit_amount": 600,
+  "currency": "usd",
+  "test_mode": false,
+  "created_at": "2026-09-30T18:02:11Z",
+  "updated_at": "2026-10-17T00:15:03Z"
 }
 ```
 
 | Field | Notes |
 |---|---|
-| `subscription_status` | `none` (Starter), `active`, `trialing`, `past_due`, `canceled`, `unpaid`, `incomplete`, `incomplete_expired`, or `paused`. Mirrors Stripe. New values may be added; see [Non-Functional Requirements → Versioning](../../non-functional-requirements/#versioning). |
-| `restricted` | `true` once a subscription has lapsed while usage exceeds what the Tenant can drop to. See [Pricing → Subscription lapse](../../pricing/#when-a-subscription-lapses). |
-| `seats.current` | Computed live. See [Pricing → What "seat" means](../../pricing/#what-a-user-means-for-an-organization). |
-| `seats.billable` | Seats over the included count. It's what the next Team or Enterprise invoice will charge for, based on the last daily sync. |
-| `add_ons` | Enterprise only: `[{"code": "isolated_tenancy", "amount": 75000}]` or `[{"code": "dedicated_region_tenancy", "amount": 150000}]`. Amounts are in cents. |
+| `id` | `sbs_` prefix. |
+| `subscriber_type` | `user` (an individual subscription) or `organization`. Exactly one of `user_id` and `organization_id` is set. |
+| `plan` | Always `standard` today. |
+| `status` | `active`, `trialing`, `past_due`, `canceled`, `unpaid`, `incomplete`, `incomplete_expired`, or `paused`. Mirrors Stripe. `active`, `trialing`, and `past_due` cover their users with Standard; the rest don't. A Checkout that hasn't completed yet is `incomplete`. New values may be added; see [Non-Functional Requirements → Versioning](../../non-functional-requirements/#versioning). |
+| `member_scope`, `member_overrides` | Organization subscriptions only: `all_members`, `allowlist`, or `denylist`, with the same meaning as on [org-wide Entitlements](../../domain-model/entitlements/#org-wide-entitlements-scoping-members-in-or-out). `null` on an individual subscription. |
+| `quantity.current` | Users billed, computed live. Always `1` for an individual subscription. For an Organization, its covered members: active Users with an active membership, included by `member_scope`, in the subscription's own mode. See [Pricing → What a "user" means for an Organization](../../pricing/#what-a-user-means-for-an-organization). |
+| `quantity.last_synced` | What was last written to Stripe by the daily sync, which is what the next invoice charges for. |
+| `unit_amount` | Cents per user per month. |
 
 Invoices and receipts aren't mirrored here. Stripe is the system of record for those, and the Portal shows them.
 
-## `GET /v1/tenants/{id}/usage`
+## `GET /v1/users/{id}/subscription`
+
+```json
+// Response — 200, a User covered by their Organization
+{
+  "user_id": "usr_01JAGC3D4E5F6G7H8J9K0L1M2N",
+  "plan": "standard",
+  "plan_sources": [{ "type": "organization", "id": "org_01JAGB2C3D4E5F6G7H8J9K0L1M" }],
+  "subscription": null
+}
+```
+
+`plan` and `plan_sources` are the same read-only fields as on the [User object](../users/#the-user-object). `subscription` is the User's own individual subscription, if they've ever started one, and `null` otherwise. A User covered both individually and by an Organization lists both sources, so a client can suggest cancelling the individual one. Nothing is refunded automatically.
+
+## `GET /v1/organizations/{id}/subscription`
 
 ```json
 // Response — 200
 {
-  "tenant_id": "tnt_01JAGC3D4E5F6G7H8J9K011M2N",
-  "plan": "team",
-  "limits": {
-    "applications":          { "limit": 5,    "current": 2 },
-    "seats":                 { "limit": null, "current": 31, "included": 25 },
-    "app_roles":             { "limit": null, "current": 4 },
-    "webhooks":              { "limit": 10,   "current": 3 },
-    "audit_hot_window_days": { "limit": 365 }
-  },
-  "fits_plans": ["team", "enterprise"]
+  "organization_id": "org_01JAGB2C3D4E5F6G7H8J9K0L1M",
+  "plan": "standard",
+  "subscription": { "id": "sbs_01JAGC3D4E5F6G7H8J9K011M2N", "subscriber_type": "organization", "status": "active", "...": "..." }
 }
 ```
 
-`limit: null` means unlimited. The keys under `limits` are the same `resource` names a [`409 plan_limit_reached`](../conventions/#plan-limit-errors) error reports, so the two always agree. `app_roles` is per Application, so its `current` is the highest count on any one of the Tenant's Applications. `audit_hot_window_days` is a retention window, not a count, so it has no `current`. `fits_plans` lists which plans the Tenant's *current* usage would fit, which is what a "can I downgrade?" screen needs.
+`plan` is `standard` while the subscription covers, and `free` otherwise. When a subscription exists, the response carries its `ETag`.
 
-## `POST /v1/tenants/{id}/billing/checkout-sessions`
+## `PATCH /v1/organizations/{id}/subscription`
 
 ```json
 // Request
+{ "member_scope": "allowlist", "member_overrides": ["usr_01JAGC3D4E5F6G7H8J9K0L1M2N", "usr_01JAGD4E5F6G7H8J9K0L1M2N3P"] }
+```
+
+Changes which members the subscription covers. Only `member_scope` and `member_overrides` can be sent; anything else is `422 read_only_field`. Every id in `member_overrides` must be a current active member (`422 member_override_not_a_member`). Send `If-Match` to avoid overwriting another admin's change. Members gained or lost take effect immediately, firing `access.granted` / `access.revoked`, and the change is counted from the next daily sync. Returns `404 subscription_not_found` if the Organization has never started a subscription.
+
+## Checkout
+
+`POST /v1/users/me/billing/checkout-sessions` (yourself) and `POST /v1/organizations/{id}/billing/checkout-sessions` (an Organization).
+
+```json
+// Request (the Organization form also accepts member_scope and member_overrides)
 {
-  "plan": "team",
+  "plan": "standard",
   "success_url": "https://dashboard.substratalapps.com/billing?checkout=success",
-  "cancel_url": "https://dashboard.substratalapps.com/billing?checkout=cancelled"
+  "cancel_url": "https://dashboard.substratalapps.com/billing?checkout=cancelled",
+  "member_scope": "all_members"
 }
 ```
 ```json
@@ -121,13 +137,17 @@ Invoices and receipts aren't mirrored here. Stripe is the system of record for t
 }
 ```
 
-- `plan` must be `team`. `enterprise` returns `422 plan_requires_sales`. Contact sales.
-- Allowed only when the Tenant has no subscription, or a lapsed one (`none`, `canceled`, `incomplete_expired`, `unpaid`). An existing active subscription returns `409 subscription_exists`, and the owner should use the portal instead.
-- Requires `Idempotency-Key`. A retry returns the same Checkout URL while it's still valid.
-- `success_url`/`cancel_url` must be `https`. Stripe adds `session_id`.
-- Returning to `success_url` does **not** by itself mean the upgrade happened. The plan changes when Stripe's `checkout.session.completed` / `customer.subscription.created` webhook arrives, usually within seconds. Clients should poll `GET …/subscription` until `plan` is `team`.
+- `plan` must be `standard`. `business` or `enterprise` returns `422 plan_requires_sales`.
+- Allowed when there's no subscription yet, or the existing one is `incomplete`, `incomplete_expired`, `canceled`, or `unpaid`. Otherwise `409 subscription_exists`, and the subscriber should use the portal instead.
+- The first Checkout creates the Subscription with `status: incomplete`, and writes `subscription.created`.
+- For an Organization, `member_scope` defaults to `all_members`, and Checkout's quantity is the current covered-member count, at least 1. The individual form rejects `member_scope` and `member_overrides`.
+- Requires `Idempotency-Key`. `success_url` and `cancel_url` must be `https`. Stripe adds `session_id`.
+- Returning to `success_url` does **not** by itself mean the subscription started. Coverage begins when Stripe's `checkout.session.completed` / `customer.subscription.created` webhook arrives, usually within seconds. Clients should poll the `GET …/subscription` endpoint until `plan` is `standard`.
+- **Test mode.** A test-mode User or Organization gets a test-mode subscription, which needs Stripe test mode. A deployment configured with a live Stripe key returns `409 test_mode_billing_unavailable`.
 
-## `POST /v1/tenants/{id}/billing/portal-sessions`
+## Portal
+
+`POST /v1/users/me/billing/portal-sessions` and `POST /v1/organizations/{id}/billing/portal-sessions`.
 
 ```json
 // Request
@@ -138,21 +158,23 @@ Invoices and receipts aren't mirrored here. Stripe is the system of record for t
 { "url": "https://billing.stripe.com/p/session/live_YWNjdF8x...", "expires_at": "2026-10-05T12:05:00Z" }
 ```
 
-The Portal is configured to allow updating the payment method, viewing invoices, and cancelling at period end. It does **not** allow switching plans, because a downgrade has to be checked against plan limits (see [Pricing → Subscription lapse](../../pricing/#when-a-subscription-lapses)). A Starter Tenant with no payment history gets `409 no_billing_account`, since there's nothing to manage yet.
+The Portal is configured to allow updating the payment method, viewing invoices, and cancelling at period end. Covered members are changed with `PATCH …/subscription`, not in the Portal. A subscriber who has never completed a Checkout gets `409 no_billing_account`.
 
-## Webhook events
+## Events
 
-Plan and billing changes write Audit Events (`tenant.plan_changed`, `tenant.subscription_status_changed`) visible to the owner. There are no outbound webhook events for billing. Stripe already emails the customer, and Applications have no reason to react to their developer's subscription state.
+Subscription changes write Audit Events with target type `subscription`: `subscription.created`, `subscription.status_changed`, and `subscription.members_changed`. There are no outbound webhook events for billing itself. What Applications need to know, who gained or lost access, arrives as [`access.granted` / `access.revoked`](../webhooks/#event-types), along with the `entitlement.*` events for the platform-managed rows.
 
 ## Errors specific to this resource
 
 | Code | Status | When |
 |---|---|---|
-| `tenant_not_found` | 404 | `{id}` doesn't resolve or isn't visible. |
-| `plan_requires_sales` | 422 | Checkout requested for `enterprise`. |
-| `subscription_exists` | 409 | Checkout requested while a non-lapsed subscription exists. |
-| `no_billing_account` | 409 | Portal requested for a Tenant that has never paid. |
-| `billing_unavailable` | 503 | Stripe is unreachable. `Retry-After` is set. |
-| `user_token_required` | 400 | Any of these endpoints called with an API Key. |
-| `idempotency_key_required` | 400 | `checkout-sessions` without an `Idempotency-Key`. |
-| `forbidden` | 403 | Checkout by anyone but the owner, or another endpoint without the permission in the table above. |
+| `organization_not_found` | 404 | `{id}` doesn't resolve, or the caller isn't a member and lacks `billing.manage`. |
+| `subscription_not_found` | 404 | `PATCH` on an Organization that has never started a subscription. |
+| `plan_requires_sales` | 422 | Checkout requested for `business` or `enterprise`. |
+| `subscription_exists` | 409 | Checkout requested while a subscription is in force. |
+| `no_billing_account` | 409 | Portal requested by a subscriber who has never completed a Checkout. |
+| `test_mode_billing_unavailable` | 409 | Test-mode Checkout on a deployment that bills in Stripe live mode. |
+| `billing_unavailable` | 503 | Stripe is unreachable, or billing isn't configured. `Retry-After` is set. |
+| `user_token_required` | 400 | Checkout or Portal called with an API Key, or `me` used without a User token. |
+| `idempotency_key_required` | 400 | Checkout without an `Idempotency-Key`. |
+| `forbidden` | 403 | Another User's subscription without `billing.manage`, or an Organization endpoint by a member who isn't an `org_admin`. |

@@ -213,12 +213,12 @@ A single resource is returned as a bare JSON object — no envelope:
 | `forbidden` | 403 | Authenticated, but the caller lacks the required permission. `details.required_permission` names it. |
 | `tenant_suspended` | 403 | The Tenant that owns the data being written (or the Application an app token is requested for) is `suspended` by the platform. See [Tenancy](../../domain-model/tenancy/#fields). |
 | `destructive_operation_restricted` | 403 | A `restrict_destructive` API Key attempted a destructive operation — see [API Keys](../api-keys/#agent-keys--restrict_destructive). |
-| `subscription_required` | 402 | The owning Tenant is `restricted` after a lapsed subscription, and this write would add usage — see [Pricing → Subscription lapse](../../pricing/#when-a-subscription-lapses). |
 | `not_found` | 404 | Generic not-found for a path that matches no route. Resource pages define their own `<resource>_not_found` codes. |
 | `version_conflict` | 409 | `If-Match` didn't match the current `ETag`. |
 | `idempotency_key_reused` | 409 | Same `Idempotency-Key`, different request body. |
 | `idempotency_key_in_flight` | 409 | The first request with this `Idempotency-Key` is still being processed. Retry after a second. |
-| `plan_limit_reached` | 409 | The owning Tenant is at a plan limit — see [Plan limit errors](#plan-limit-errors) below and [Pricing → Enforcement](../../pricing/#the-tiers). |
+| `plan_limit_reached` | 409 | Reserved for the limits of business and enterprise plans, which aren't offered yet. Nothing returns it today; see [Plan limit errors](#plan-limit-errors) below. |
+| `entitlement_platform_managed` | 409 | A change to a `free` or `subscription` Entitlement other than disabling or re-enabling it. See [Entitlements → Platform-managed](../../domain-model/entitlements/#platform-managed-entitlements). |
 | `payload_too_large` | 413 | Body over 1 MB. |
 | `validation_failed` | 422 | One or more fields fail validation. Uses `details.fields` — see below. |
 | `read_only_field` | 422 | A `PATCH` body included a read-only field. |
@@ -231,17 +231,16 @@ HTTP status follows a fixed mapping from error *class*, not a judgment call per 
 | Status | Class | Example |
 |---|---|---|
 | `400` | Malformed request — the body isn't valid JSON, or is missing a required field with no sensible default. | Missing `application_id` on a grant. |
-| `402` | Payment required — the owning Tenant's subscription has lapsed, and this write would add usage. | `subscription_required`. |
 | `401` | Missing or invalid auth — no Bearer token, an expired one, or a revoked API Key's secret. | A revoked key's secret used after `revoked_at`. |
 | `403` | Authenticated, but not permitted — a real permission or ownership check failed. | `moderation_field_forbidden`, `destructive_operation_restricted`. |
 | `404` | Not found — including a never-existed resource, one the caller isn't allowed to see, and a soft-deleted User; see [Filtering](#filtering) for which records 404 after deletion and which stay fetchable. | `entitlement_not_found`. |
-| `409` | Conflict — the request is individually valid, but the current state of the resource makes it impossible to apply as-is. | `entitlement_already_exists`, `version_conflict`, `plan_limit_reached`, an idempotency key reused with a different body. |
+| `409` | Conflict — the request is individually valid, but the current state of the resource makes it impossible to apply as-is. | `entitlement_already_exists`, `version_conflict`, `subscription_exists`, `entitlement_platform_managed`, an idempotency key reused with a different body. |
 | `422` | Semantically invalid — the request is well-formed but violates a declared rule beyond basic shape. | A `settings_schema` violation, `validation_failed`. |
 | `413` | Body too large. | `payload_too_large`. |
 | `429` | Rate limited. | See [Rate limiting](../../non-functional-requirements/#rate-limiting). |
 | `5xx` | Server-side failure; safe to retry idempotent requests with backoff. | `internal_error`, `service_unavailable`. |
 
-The dividing line between `409` and `422` worth internalizing: `409` is about *state* ("this would conflict with something that already exists or already happened"), `422` is about the *request's own content* ("this value, on its own, doesn't satisfy a rule"). `plan_limit_reached` is `409`, not `422`, for exactly this reason — the request is well-formed, it just can't be satisfied against the owning Tenant's current count.
+The dividing line between `409` and `422` worth internalizing: `409` is about *state* ("this would conflict with something that already exists or already happened"), `422` is about the *request's own content* ("this value, on its own, doesn't satisfy a rule"). `subscription_exists` is `409`, not `422`, for exactly this reason — the request is well-formed, it just can't be satisfied while a subscription is already in force.
 
 **Multiple field errors** (a `422` from a request that fails validation on more than one field at once) use a structured `details.fields` array instead of forcing the client to parse `message`:
 
@@ -266,28 +265,17 @@ Each entry's `code` is one of a small fixed set: `required`, `invalid_format`, `
 
 ### Plan limit errors
 
-{: .decision }
-**API changes awaiting review** ([DECISIONS.md #39](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#39-subscriber-billing-api)). With developer plans retired, #39 proposes removing the Applications, AppRoles, webhooks, and seat caps that produce `plan_limit_reached`, and reserving the code for business and enterprise limits.
-
-`409 plan_limit_reached` always carries the same `details`, so a client can render one "upgrade to continue" screen for every limit:
+`409 plan_limit_reached` is reserved. Nothing in the API returns it today: the Applications, AppRoles, webhook, and seat caps that used to produce it belonged to developer plans, which [Pricing](../../pricing/) retired. Business and enterprise plans may bring limits of their own, and will report them with this code and these `details`, so a client can render one "upgrade to continue" screen:
 
 ```json
 {
   "error": {
     "code": "plan_limit_reached",
-    "message": "This Tenant's Starter plan allows 1 Application.",
-    "details": {
-      "resource": "applications",
-      "limit": 1,
-      "current": 1,
-      "plan": "starter",
-      "tenant_id": "tnt_01JAG2STARTER0000000000000"
-    }
+    "message": "This plan's limit has been reached.",
+    "details": { "resource": "…", "limit": 0, "current": 0, "plan": "…" }
   }
 }
 ```
-
-`resource` is one of `applications`, `app_roles`, `webhooks`, or `seats`. These are the same keys [`GET /v1/tenants/{id}/usage`](../billing/#get-v1tenantsidusage) reports under `limits`, so the error and the usage screen always agree on names. See [Pricing → Enforcement](../../pricing/#the-tiers) for what each one counts.
 
 ## Idempotency
 
@@ -299,7 +287,7 @@ Idempotency-Key: <client-generated string, 1–255 characters; a UUID v4 is reco
 
 A repeated key with an identical body returns the original response (same status code, same body) instead of creating a duplicate. A repeated key with a *different* body returns `409`. Keys are remembered for 24 hours, scoped per API key/caller — after that window a repeated key is treated as new. A request that arrives while the first one with the same key is still in flight gets `409 idempotency_key_in_flight`; retry after a second. Responses replayed from the store carry `Idempotent-Replayed: true`.
 
-Endpoints that **require** `Idempotency-Key`: `POST /v1/users/{id}/entitlements`, `POST /v1/organizations/{id}/entitlements`, and `POST /v1/tenants/{id}/billing/checkout-sessions`. Every other `POST` **accepts** it optionally and honors it the same way. See [Non-Functional Requirements → Idempotency & retries](../../non-functional-requirements/#idempotency--retries) for why this is mandatory rather than optional on those endpoints — billing webhooks retry, and a duplicate Entitlement is a real-money bug, not a cosmetic one.
+Endpoints that **require** `Idempotency-Key`: `POST /v1/users/{id}/entitlements`, `POST /v1/organizations/{id}/entitlements`, and both billing Checkout endpoints (`POST /v1/users/me/billing/checkout-sessions` and `POST /v1/organizations/{id}/billing/checkout-sessions`). Every other `POST` **accepts** it optionally and honors it the same way. See [Non-Functional Requirements → Idempotency & retries](../../non-functional-requirements/#idempotency--retries) for why this is mandatory rather than optional on those endpoints — billing webhooks retry, and a duplicate Entitlement is a real-money bug, not a cosmetic one.
 
 **Implementation note:** store `(caller_id, idempotency_key) → (request_body_hash, response_status, response_body, expires_at)`, written in the same transaction as the mutation it guards (see [Non-Functional Requirements → Transaction boundaries](../../non-functional-requirements/#transaction-boundaries)) so a crash between "wrote the Entitlement" and "recorded the idempotency key" can't produce a duplicate on retry. Compare the stored hash, not the raw body, to decide same-vs-different.
 
