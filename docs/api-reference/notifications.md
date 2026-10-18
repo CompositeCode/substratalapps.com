@@ -145,7 +145,7 @@ Writable: the same fields as on `POST` for that provider, plus `status` (only `f
 
 ### `DELETE /v1/applications/{id}/push-credentials/{provider}`
 
-`204`. Pending deliveries to that provider are skipped (`credential_removed`) and new sends skip it (`no_credentials`). Devices are kept, because an APNs or FCM token stays valid and works again once a credential is configured. The exception is `web_push`: browser subscriptions are bound to the deleted VAPID key, so every `web_push` device of the Application becomes `inactive` with `inactive_reason: credential_removed`. Writes `push_credential.deleted`. Destructive. See [MCP Server → Tool annotations](../../mcp-server/#tool-annotations--safety).
+`204`. Pending deliveries to that provider are skipped (each delivery's `error` is `credential_removed`), and new sends skip the provider (`skip_reason: no_credentials` when no other provider can reach the User). Devices are kept, because an APNs or FCM token stays valid and works again once a credential is configured. The exception is `web_push`: browser subscriptions are bound to the deleted VAPID key, so every `web_push` device of the Application becomes `inactive` with `inactive_reason: credential_removed`. Writes `push_credential.deleted`. Destructive. See [MCP Server → Tool annotations](../../mcp-server/#tool-annotations--safety).
 
 ## Devices
 
@@ -268,7 +268,7 @@ Sends one push to one device through the real signing and delivery path, waits u
 
 - `title` defaults to `Test notification from Substratal` and `body` to `null`.
 - It's sent whatever the User's push preference says (you asked for it), and to an `inactive` device too, so you can check a device the platform deactivated.
-- It isn't stored in the inbox, doesn't count toward any rate limit except its own (10 per device per hour), and its result updates the device and credential the same way a real delivery would: an invalid token deactivates the device, and a rejected credential marks it `failed`.
+- It isn't stored in the inbox and doesn't count toward the per-recipient limit. It has its own limit of 10 per device per hour, on top of the default per-key bucket. Its result updates the device and credential the same way a real delivery would: an invalid token deactivates the device, and a rejected credential marks it `failed`.
 - `409 push_not_configured` if the Application has no credential for the device's provider.
 
 ## Sending a notification
@@ -488,7 +488,7 @@ The platform raises a small, fixed set of notifications itself, about the User's
 | `security.mfa_disabled` | `high` | TOTP is turned off by the User, or reset by support. | — |
 | `security.session_reuse_detected` | `high` | A reused refresh token revokes a session ([`refresh_token_reused`](../auth/#post-v1authtokenrefresh)). | `session_id` |
 | `account.organization_invitation` | `normal` | A `pending` membership is created for an existing User ([Organizations → Adding members](../organizations/#post-v1organizationsidmembers)). | `organization_id`, `invited_by` |
-| `account.access_granted` | `normal` | The User gains resolved access to an Application (the same moment `access.granted` fires). | `application_id` |
+| `account.access_granted` | `normal` | The User gains resolved access to an Application (the same moment `access.granted` fires). Not raised for access granted in the transaction that creates the User, or within 60 seconds of signup, so a new account isn't greeted with one alert per app it starts with. | `application_id` |
 
 `billing.` categories are reserved for subscription alerts, such as a failed payment. They're defined with the subscriber billing API ([DECISIONS.md #39](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#39-subscriber-billing-api)).
 
@@ -570,7 +570,7 @@ Five events tell an Application's backend about its devices, credentials, and fa
 | `device.registered` | A Device is created, or an `inactive` one is reactivated. | `device` |
 | `device.deactivated` | A Device becomes `inactive`. | `device` (with `inactive_reason`) |
 | `device.deleted` | A Device is deleted, by `DELETE`, by a registration of its token for another User, or 30 days after deactivation. | `device` (last state) |
-| `notification.push_failed` | A notification's `push.status` ends `failed`, or `skipped` for `no_devices`, `no_credentials`, or `credential_failed`. Not for `push_disabled` or `push_not_requested`, which are choices rather than failures. | `notification_id`, `user_id`, `category`, `push` |
+| `notification.push_failed` | One of the Application's own notifications ends with `push.status` `failed`, or `skipped` for `no_devices`, `no_credentials`, or `credential_failed`. Not for `push_disabled` or `push_not_requested`, which are choices rather than failures, and never for a platform alert. | `notification_id`, `user_id`, `category`, `push` |
 | `push_credential.failed` | A credential becomes `failed`. | `provider`, `failure_reason` |
 
 `notification.push_failed` is the hook for falling back to another channel, such as email from your own backend, when a push can't go out.

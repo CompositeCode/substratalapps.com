@@ -205,7 +205,7 @@ A change that doesn't flip someone's resolved access fires nothing for them. For
 | `organization.member_added` / `organization.member_removed` | A membership becomes `active` (on acceptance, or a direct add), or an active membership is removed. Pending invitations don't fire either. | `organization_id`, `user_id`, `role` |
 | `application.review_status_changed` | The Application is approved, rejected, suspended, or reinstated. | `application_id`, `review_status`, `review_notes` |
 | `device.registered` / `device.deactivated` / `device.deleted` | A push [Device](../notifications/#devices) is registered or reactivated, becomes `inactive`, or is deleted. | `device` (never the token) |
-| `notification.push_failed` | A [notification](../notifications/#sending-a-notification)'s push couldn't go out: every device failed, or there was no device or working credential to try. | `notification_id`, `user_id`, `category`, `push` |
+| `notification.push_failed` | One of the Application's own [notifications](../notifications/#sending-a-notification) couldn't be pushed: every device failed, or there was no device or working credential to try. Never fires for platform alerts. | `notification_id`, `user_id`, `category`, `push` |
 | `push_credential.failed` | The push provider rejected one of the Application's [push credentials](../notifications/#push-credentials). | `provider`, `failure_reason` |
 | `webhook.test` | `POST …/test`. | `message` |
 
