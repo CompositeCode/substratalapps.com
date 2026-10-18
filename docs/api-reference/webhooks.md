@@ -44,6 +44,9 @@ The request's `scope` field picks it. An app-scoped key may omit `scope` (it def
 
 A subscription is managed by its scope's owners (the app's own keys, the app's owner) and by `webhooks.manage`. Anyone else gets `404`. `POST` is rejected with `409 plan_limit_reached` if the Application's Tenant is at its plan's cap (1/10/unlimited on Starter/Team/Enterprise, counted per Tenant across all its Applications), and with `402 subscription_required` if the Tenant is restricted. Test-mode keys create test-mode subscriptions, which only ever receive test-mode events; live subscriptions never receive test traffic.
 
+{: .decision }
+**API changes awaiting review** ([DECISIONS.md #39](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#39-subscriber-billing-api)). #39 proposes removing the per-plan webhook-subscription cap.
+
 ## `POST /v1/webhooks`
 
 ```json
@@ -201,6 +204,9 @@ A change that doesn't flip someone's resolved access fires nothing for them. For
 | `user.suspended` / `user.reactivated` / `user.deleted` | User status changes. | `user_id` |
 | `organization.member_added` / `organization.member_removed` | A membership becomes `active` (on acceptance, or a direct add), or an active membership is removed. Pending invitations don't fire either. | `organization_id`, `user_id`, `role` |
 | `application.review_status_changed` | The Application is approved, rejected, suspended, or reinstated. | `application_id`, `review_status`, `review_notes` |
+| `device.registered` / `device.deactivated` / `device.deleted` | A push [Device](../notifications/#devices) is registered or reactivated, becomes `inactive`, or is deleted. | `device` (never the token) |
+| `notification.push_failed` | One of the Application's own [notifications](../notifications/#sending-a-notification) couldn't be pushed: every device failed, or there was no device or working credential to try. Never fires for platform alerts. | `notification_id`, `user_id`, `category`, `push` |
+| `push_credential.failed` | The push provider rejected one of the Application's [push credentials](../notifications/#push-credentials). | `provider`, `failure_reason` |
 | `webhook.test` | `POST …/test`. | `message` |
 
 {: .note }

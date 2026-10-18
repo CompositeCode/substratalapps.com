@@ -1,11 +1,11 @@
 openapi: 3.1.0
 info:
   title: Substratal Apps — Platform API
-  version: "1.0.0-draft.2"
+  version: "1.0.0-draft.3"
   summary: >-
     User accounts, auth, roles, per-app entitlements (the on/off access
-    switch), profiles, settings, organizations, tenancy, and platform billing
-    for applications built on Substratal Apps. Target contract for an API
+    switch), profiles, settings, organizations, tenancy, platform billing,
+    and push notifications for applications built on Substratal Apps. Target contract for an API
     that is not yet implemented; the prose specification is authoritative.
   description: >-
     Full documentation: https://compositecode.github.io/substratalapps.com/ — read
@@ -46,6 +46,11 @@ tags:
   - name: Billing
   - name: Audit
   - name: Webhooks
+  - name: Notifications
+    description: >-
+      Push notifications (APNs, FCM, Web Push) and the notification inbox.
+      Specified 2026-10-17; every operation returns 501 not_implemented until
+      the reference implementation builds it.
   - name: API Keys
   - name: Meta
 
@@ -2059,6 +2064,383 @@ paths:
         "202": { description: Enqueued }
         "404": { $ref: "#/components/responses/NotFound" }
 
+  # ───────────────────────────── Notifications ─────────────────────────────
+
+  /applications/{id}/push-credentials:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    get:
+      operationId: pushCredentials.list
+      tags: [Notifications]
+      summary: List the push providers an Application has configured (the owner, the app's own key, or applications.manage)
+      description: "Never returns key material. At most one credential per provider, so the list isn't paginated."
+      x-substratal-phase: phase2
+      responses:
+        "200":
+          description: Every configured provider
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PushCredentialList" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    post:
+      operationId: pushCredentials.create
+      tags: [Notifications]
+      summary: Configure one push provider (the owner or applications.manage, User token only)
+      description: "private_key (apns) and service_account (fcm) are write-only and stored KMS-encrypted. For web_push the platform generates the VAPID key pair and returns its public half. An API Key gets 400 user_token_required. A second credential for the same provider is 409 push_credential_exists; material that doesn't parse is 422 invalid_push_credential."
+      x-substratal-phase: phase2
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKeyOptional"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PushCredentialCreate" }
+      responses:
+        "201":
+          description: Credential configured (never echoes the secret)
+          headers:
+            ETag: { $ref: "#/components/headers/ETag" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PushCredential" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/Unprocessable" }
+
+  /applications/{id}/push-credentials/{provider}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+      - name: provider
+        in: path
+        required: true
+        schema: { $ref: "#/components/schemas/PushProvider" }
+    get:
+      operationId: pushCredentials.get
+      tags: [Notifications]
+      summary: Fetch one provider's configuration
+      x-substratal-phase: phase2
+      responses:
+        "200":
+          description: The credential
+          headers:
+            ETag: { $ref: "#/components/headers/ETag" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PushCredential" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      operationId: pushCredentials.update
+      tags: [Notifications]
+      summary: Replace key material, change non-secret fields, or re-enable a failed credential (User token only)
+      description: "Writable fields are the provider's own create fields, plus status (only failed → active). Any change to key material also returns a failed credential to active. The VAPID key pair can't be rotated in place: delete and recreate the web_push credential."
+      x-substratal-phase: phase2
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PushCredentialUpdate" }
+      responses:
+        "200":
+          description: The updated credential
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PushCredential" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/Unprocessable" }
+    delete:
+      operationId: pushCredentials.delete
+      tags: [Notifications]
+      summary: Remove a push provider (User token only)
+      description: "Pending deliveries to that provider are skipped. Removing web_push deactivates every web_push device of the Application (inactive_reason credential_removed), because browser subscriptions are bound to the VAPID key."
+      x-substratal-phase: phase2
+      x-substratal-destructive: always
+      responses:
+        "204": { description: Removed }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /users/{id}/devices:
+    parameters:
+      - $ref: "#/components/parameters/UserIdOrMe"
+    get:
+      operationId: devices.list
+      tags: [Notifications]
+      summary: List a User's push devices (self, the app's own key, or users.list)
+      description: "Only active devices unless status or include_inactive=true is passed. An app key sees only its own Application's devices."
+      x-substratal-phase: phase2
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Cursor"
+        - { name: application_id, in: query, schema: { type: string } }
+        - { name: provider, in: query, schema: { $ref: "#/components/schemas/PushProvider" } }
+        - { name: status, in: query, schema: { $ref: "#/components/schemas/DeviceStatus" } }
+        - { name: include_inactive, in: query, schema: { type: boolean, default: false } }
+      responses:
+        "200":
+          description: A page of Devices
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DevicePage" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    post:
+      operationId: devices.register
+      tags: [Notifications]
+      summary: Register a push device, or refresh an existing registration (self or the app's own key)
+      description: "An idempotent upsert keyed on (application_id, provider, token). 201 for a new Device, 200 for a refresh of the caller's own. A token registered to a different User is moved: the old Device is deleted and a new one created (201). The User must have active access to application_id (403 entitlement_required). A User token ties the device to its session; an app key's registration has session_id null. At most 20 active devices per User per Application: a 21st deactivates the oldest (inactive_reason limit)."
+      x-substratal-phase: phase2
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DeviceRegistration" }
+      responses:
+        "200":
+          description: Existing registration refreshed (and reactivated if it was inactive)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Device" }
+        "201":
+          description: Device registered
+          headers:
+            ETag: { $ref: "#/components/headers/ETag" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Device" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/Unprocessable" }
+
+  /users/{id}/devices/{deviceId}:
+    parameters:
+      - $ref: "#/components/parameters/UserIdOrMe"
+      - { name: deviceId, in: path, required: true, schema: { type: string } }
+    get:
+      operationId: devices.get
+      tags: [Notifications]
+      summary: Fetch one device
+      x-substratal-phase: phase2
+      responses:
+        "200":
+          description: The Device
+          headers:
+            ETag: { $ref: "#/components/headers/ETag" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Device" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      operationId: devices.update
+      tags: [Notifications]
+      summary: Update a device's name, app version, environment, or rotated token (self or the app's own key)
+      description: "Writing a token reactivates an inactive device. If the new token is already another Device of the same User and Application, that other registration is deleted."
+      x-substratal-phase: phase2
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DeviceUpdate" }
+      responses:
+        "200":
+          description: The updated Device
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Device" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/Unprocessable" }
+    delete:
+      operationId: devices.delete
+      tags: [Notifications]
+      summary: Unregister a device (self, the app's own key, or users.manage)
+      description: "Hard delete. Pending deliveries to it are dropped. A users.manage delete of someone else's device writes the device.deleted Audit Event."
+      x-substratal-phase: phase2
+      x-substratal-destructive: always
+      responses:
+        "204": { description: Unregistered }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /users/{id}/devices/{deviceId}/test:
+    parameters:
+      - $ref: "#/components/parameters/UserIdOrMe"
+      - { name: deviceId, in: path, required: true, schema: { type: string } }
+    post:
+      operationId: devices.sendTest
+      tags: [Notifications]
+      summary: Send a test push to one device and wait for the provider's answer (self or the app's own key)
+      description: "Synchronous, up to 10 seconds. Ignores the push preference, works on inactive devices, isn't stored in the inbox, and is limited to 10 per device per hour. 409 push_not_configured if the Application has no credential for the device's provider."
+      x-substratal-phase: phase2
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string, minLength: 1, maxLength: 120 }
+                body: { type: [string, "null"], maxLength: 1000 }
+      responses:
+        "200":
+          description: The provider's answer
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DeviceTestResult" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /users/{id}/notifications:
+    parameters:
+      - $ref: "#/components/parameters/UserIdOrMe"
+    get:
+      operationId: notifications.list
+      tags: [Notifications]
+      summary: List a User's notification inbox (self, the app's own key, or users.list)
+      description: "Newest first. Archived notifications are excluded unless state=archived or include_inactive=true. An app key sees only its own Application's notifications, never platform alerts."
+      x-substratal-phase: phase2
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Cursor"
+        - { name: state, in: query, schema: { $ref: "#/components/schemas/NotificationState" } }
+        - { name: application_id, in: query, schema: { type: string } }
+        - { name: source, in: query, schema: { $ref: "#/components/schemas/NotificationSource" } }
+        - { name: category, in: query, schema: { type: string } }
+        - { name: priority, in: query, schema: { $ref: "#/components/schemas/NotificationPriority" } }
+        - { name: created_after, in: query, schema: { type: string, format: date-time } }
+        - { name: created_before, in: query, schema: { type: string, format: date-time } }
+        - { name: include_inactive, in: query, schema: { type: boolean, default: false } }
+      responses:
+        "200":
+          description: A page of Notifications (without deliveries)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/NotificationPage" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    post:
+      operationId: notifications.send
+      tags: [Notifications]
+      summary: Send one notification to one User (the app's own key with notifications.send, or platform notifications.send)
+      description: "Always creates the notification in the User's inbox; push.status says what happened to the push. The recipient must have active access to the Application (403 entitlement_required). The whole push payload must fit in 4 KB (422 notification_too_large). Categories under security., account., and billing. are reserved for platform alerts (422 reserved_category). Over 60 notifications per User per Application per hour is 429 rate_limited with details.scope recipient."
+      x-substratal-phase: phase2
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKeyOptional"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/NotificationCreate" }
+      responses:
+        "201":
+          description: Notification created; push queued or skipped
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Notification" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/Unprocessable" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /users/{id}/notifications/unread-count:
+    parameters:
+      - $ref: "#/components/parameters/UserIdOrMe"
+    get:
+      operationId: notifications.unreadCount
+      tags: [Notifications]
+      summary: Count unread notifications, in total and per Application (self or the app's own key)
+      x-substratal-phase: phase2
+      parameters:
+        - { name: application_id, in: query, schema: { type: string } }
+        - { name: source, in: query, schema: { $ref: "#/components/schemas/NotificationSource" } }
+      responses:
+        "200":
+          description: Unread, unarchived counts
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/NotificationUnreadCount" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /users/{id}/notifications/mark-read:
+    parameters:
+      - $ref: "#/components/parameters/UserIdOrMe"
+    post:
+      operationId: notifications.markRead
+      tags: [Notifications]
+      summary: Mark every unread notification matching the filters as read (self or the app's own key)
+      description: "Every filter is optional; an empty body marks everything the caller can see. before limits it to notifications created at or before that time. An app key's application_id is forced to its own."
+      x-substratal-phase: phase2
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                application_id: { type: string }
+                source: { $ref: "#/components/schemas/NotificationSource" }
+                category: { type: string }
+                before: { type: string, format: date-time }
+      responses:
+        "200":
+          description: How many were marked read
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [updated_count]
+                properties:
+                  updated_count: { type: integer, minimum: 0 }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /users/{id}/notifications/{notificationId}:
+    parameters:
+      - $ref: "#/components/parameters/UserIdOrMe"
+      - { name: notificationId, in: path, required: true, schema: { type: string } }
+    get:
+      operationId: notifications.get
+      tags: [Notifications]
+      summary: Fetch one notification, with its per-device deliveries
+      x-substratal-phase: phase2
+      responses:
+        "200":
+          description: The Notification with deliveries (empty after 30 days)
+          headers:
+            ETag: { $ref: "#/components/headers/ETag" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/NotificationWithDeliveries" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      operationId: notifications.update
+      tags: [Notifications]
+      summary: Mark one notification read, unread, or archived (self or the app's own key)
+      x-substratal-phase: phase2
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [state]
+              properties:
+                state: { $ref: "#/components/schemas/NotificationState" }
+      responses:
+        "200":
+          description: The updated Notification
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Notification" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/Unprocessable" }
+
   # ───────────────────────────── API Keys ─────────────────────────────
 
   /api-keys:
@@ -2476,6 +2858,14 @@ components:
           type: array
           description: "This user's own trail as target_user_id (hot window)."
           items: { $ref: "#/components/schemas/AuditEvent" }
+        devices:
+          type: array
+          description: "Push devices, active and inactive. Never includes the token."
+          items: { $ref: "#/components/schemas/Device" }
+        notifications:
+          type: array
+          description: "Every notification still retained (90 days), without deliveries."
+          items: { $ref: "#/components/schemas/Notification" }
 
     # ── Profiles & Settings ──
     ProfileWrite:
@@ -2590,6 +2980,7 @@ components:
         owner_organization_id: { type: [string, "null"] }
         review_status: { $ref: "#/components/schemas/ApplicationReviewStatus" }
         review_notes: { type: [string, "null"], maxLength: 2000 }
+        receives_platform_notifications: { type: boolean, default: false, description: "When true, this Application's devices also receive pushes for platform alerts (security and account notices). A configuration field the owner may set." }
 
     Application:
       allOf:
@@ -2969,10 +3360,14 @@ components:
         - webhook.updated
         - webhook.deleted
         - webhook.secret_rotated
+        - push_credential.created
+        - push_credential.updated
+        - push_credential.deleted
+        - device.deleted
 
     AuditTargetType:
       type: string
-      enum: [user, entitlement, role, role_assignment, application, organization, tenant, tier_change_request, api_key, webhook]
+      enum: [user, entitlement, role, role_assignment, application, organization, tenant, tier_change_request, api_key, webhook, push_credential, device]
 
     AuditEvent:
       type: object
@@ -3022,6 +3417,11 @@ components:
         - organization.member_added
         - organization.member_removed
         - application.review_status_changed
+        - device.registered
+        - device.deactivated
+        - device.deleted
+        - notification.push_failed
+        - push_credential.failed
         - webhook.test
 
     AccessEventReason:
@@ -3097,6 +3497,271 @@ components:
         error: { type: [string, "null"] }
         next_retry_at: { type: [string, "null"], format: date-time }
         created_at: { type: string, format: date-time }
+
+    # ── Notifications ──
+    PushProvider:
+      type: string
+      enum: [apns, fcm, web_push]
+
+    PushCredentialCreate:
+      type: object
+      description: "Fields depend on provider. apns: team_id, key_id, topic, private_key. fcm: service_account. web_push: subject (the VAPID key pair is generated)."
+      required: [provider]
+      properties:
+        provider: { $ref: "#/components/schemas/PushProvider" }
+        team_id: { type: string, minLength: 10, maxLength: 10, description: "apns" }
+        key_id: { type: string, minLength: 10, maxLength: 10, description: "apns" }
+        topic: { type: string, maxLength: 255, description: "apns: the app's bundle id" }
+        private_key: { type: string, writeOnly: true, description: "apns: the .p8 file's contents (PEM PKCS#8, P-256). Write-only." }
+        service_account: { type: object, writeOnly: true, description: "fcm: the service-account JSON key (type, project_id, private_key, client_email). Write-only." }
+        subject: { type: string, maxLength: 255, description: "web_push: a mailto: or https: contact URI (RFC 8292)" }
+
+    PushCredentialUpdate:
+      type: object
+      properties:
+        team_id: { type: string, minLength: 10, maxLength: 10 }
+        key_id: { type: string, minLength: 10, maxLength: 10 }
+        topic: { type: string, maxLength: 255 }
+        private_key: { type: string, writeOnly: true }
+        service_account: { type: object, writeOnly: true }
+        subject: { type: string, maxLength: 255 }
+        status: { type: string, enum: [active], description: "Only failed → active." }
+
+    PushCredential:
+      type: object
+      required: [id, application_id, provider, status]
+      properties:
+        id: { type: string, description: "pcr_…" }
+        application_id: { type: string }
+        provider: { $ref: "#/components/schemas/PushProvider" }
+        status: { type: string, enum: [active, failed] }
+        team_id: { type: string, description: "apns" }
+        key_id: { type: string, description: "apns" }
+        topic: { type: string, description: "apns" }
+        project_id: { type: string, description: "fcm" }
+        client_email: { type: string, description: "fcm" }
+        subject: { type: string, description: "web_push" }
+        vapid_public_key: { type: string, description: "web_push: base64url uncompressed P-256 point, for PushManager.subscribe({applicationServerKey})" }
+        failure_reason: { type: [string, "null"] }
+        failed_at: { type: [string, "null"], format: date-time }
+        last_used_at: { type: [string, "null"], format: date-time }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    PushCredentialList:
+      type: object
+      required: [data]
+      properties:
+        data: { type: array, maxItems: 3, items: { $ref: "#/components/schemas/PushCredential" } }
+
+    DeviceStatus:
+      type: string
+      enum: [active, inactive]
+
+    DeviceInactiveReason:
+      type: string
+      enum: [unregistered, session_revoked, user_suspended, user_deleted, stale, limit, credential_removed]
+
+    WebPushSubscription:
+      type: object
+      description: "The PushSubscription from PushManager.subscribe(), as JSON."
+      required: [endpoint, keys]
+      properties:
+        endpoint: { type: string, format: uri, maxLength: 2048 }
+        keys:
+          type: object
+          required: [p256dh, auth]
+          properties:
+            p256dh: { type: string }
+            auth: { type: string }
+
+    DeviceRegistration:
+      type: object
+      required: [application_id, provider]
+      properties:
+        application_id: { type: string }
+        provider: { $ref: "#/components/schemas/PushProvider" }
+        token: { type: string, minLength: 1, maxLength: 4096, writeOnly: true, description: "apns (hex, 64–200 characters) and fcm only" }
+        subscription: { $ref: "#/components/schemas/WebPushSubscription" }
+        environment: { type: string, enum: [production, sandbox], description: "apns only, required for it" }
+        name: { type: [string, "null"], maxLength: 100 }
+        app_version: { type: [string, "null"], maxLength: 50 }
+
+    DeviceUpdate:
+      type: object
+      properties:
+        token: { type: string, minLength: 1, maxLength: 4096, writeOnly: true }
+        subscription: { $ref: "#/components/schemas/WebPushSubscription" }
+        environment: { type: string, enum: [production, sandbox] }
+        name: { type: [string, "null"], maxLength: 100 }
+        app_version: { type: [string, "null"], maxLength: 50 }
+
+    Device:
+      type: object
+      required: [id, user_id, application_id, provider, token_hint, status]
+      properties:
+        id: { type: string, description: "dvc_…" }
+        user_id: { type: string }
+        application_id: { type: string }
+        provider: { $ref: "#/components/schemas/PushProvider" }
+        environment: { type: [string, "null"], enum: [production, sandbox, null] }
+        token_hint: { type: string, example: "…9f3a", description: "The token itself is never returned." }
+        name: { type: [string, "null"] }
+        app_version: { type: [string, "null"] }
+        session_id: { type: [string, "null"], description: "The registering session; null when an app key registered it." }
+        status: { $ref: "#/components/schemas/DeviceStatus" }
+        inactive_reason:
+          oneOf:
+            - $ref: "#/components/schemas/DeviceInactiveReason"
+            - type: "null"
+        last_registered_at: { type: string, format: date-time }
+        last_delivery_at: { type: [string, "null"], format: date-time }
+        test_mode: { type: boolean }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    DevicePage:
+      allOf:
+        - $ref: "#/components/schemas/PageEnvelope"
+        - type: object
+          properties:
+            data: { type: array, items: { $ref: "#/components/schemas/Device" } }
+
+    DeviceTestResult:
+      type: object
+      required: [device_id, status]
+      properties:
+        device_id: { type: string }
+        status: { type: string, enum: [sent, failed] }
+        provider_status: { type: [integer, "null"], description: "The provider's HTTP status; null on a timeout or connection error." }
+        error: { type: [string, "null"], description: "The provider's reason code, e.g. BadDeviceToken, UNREGISTERED, InvalidProviderToken, or timeout." }
+        duration_ms: { type: integer }
+
+    NotificationPriority:
+      type: string
+      enum: [normal, high]
+
+    NotificationSource:
+      type: string
+      enum: [application, platform]
+
+    NotificationState:
+      type: string
+      enum: [unread, read, archived]
+
+    NotificationPushStatus:
+      type: string
+      enum: [queued, sent, failed, skipped]
+
+    NotificationSkipReason:
+      type: string
+      enum: [push_not_requested, push_disabled, no_devices, no_credentials, credential_failed, expired]
+
+    NotificationCreate:
+      type: object
+      required: [title, category]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 120 }
+        body: { type: [string, "null"], maxLength: 1000 }
+        category: { type: string, maxLength: 64, pattern: "^[a-z][a-z0-9_]*(\\.[a-z0-9_]+)*$", description: "Sender-defined. security., account., and billing. are reserved for platform alerts." }
+        priority: { $ref: "#/components/schemas/NotificationPriority" }
+        push: { type: boolean, default: true, description: "false writes to the inbox without a push." }
+        data:
+          type: object
+          maxProperties: 20
+          additionalProperties: { type: string }
+          description: "String values only (FCM's data payload carries only strings); 2 KB serialized; the key substratal is reserved."
+        action_url: { type: [string, "null"], maxLength: 2048 }
+        badge: { type: [integer, "null"], minimum: 0, maximum: 99999 }
+        sound: { type: [string, "null"], enum: [default, null], description: "Defaults to default for high priority, null (silent) for normal." }
+        collapse_key: { type: [string, "null"], maxLength: 64, pattern: "^[A-Za-z0-9._-]+$" }
+        ttl_seconds: { type: integer, minimum: 0, maximum: 2419200, default: 86400 }
+        application_id: { type: string, description: "Only for a platform notifications.send caller, and required for one." }
+
+    NotificationPush:
+      type: object
+      required: [requested, status]
+      properties:
+        requested: { type: boolean }
+        status: { $ref: "#/components/schemas/NotificationPushStatus" }
+        devices_targeted: { type: integer, minimum: 0 }
+        devices_sent: { type: integer, minimum: 0 }
+        devices_failed: { type: integer, minimum: 0 }
+        skip_reason:
+          oneOf:
+            - $ref: "#/components/schemas/NotificationSkipReason"
+            - type: "null"
+
+    Notification:
+      type: object
+      required: [id, user_id, source, category, priority, title, push, state, created_at]
+      properties:
+        id: { type: string, description: "ntf_…" }
+        user_id: { type: string }
+        application_id: { type: [string, "null"], description: "null for a platform alert" }
+        source: { $ref: "#/components/schemas/NotificationSource" }
+        category: { type: string }
+        priority: { $ref: "#/components/schemas/NotificationPriority" }
+        title: { type: string }
+        body: { type: [string, "null"] }
+        data: { type: object, additionalProperties: { type: string } }
+        action_url: { type: [string, "null"] }
+        badge: { type: [integer, "null"] }
+        sound: { type: [string, "null"] }
+        collapse_key: { type: [string, "null"] }
+        ttl_seconds: { type: integer }
+        push: { $ref: "#/components/schemas/NotificationPush" }
+        state: { $ref: "#/components/schemas/NotificationState" }
+        read_at: { type: [string, "null"], format: date-time }
+        archived_at: { type: [string, "null"], format: date-time }
+        sender:
+          type: object
+          required: [type, id]
+          properties:
+            type: { type: string, enum: [api_key, user, system] }
+            id: { type: string }
+        test_mode: { type: boolean }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    NotificationDelivery:
+      type: object
+      properties:
+        id: { type: string, description: "ndl_…" }
+        device_id: { type: [string, "null"], description: "null once the Device is deleted" }
+        provider: { $ref: "#/components/schemas/PushProvider" }
+        status: { type: string, enum: [pending, sent, failed, skipped] }
+        attempts: { type: integer, minimum: 0, maximum: 4 }
+        error: { type: [string, "null"] }
+        sent_at: { type: [string, "null"], format: date-time }
+
+    NotificationWithDeliveries:
+      allOf:
+        - $ref: "#/components/schemas/Notification"
+        - type: object
+          properties:
+            deliveries: { type: array, items: { $ref: "#/components/schemas/NotificationDelivery" } }
+
+    NotificationPage:
+      allOf:
+        - $ref: "#/components/schemas/PageEnvelope"
+        - type: object
+          properties:
+            data: { type: array, items: { $ref: "#/components/schemas/Notification" } }
+
+    NotificationUnreadCount:
+      type: object
+      required: [unread_count, applications]
+      properties:
+        unread_count: { type: integer, minimum: 0 }
+        applications:
+          type: array
+          items:
+            type: object
+            required: [application_id, unread_count]
+            properties:
+              application_id: { type: [string, "null"], description: "null for platform alerts" }
+              unread_count: { type: integer, minimum: 0 }
 
     # ── API Keys ──
     ApiKeyWrite:

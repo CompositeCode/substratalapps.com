@@ -36,6 +36,9 @@ A Tenant is owned by either a User or an Organization. "Owner" here means the `o
 
 Tenants are never created or deleted directly. One is created automatically the first time its owner gets an Application (see [Applications → `POST`](../applications/#post-v1applications)), and it persists after that.
 
+{: .decision }
+**API changes awaiting review** ([DECISIONS.md #39](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#39-subscriber-billing-api)). #39 proposes removing `plan`, `subscription_status`, and `restricted` from the Tenant, since Tenants are no longer what's billed. `isolated`/`dedicated_region` would wait for business pricing instead of requiring `plan: enterprise`.
+
 ## The Tenant object
 
 ```json
@@ -57,7 +60,7 @@ Tenants are never created or deleted directly. One is created automatically the 
 ```
 
 - `region` is always set. It's `us-east-1` for `shared` and `isolated`, and the chosen region for `dedicated_region`. Earlier drafts used `null` for "the default region". Always returning a real value means a reader never has to know what the default is.
-- `subscription_status` and `restricted` mirror the Stripe-synced billing state. See [Billing](../billing/) and [Pricing → Subscription lapse](../../pricing/#subscription-lapse--downgrades).
+- `subscription_status` and `restricted` mirror the Stripe-synced billing state. See [Billing](../billing/) and [Pricing → Subscription lapse](../../pricing/#when-a-subscription-lapses).
 - `status: migrating` holds for the duration of an `in_progress` tier change. While it does, reads keep working, and writes to that Tenant's data return `503 service_unavailable` with `Retry-After`.
 
 ## `GET /v1/tenants`

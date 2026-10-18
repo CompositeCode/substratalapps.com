@@ -135,8 +135,8 @@ Active members and `organizations.manage`. Filters: `?role=org_admin|member`, `?
 - **By `email`** (org admins and `organizations.manage`): creates a `pending` membership and emails the address an invitation naming the Organization. If no live User has that email, an `invited` User is created first, and the email is the account invitation (see [Auth → Invitations](../auth/#invitations)). This is the one way a non-platform caller can cause a User to be created. **The response is the same shape either way**, `membership_status: "pending"` and `display_name: null`, so inviting an address never reveals whether it already had an account. Because any User can create an Organization, anything else would let anyone test arbitrary emails for accounts.
 - **By `user_id`** (`organizations.manage` only, `403 forbidden` otherwise): the membership is `active` immediately. Ids aren't something an org admin can look up, and accepting on someone's behalf is a platform action.
 - A `pending` membership grants nothing: no org-wide grant reaches the person, they're not counted as a seat, and they can't see the Organization. It becomes `active` when they accept, with [`POST …/members/me/accept`](#post-v1organizationsidmembersmeaccept) if they already have an account, or by accepting the account invitation if they don't. An unaccepted invitation never expires on its own; an org admin can withdraw it with `DELETE`.
-- Writes `organization.member_invited`. `organization.member_added` (audit and webhook) and any `access.granted` events fire later, on acceptance.
-- **Seats:** adding a member never fails on a plan limit, because the membership isn't usage. When it becomes active, every `all_members`/`denylist` org grant reaches the new member, and each one counts as a seat on that Application's Tenant. If a Starter Tenant is at its seat cap, the member still joins, but their `member_decision` on that grant reads `seat_limit` and they get no access through it until a seat frees up or the plan is upgraded. See [Pricing → Enforcement](../../pricing/#enforcement).
+- Writes `organization.member_invited`. `organization.member_added` (audit and webhook) and any `access.granted` events fire later, on acceptance. If the address already belongs to an active User, they also get an [`account.organization_invitation`](../notifications/#platform-alerts) platform alert. The caller can't tell, so it reveals nothing the response doesn't.
+- **Seats:** adding a member never fails on a plan limit, because the membership isn't usage. When it becomes active, every `all_members`/`denylist` org grant reaches the new member, and each one counts as a seat on that Application's Tenant. If a Starter Tenant is at its seat cap, the member still joins, but their `member_decision` on that grant reads `seat_limit` and they get no access through it until a seat frees up or the plan is upgraded. See [Pricing → Enforcement](../../pricing/#the-tiers).
 
 ## `POST /v1/organizations/{id}/members/me/accept`
 
@@ -175,6 +175,9 @@ Demoting the Organization's last active `org_admin` returns `409 last_org_admin`
 - The removed User loses every org-wide (`source: org_seat`) access path through this Organization. `access.revoked` fires for each Application where that was their only active path, so a personal Entitlement held some other way is untouched. Their user id is also removed from `member_overrides` on this Organization's grants, so re-adding them later starts clean.
 - **App Role assignments aren't touched.** Roles belong to the User, not the Organization. If the user has no other access path, those Roles simply grant nothing until they do (see [Access Control](../../access-control/)).
 - Writes `organization.member_removed`, and emits the `organization.member_removed` webhook. Destructive.
+
+{: .decision }
+**API changes awaiting review** ([DECISIONS.md #39](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#39-subscriber-billing-api)). #39 proposes Organization subscription endpoints (`/v1/organizations/{id}/subscription` and its Checkout and Portal sessions), so an Organization can buy Standard for its members.
 
 ## `GET /v1/organizations/{id}/entitlements`
 
@@ -236,7 +239,7 @@ Demoting the Organization's last active `org_admin` returns `409 last_org_admin`
 - `order_id`, `starts_at`, and `ends_at` follow the same rules as a [personal grant](../entitlements/#post-v1usersidentitlements). `member_scope` defaults to `all_members`. `member_overrides` must list active members only.
 - **Who:** whoever controls access to the *Application*, never the Organization itself. That means platform `entitlements.manage`, the Application's own key with app-confined `entitlements.manage` (the normal path: the developer's backend reflecting a team purchase in their own billing), or the Application's owner. **An org admin can't create a grant for their own Organization.** Organizations are self-service ([`POST /v1/organizations`](#post-v1organizations)), so allowing it would let anyone create an Organization and grant themselves free access to any app. `403 forbidden` otherwise.
 - **One live org grant per (Organization, app):** `409 entitlement_already_exists` if an `active`/`disabled` one exists.
-- Plan checks apply to the **Application's** Tenant: every newly included member counts as a seat (see [Pricing → Enforcement](../../pricing/#enforcement)).
+- Plan checks apply to the **Application's** Tenant: every newly included member counts as a seat (see [Pricing → Enforcement](../../pricing/#the-tiers)).
 - Writes `entitlement.granted`. Emits `entitlement.granted`, and `access.granted` per newly included member.
 - Change the grant afterwards with [`PATCH /v1/entitlements/{id}`](../entitlements/#patch-v1entitlementsid--the-toggle) (status, term, `member_scope`).
 

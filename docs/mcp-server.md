@@ -78,7 +78,7 @@ This table is the single source of truth. `openapi.yaml`'s `x-substratal-destruc
 
 | Operation | When destructive |
 |---|---|
-| Every `DELETE` | Always. That covers: user soft-delete, Entitlement delete-in-error, Role delete, Role-assignment removal, Organization member removal, webhook unsubscribe, API Key revoke, session revoke, MFA support-reset, and erasure cancellation. |
+| Every `DELETE` | Always. That covers: user soft-delete, Entitlement delete-in-error, Role delete, Role-assignment removal, Organization member removal, webhook unsubscribe, API Key revoke, session revoke, MFA support-reset, erasure cancellation, push-device unregister, and push-credential removal. |
 | `PATCH /v1/entitlements/{id}` | When `status` becomes `disabled` or `revoked`. |
 | `PATCH /v1/users/{id}` | When `status` becomes `suspended`. |
 | `POST /v1/users/{id}/suspend` | Always. |

@@ -235,7 +235,7 @@ Refresh tokens are single-use. Presenting one that has **already been rotated** 
 // Response — 204
 ```
 
-Revokes the session(s): the refresh token and any app refresh tokens in them stop working immediately, and the platform access token is rejected from then on — the API checks `sid` against the session table on every request, so logout is immediate, not "at access-token expiry". Already-issued **app tokens** are not recalled (they're verified locally by Applications, by design); they expire within 5 minutes. Logout does not by itself fire `access.revoked` — the User still *has* access; they've just signed out.
+Revokes the session(s): the refresh token and any app refresh tokens in them stop working immediately, and the platform access token is rejected from then on — the API checks `sid` against the session table on every request, so logout is immediate, not "at access-token expiry". Already-issued **app tokens** are not recalled (they're verified locally by Applications, by design); they expire within 5 minutes. Logout does not by itself fire `access.revoked` — the User still *has* access; they've just signed out. Push [devices](../notifications/#sessions-and-device-lifecycle) registered under a revoked session become `inactive`, so a signed-out install stops receiving notifications.
 
 ## Getting an app token
 
@@ -542,7 +542,7 @@ Requires `users.manage`. For a User who has lost their device *and* their recove
 
 ### `DELETE /v1/users/{id}/sessions/{sessionId}`
 
-`204`. Same effect as logout for that one session. `revoked_reason` is `logout` when the User revokes their own session, and `admin` when a `users.manage` caller does.
+`204`. Same effect as logout for that one session, including deactivating the push devices it registered. `revoked_reason` is `logout` when the User revokes their own session, and `admin` when a `users.manage` caller does.
 
 ## `POST /v1/auth/sso/{provider}/callback`
 

@@ -43,7 +43,7 @@ An Application can't declare a reserved key, and global Settings holds nothing b
 | `locale` | string | |
 | `timezone` | string | IANA zone, e.g. `America/Denver`. |
 | `theme` | enum | `light` \| `dark` \| `system`. |
-| `notifications` | object | Site-wide channel defaults, e.g. `{"email": true, "sms": false}`. |
+| `notifications` | object | Site-wide channel defaults, e.g. `{"email": true, "sms": false}`. The `push` channel is the one the platform itself reads: a resolved `push: false` stops [push notifications](../../api-reference/notifications/#preferences) for that Application (or, globally, for every Application), and a missing `push` key counts as on. |
 | `updated_at` | timestamp | |
 
 ### Example

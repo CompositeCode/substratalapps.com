@@ -103,12 +103,15 @@ The "kill switch": a support agent or admin disabling one user's access to one a
 3. The user accepts the invitation ([`POST /v1/auth/invitations/accept`](../api-reference/auth/#post-v1authinvitationsaccept)), setting a password, and is signed in.
 4. The first time the app reads the user's AppProfile or AppSettings, it gets defaults. The first write creates the row. There's no "provision this user in this app" step to orchestrate.
 
+{: .decision }
+**API changes awaiting review** ([DECISIONS.md #39](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#39-subscriber-billing-api)). Step 4 of the next workflow and the "Developer upgrades their own plan" workflow describe the previous developer billing. #39 proposes replacing them with "A User subscribes to Standard" and "An Organization subscribes to Standard".
+
 ## Team purchase (org-wide grant)
 
 1. A customer creates an [Organization](../api-reference/organizations/#post-v1organizations) (self-service) and invites members by email. Each invitation is a `pending` membership until the person accepts it.
 2. The customer pays the developer for a team plan. The developer's backend calls `POST /v1/organizations/{id}/entitlements` with its app key: `order_id`, and optionally `member_scope`.
 3. Every included member gets access. `access.granted` fires once per member. New members are included automatically under `all_members`/`denylist` once they accept their invitation (a `pending` membership grants nothing).
-4. Seat changes on the customer's side need no API call unless the developer limits seats with `member_scope: allowlist`. Billing per member is the developer's business; each included member counts as one *Substratal* seat for the developer's own plan (see [Pricing](../pricing/#what-seat-means-here)).
+4. Seat changes on the customer's side need no API call unless the developer limits seats with `member_scope: allowlist`. Billing per member is the developer's business; each included member counts as one *Substratal* seat for the developer's own plan (see [Pricing](../pricing/#what-a-user-means-for-an-organization)).
 
 ## An org admin narrows who an org-wide grant reaches
 
@@ -133,10 +136,51 @@ Support-run today. See [Tenancy → How a tier change happens today](../domain-m
 4. `PATCH` to `completed` updates `tier`/`region` and returns `status` to `active`, and an [Audit Event](../domain-model/orders-and-audit/#audit-event) (`tenant.tier_changed`) records it.
 5. Nothing about the customer's Applications, Entitlements, or any end user's access changes shape. This workflow only ever moves *where* the same rows live, never *what* they say.
 
+## An Application sends a push alert
+
+A timesheet is due, and TimeTrack wants the User's phone to say so.
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant App as Application (client)
+    participant Backend as Application backend
+    participant Hub as Substratal API
+    participant Provider as APNs / FCM / Web Push
+
+    Note over Backend,Hub: once: the owner configures push credentials
+    App->>App: OS grants notification permission, issues a token
+    App->>Hub: POST /v1/users/me/devices {application_id, provider, token} (user token)
+    Hub-->>App: 201 Device (tied to this session)
+    Backend->>Hub: POST /v1/users/{id}/notifications {category, title, body, data}<br/>Idempotency-Key (app key, notifications.send)
+    Hub->>Hub: allow() + push preference, insert Notification + deliveries, one transaction
+    Hub-->>Backend: 201 Notification (push.status: queued)
+    Hub->>Provider: signed push, per device
+    Provider-->>User: notification on the lock screen
+    User->>App: opens it
+    App->>Hub: PATCH /v1/users/me/notifications/{id} {state: read}
+```
+
+1. Once, the Application's owner configures its [push credentials](../api-reference/notifications/#push-credentials) (an APNs key, an FCM service account, or a Web Push key pair). Credentials are managed only by people, never by an API Key.
+2. On launch, the client asks the OS for permission, gets a token, and [registers the device](../api-reference/notifications/#post-v1usersiddevices). An embedded-login client does it with its user token, which ties the device to the session. A hosted-flow client passes the token to its backend, which registers it with the app key.
+3. The backend [sends](../api-reference/notifications/#post-v1usersidnotifications) with its app key. The hub checks that the User has active access to TimeTrack and hasn't turned push off, then writes the Notification and one delivery per active device in one transaction.
+4. A worker signs each push with TimeTrack's credential and hands it to the provider. A token the provider reports as gone deactivates that device, and fires `device.deactivated`.
+5. The notification is in the User's [inbox](../api-reference/notifications/#the-inbox) whether or not a push arrived. When they open it, or the app shows it, the client marks it read, and its badge comes from `unread-count`.
+6. If no push could go out at all (no devices, no working credential, every device failed), `notification.push_failed` tells the backend, which can fall back to email.
+
+## A User signs out, and back in, on a device
+
+1. The User signs out of TimeTrack. The app calls [`POST /v1/auth/logout`](../api-reference/auth/#post-v1authlogout).
+2. The session is revoked, and every device registered under it becomes `inactive` (`session_revoked`). Nothing more is pushed to that install, even though the OS token is still valid.
+3. Someone else signs in on the same install, and the app registers the same token under their session. The token now belongs to them: the previous User's Device is deleted (`device.deleted`) and a new one is created for the new User. Neither User's notifications ever reach the other.
+4. If the first User signs back in instead, re-registering reactivates their existing Device.
+
+An app that registers devices with its app key (no session) does step 2 itself: its backend calls [`DELETE /v1/users/{id}/devices/{deviceId}`](../api-reference/notifications/#delete-v1usersiddevicesdeviceid) when its own session ends.
+
 ## User asks for their data, then for erasure
 
 1. `GET /v1/users/me/export` returns everything as one JSON bundle.
-2. `POST /v1/users/me/erasure-requests` soft-deletes immediately: sessions are revoked, `access.revoked` fires everywhere, and the email address is freed.
+2. `POST /v1/users/me/erasure-requests` soft-deletes immediately: sessions are revoked, push devices are deactivated, `access.revoked` fires everywhere, and the email address is freed.
 3. Seven days later, the [hard-delete cascade](../non-functional-requirements/#hard-delete-cascade) runs and writes `user.erased`.
 
 ## Settings resolution, in practice

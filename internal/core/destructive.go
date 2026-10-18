@@ -41,6 +41,8 @@ var DestructiveOps = map[string]Destructive{
 	"apiKeys.update":                  {When: "restrict_destructive set to false"},
 	"apiKeys.delete":                  {Always: true},
 	"apiKeys.rotate":                  {Always: true},
+	"pushCredentials.delete":          {Always: true},
+	"devices.delete":                  {Always: true},
 }
 
 func restricted(c *Call) error {

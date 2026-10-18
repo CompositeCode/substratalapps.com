@@ -584,6 +584,11 @@
                     "maxItems": 100,
                     "type": "array"
                   },
+                  "receives_platform_notifications": {
+                    "default": false,
+                    "description": "When true, this Application's devices also receive pushes for platform alerts (security and account notices). A configuration field the owner may set.",
+                    "type": "boolean"
+                  },
                   "redirect_uris": {
                     "items": {
                       "type": "string"
@@ -858,6 +863,11 @@
                 "maxItems": 100,
                 "type": "array"
               },
+              "receives_platform_notifications": {
+                "default": false,
+                "description": "When true, this Application's devices also receive pushes for platform alerts (security and account notices). A configuration field the owner may set.",
+                "type": "boolean"
+              },
               "redirect_uris": {
                 "items": {
                   "type": "string"
@@ -1033,7 +1043,11 @@
                 "webhook.created",
                 "webhook.updated",
                 "webhook.deleted",
-                "webhook.secret_rotated"
+                "webhook.secret_rotated",
+                "push_credential.created",
+                "push_credential.updated",
+                "push_credential.deleted",
+                "device.deleted"
               ],
               "type": "string"
             },
@@ -1083,7 +1097,9 @@
               "tenant",
               "tier_change_request",
               "api_key",
-              "webhook"
+              "webhook",
+              "push_credential",
+              "device"
             ],
             "type": "string"
           },
@@ -2281,6 +2297,438 @@
       "x_accepts_if_match": false
     },
     {
+      "name": "substratal_devices_delete",
+      "title": "Unregister a device (self, the app's own key, or users.manage)",
+      "description": "Unregister a device (self, the app's own key, or users.manage)\n\nHard delete. Pending deliveries to it are dropped. A users.manage delete of someone else's device writes the device.deleted Audit Event.\n\nREST: DELETE /v1/users/{id}/devices/{deviceId}",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "deviceId": {
+            "type": "string"
+          },
+          "id": {
+            "description": "A usr_... id, or the literal string 'me' for the calling User (not valid for API Keys).",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "deviceId"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": false,
+        "title": "Unregister a device (self, the app's own key, or users.manage)"
+      },
+      "x_operation_id": "devices.delete",
+      "x_method": "DELETE",
+      "x_path": "/v1/users/{id}/devices/{deviceId}",
+      "x_path_params": [
+        "id",
+        "deviceId"
+      ],
+      "x_query_params": null,
+      "x_has_body": false,
+      "x_needs_idempotency_key": false,
+      "x_accepts_if_match": false
+    },
+    {
+      "name": "substratal_devices_get",
+      "title": "Fetch one device",
+      "description": "Fetch one device\n\nREST: GET /v1/users/{id}/devices/{deviceId}",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "deviceId": {
+            "type": "string"
+          },
+          "id": {
+            "description": "A usr_... id, or the literal string 'me' for the calling User (not valid for API Keys).",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "deviceId"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "Fetch one device"
+      },
+      "x_operation_id": "devices.get",
+      "x_method": "GET",
+      "x_path": "/v1/users/{id}/devices/{deviceId}",
+      "x_path_params": [
+        "id",
+        "deviceId"
+      ],
+      "x_query_params": null,
+      "x_has_body": false,
+      "x_needs_idempotency_key": false,
+      "x_accepts_if_match": false
+    },
+    {
+      "name": "substratal_devices_list",
+      "title": "List a User's push devices (self, the app's own key, or users.list)",
+      "description": "List a User's push devices (self, the app's own key, or users.list)\n\nOnly active devices unless status or include_inactive=true is passed. An app key sees only its own Application's devices.\n\nREST: GET /v1/users/{id}/devices",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "application_id": {
+            "type": "string"
+          },
+          "cursor": {
+            "type": "string"
+          },
+          "id": {
+            "description": "A usr_... id, or the literal string 'me' for the calling User (not valid for API Keys).",
+            "type": "string"
+          },
+          "include_inactive": {
+            "default": false,
+            "type": "boolean"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "provider": {
+            "enum": [
+              "apns",
+              "fcm",
+              "web_push"
+            ],
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "active",
+              "inactive"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "List a User's push devices (self, the app's own key, or users.list)"
+      },
+      "x_operation_id": "devices.list",
+      "x_method": "GET",
+      "x_path": "/v1/users/{id}/devices",
+      "x_path_params": [
+        "id"
+      ],
+      "x_query_params": [
+        "limit",
+        "cursor",
+        "application_id",
+        "provider",
+        "status",
+        "include_inactive"
+      ],
+      "x_has_body": false,
+      "x_needs_idempotency_key": false,
+      "x_accepts_if_match": false
+    },
+    {
+      "name": "substratal_devices_register",
+      "title": "Register a push device, or refresh an existing registration (self or the app's own key)",
+      "description": "Register a push device, or refresh an existing registration (self or the app's own key)\n\nAn idempotent upsert keyed on (application_id, provider, token). 201 for a new Device, 200 for a refresh of the caller's own. A token registered to a different User is moved: the old Device is deleted and a new one created (201). The User must have active access to application_id (403 entitlement_required). A User token ties the device to its session; an app key's registration has session_id null. At most 20 active devices per User per Application: a 21st deactivates the oldest (inactive_reason limit).\n\nREST: POST /v1/users/{id}/devices",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "properties": {
+              "app_version": {
+                "maxLength": 50,
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "application_id": {
+                "type": "string"
+              },
+              "environment": {
+                "description": "apns only, required for it",
+                "enum": [
+                  "production",
+                  "sandbox"
+                ],
+                "type": "string"
+              },
+              "name": {
+                "maxLength": 100,
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "provider": {
+                "enum": [
+                  "apns",
+                  "fcm",
+                  "web_push"
+                ],
+                "type": "string"
+              },
+              "subscription": {
+                "description": "The PushSubscription from PushManager.subscribe(), as JSON.",
+                "properties": {
+                  "endpoint": {
+                    "format": "uri",
+                    "maxLength": 2048,
+                    "type": "string"
+                  },
+                  "keys": {
+                    "properties": {
+                      "auth": {
+                        "type": "string"
+                      },
+                      "p256dh": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "p256dh",
+                      "auth"
+                    ],
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "endpoint",
+                  "keys"
+                ],
+                "type": "object"
+              },
+              "token": {
+                "description": "apns (hex, 64–200 characters) and fcm only",
+                "maxLength": 4096,
+                "minLength": 1,
+                "type": "string",
+                "writeOnly": true
+              }
+            },
+            "required": [
+              "application_id",
+              "provider"
+            ],
+            "type": "object"
+          },
+          "id": {
+            "description": "A usr_... id, or the literal string 'me' for the calling User (not valid for API Keys).",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "body"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false,
+        "title": "Register a push device, or refresh an existing registration (self or the app's own key)"
+      },
+      "x_operation_id": "devices.register",
+      "x_method": "POST",
+      "x_path": "/v1/users/{id}/devices",
+      "x_path_params": [
+        "id"
+      ],
+      "x_query_params": null,
+      "x_has_body": true,
+      "x_needs_idempotency_key": false,
+      "x_accepts_if_match": false
+    },
+    {
+      "name": "substratal_devices_sendTest",
+      "title": "Send a test push to one device and wait for the provider's answer (self or the app's own key)",
+      "description": "Send a test push to one device and wait for the provider's answer (self or the app's own key)\n\nSynchronous, up to 10 seconds. Ignores the push preference, works on inactive devices, isn't stored in the inbox, and is limited to 10 per device per hour. 409 push_not_configured if the Application has no credential for the device's provider.\n\nREST: POST /v1/users/{id}/devices/{deviceId}/test",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "properties": {
+              "body": {
+                "maxLength": 1000,
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "title": {
+                "maxLength": 120,
+                "minLength": 1,
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "deviceId": {
+            "type": "string"
+          },
+          "id": {
+            "description": "A usr_... id, or the literal string 'me' for the calling User (not valid for API Keys).",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "deviceId"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false,
+        "title": "Send a test push to one device and wait for the provider's answer (self or the app's own key)"
+      },
+      "x_operation_id": "devices.sendTest",
+      "x_method": "POST",
+      "x_path": "/v1/users/{id}/devices/{deviceId}/test",
+      "x_path_params": [
+        "id",
+        "deviceId"
+      ],
+      "x_query_params": null,
+      "x_has_body": true,
+      "x_needs_idempotency_key": false,
+      "x_accepts_if_match": false
+    },
+    {
+      "name": "substratal_devices_update",
+      "title": "Update a device's name, app version, environment, or rotated token (self or the app's own key)",
+      "description": "Update a device's name, app version, environment, or rotated token (self or the app's own key)\n\nWriting a token reactivates an inactive device. If the new token is already another Device of the same User and Application, that other registration is deleted.\n\nREST: PATCH /v1/users/{id}/devices/{deviceId}",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "properties": {
+              "app_version": {
+                "maxLength": 50,
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "environment": {
+                "enum": [
+                  "production",
+                  "sandbox"
+                ],
+                "type": "string"
+              },
+              "name": {
+                "maxLength": 100,
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "subscription": {
+                "description": "The PushSubscription from PushManager.subscribe(), as JSON.",
+                "properties": {
+                  "endpoint": {
+                    "format": "uri",
+                    "maxLength": 2048,
+                    "type": "string"
+                  },
+                  "keys": {
+                    "properties": {
+                      "auth": {
+                        "type": "string"
+                      },
+                      "p256dh": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "p256dh",
+                      "auth"
+                    ],
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "endpoint",
+                  "keys"
+                ],
+                "type": "object"
+              },
+              "token": {
+                "maxLength": 4096,
+                "minLength": 1,
+                "type": "string",
+                "writeOnly": true
+              }
+            },
+            "type": "object"
+          },
+          "deviceId": {
+            "type": "string"
+          },
+          "id": {
+            "description": "A usr_... id, or the literal string 'me' for the calling User (not valid for API Keys).",
+            "type": "string"
+          },
+          "if_match": {
+            "description": "ETag from a prior read; a mismatch returns 409 version_conflict.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "deviceId",
+          "body"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": false,
+        "title": "Update a device's name, app version, environment, or rotated token (self or the app's own key)"
+      },
+      "x_operation_id": "devices.update",
+      "x_method": "PATCH",
+      "x_path": "/v1/users/{id}/devices/{deviceId}",
+      "x_path_params": [
+        "id",
+        "deviceId"
+      ],
+      "x_query_params": null,
+      "x_has_body": true,
+      "x_needs_idempotency_key": false,
+      "x_accepts_if_match": true
+    },
+    {
       "name": "substratal_entitlements_delete",
       "title": "Hard-remove a grant made in error (no order_id, under 24 hours old)",
       "description": "Hard-remove a grant made in error (no order_id, under 24 hours old)\n\nREST: DELETE /v1/entitlements/{id}",
@@ -2698,6 +3146,434 @@
       "x_has_body": false,
       "x_needs_idempotency_key": false,
       "x_accepts_if_match": false
+    },
+    {
+      "name": "substratal_notifications_get",
+      "title": "Fetch one notification, with its per-device deliveries",
+      "description": "Fetch one notification, with its per-device deliveries\n\nREST: GET /v1/users/{id}/notifications/{notificationId}",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "description": "A usr_... id, or the literal string 'me' for the calling User (not valid for API Keys).",
+            "type": "string"
+          },
+          "notificationId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "notificationId"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "Fetch one notification, with its per-device deliveries"
+      },
+      "x_operation_id": "notifications.get",
+      "x_method": "GET",
+      "x_path": "/v1/users/{id}/notifications/{notificationId}",
+      "x_path_params": [
+        "id",
+        "notificationId"
+      ],
+      "x_query_params": null,
+      "x_has_body": false,
+      "x_needs_idempotency_key": false,
+      "x_accepts_if_match": false
+    },
+    {
+      "name": "substratal_notifications_list",
+      "title": "List a User's notification inbox (self, the app's own key, or users.list)",
+      "description": "List a User's notification inbox (self, the app's own key, or users.list)\n\nNewest first. Archived notifications are excluded unless state=archived or include_inactive=true. An app key sees only its own Application's notifications, never platform alerts.\n\nREST: GET /v1/users/{id}/notifications",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "application_id": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "created_after": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "created_before": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "cursor": {
+            "type": "string"
+          },
+          "id": {
+            "description": "A usr_... id, or the literal string 'me' for the calling User (not valid for API Keys).",
+            "type": "string"
+          },
+          "include_inactive": {
+            "default": false,
+            "type": "boolean"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "priority": {
+            "enum": [
+              "normal",
+              "high"
+            ],
+            "type": "string"
+          },
+          "source": {
+            "enum": [
+              "application",
+              "platform"
+            ],
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "unread",
+              "read",
+              "archived"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "List a User's notification inbox (self, the app's own key, or users.list)"
+      },
+      "x_operation_id": "notifications.list",
+      "x_method": "GET",
+      "x_path": "/v1/users/{id}/notifications",
+      "x_path_params": [
+        "id"
+      ],
+      "x_query_params": [
+        "limit",
+        "cursor",
+        "state",
+        "application_id",
+        "source",
+        "category",
+        "priority",
+        "created_after",
+        "created_before",
+        "include_inactive"
+      ],
+      "x_has_body": false,
+      "x_needs_idempotency_key": false,
+      "x_accepts_if_match": false
+    },
+    {
+      "name": "substratal_notifications_markRead",
+      "title": "Mark every unread notification matching the filters as read (self or the app's own key)",
+      "description": "Mark every unread notification matching the filters as read (self or the app's own key)\n\nEvery filter is optional; an empty body marks everything the caller can see. before limits it to notifications created at or before that time. An app key's application_id is forced to its own.\n\nREST: POST /v1/users/{id}/notifications/mark-read",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "properties": {
+              "application_id": {
+                "type": "string"
+              },
+              "before": {
+                "format": "date-time",
+                "type": "string"
+              },
+              "category": {
+                "type": "string"
+              },
+              "source": {
+                "enum": [
+                  "application",
+                  "platform"
+                ],
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "id": {
+            "description": "A usr_... id, or the literal string 'me' for the calling User (not valid for API Keys).",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false,
+        "title": "Mark every unread notification matching the filters as read (self or the app's own key)"
+      },
+      "x_operation_id": "notifications.markRead",
+      "x_method": "POST",
+      "x_path": "/v1/users/{id}/notifications/mark-read",
+      "x_path_params": [
+        "id"
+      ],
+      "x_query_params": null,
+      "x_has_body": true,
+      "x_needs_idempotency_key": false,
+      "x_accepts_if_match": false
+    },
+    {
+      "name": "substratal_notifications_send",
+      "title": "Send one notification to one User (the app's own key with notifications.send, or platform notifications.send)",
+      "description": "Send one notification to one User (the app's own key with notifications.send, or platform notifications.send)\n\nAlways creates the notification in the User's inbox; push.status says what happened to the push. The recipient must have active access to the Application (403 entitlement_required). The whole push payload must fit in 4 KB (422 notification_too_large). Categories under security., account., and billing. are reserved for platform alerts (422 reserved_category). Over 60 notifications per User per Application per hour is 429 rate_limited with details.scope recipient.\n\nREST: POST /v1/users/{id}/notifications",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "properties": {
+              "action_url": {
+                "maxLength": 2048,
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "application_id": {
+                "description": "Only for a platform notifications.send caller, and required for one.",
+                "type": "string"
+              },
+              "badge": {
+                "maximum": 99999,
+                "minimum": 0,
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "body": {
+                "maxLength": 1000,
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "category": {
+                "description": "Sender-defined. security., account., and billing. are reserved for platform alerts.",
+                "maxLength": 64,
+                "pattern": "^[a-z][a-z0-9_]*(\\.[a-z0-9_]+)*$",
+                "type": "string"
+              },
+              "collapse_key": {
+                "maxLength": 64,
+                "pattern": "^[A-Za-z0-9._-]+$",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "data": {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "description": "String values only (FCM's data payload carries only strings); 2 KB serialized; the key substratal is reserved.",
+                "maxProperties": 20,
+                "type": "object"
+              },
+              "priority": {
+                "enum": [
+                  "normal",
+                  "high"
+                ],
+                "type": "string"
+              },
+              "push": {
+                "default": true,
+                "description": "false writes to the inbox without a push.",
+                "type": "boolean"
+              },
+              "sound": {
+                "description": "Defaults to default for high priority, null (silent) for normal.",
+                "enum": [
+                  "default",
+                  null
+                ],
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "title": {
+                "maxLength": 120,
+                "minLength": 1,
+                "type": "string"
+              },
+              "ttl_seconds": {
+                "default": 86400,
+                "maximum": 2419200,
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "title",
+              "category"
+            ],
+            "type": "object"
+          },
+          "id": {
+            "description": "A usr_... id, or the literal string 'me' for the calling User (not valid for API Keys).",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "body"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false,
+        "title": "Send one notification to one User (the app's own key with notifications.send, or platform notifications.send)"
+      },
+      "x_operation_id": "notifications.send",
+      "x_method": "POST",
+      "x_path": "/v1/users/{id}/notifications",
+      "x_path_params": [
+        "id"
+      ],
+      "x_query_params": null,
+      "x_has_body": true,
+      "x_needs_idempotency_key": false,
+      "x_accepts_if_match": false
+    },
+    {
+      "name": "substratal_notifications_unreadCount",
+      "title": "Count unread notifications, in total and per Application (self or the app's own key)",
+      "description": "Count unread notifications, in total and per Application (self or the app's own key)\n\nREST: GET /v1/users/{id}/notifications/unread-count",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "application_id": {
+            "type": "string"
+          },
+          "id": {
+            "description": "A usr_... id, or the literal string 'me' for the calling User (not valid for API Keys).",
+            "type": "string"
+          },
+          "source": {
+            "enum": [
+              "application",
+              "platform"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "Count unread notifications, in total and per Application (self or the app's own key)"
+      },
+      "x_operation_id": "notifications.unreadCount",
+      "x_method": "GET",
+      "x_path": "/v1/users/{id}/notifications/unread-count",
+      "x_path_params": [
+        "id"
+      ],
+      "x_query_params": [
+        "application_id",
+        "source"
+      ],
+      "x_has_body": false,
+      "x_needs_idempotency_key": false,
+      "x_accepts_if_match": false
+    },
+    {
+      "name": "substratal_notifications_update",
+      "title": "Mark one notification read, unread, or archived (self or the app's own key)",
+      "description": "Mark one notification read, unread, or archived (self or the app's own key)\n\nREST: PATCH /v1/users/{id}/notifications/{notificationId}",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "properties": {
+              "state": {
+                "enum": [
+                  "unread",
+                  "read",
+                  "archived"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "state"
+            ],
+            "type": "object"
+          },
+          "id": {
+            "description": "A usr_... id, or the literal string 'me' for the calling User (not valid for API Keys).",
+            "type": "string"
+          },
+          "if_match": {
+            "description": "ETag from a prior read; a mismatch returns 409 version_conflict.",
+            "type": "string"
+          },
+          "notificationId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "notificationId",
+          "body"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": false,
+        "title": "Mark one notification read, unread, or archived (self or the app's own key)"
+      },
+      "x_operation_id": "notifications.update",
+      "x_method": "PATCH",
+      "x_path": "/v1/users/{id}/notifications/{notificationId}",
+      "x_path_params": [
+        "id",
+        "notificationId"
+      ],
+      "x_query_params": null,
+      "x_has_body": true,
+      "x_needs_idempotency_key": false,
+      "x_accepts_if_match": true
     },
     {
       "name": "substratal_organizations_acceptMembership",
@@ -3481,6 +4357,299 @@
       "x_path": "/v1/users/{id}/profile",
       "x_path_params": [
         "id"
+      ],
+      "x_query_params": null,
+      "x_has_body": true,
+      "x_needs_idempotency_key": false,
+      "x_accepts_if_match": true
+    },
+    {
+      "name": "substratal_pushCredentials_create",
+      "title": "Configure one push provider (the owner or applications.manage, User token only)",
+      "description": "Configure one push provider (the owner or applications.manage, User token only)\n\nprivate_key (apns) and service_account (fcm) are write-only and stored KMS-encrypted. For web_push the platform generates the VAPID key pair and returns its public half. An API Key gets 400 user_token_required. A second credential for the same provider is 409 push_credential_exists; material that doesn't parse is 422 invalid_push_credential.\n\nREST: POST /v1/applications/{id}/push-credentials",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "description": "Fields depend on provider. apns: team_id, key_id, topic, private_key. fcm: service_account. web_push: subject (the VAPID key pair is generated).",
+            "properties": {
+              "key_id": {
+                "description": "apns",
+                "maxLength": 10,
+                "minLength": 10,
+                "type": "string"
+              },
+              "private_key": {
+                "description": "apns: the .p8 file's contents (PEM PKCS#8, P-256). Write-only.",
+                "type": "string",
+                "writeOnly": true
+              },
+              "provider": {
+                "enum": [
+                  "apns",
+                  "fcm",
+                  "web_push"
+                ],
+                "type": "string"
+              },
+              "service_account": {
+                "description": "fcm: the service-account JSON key (type, project_id, private_key, client_email). Write-only.",
+                "type": "object",
+                "writeOnly": true
+              },
+              "subject": {
+                "description": "web_push: a mailto: or https: contact URI (RFC 8292)",
+                "maxLength": 255,
+                "type": "string"
+              },
+              "team_id": {
+                "description": "apns",
+                "maxLength": 10,
+                "minLength": 10,
+                "type": "string"
+              },
+              "topic": {
+                "description": "apns: the app's bundle id",
+                "maxLength": 255,
+                "type": "string"
+              }
+            },
+            "required": [
+              "provider"
+            ],
+            "type": "object"
+          },
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "body"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false,
+        "title": "Configure one push provider (the owner or applications.manage, User token only)"
+      },
+      "x_operation_id": "pushCredentials.create",
+      "x_method": "POST",
+      "x_path": "/v1/applications/{id}/push-credentials",
+      "x_path_params": [
+        "id"
+      ],
+      "x_query_params": null,
+      "x_has_body": true,
+      "x_needs_idempotency_key": false,
+      "x_accepts_if_match": false
+    },
+    {
+      "name": "substratal_pushCredentials_delete",
+      "title": "Remove a push provider (User token only)",
+      "description": "Remove a push provider (User token only)\n\nPending deliveries to that provider are skipped. Removing web_push deactivates every web_push device of the Application (inactive_reason credential_removed), because browser subscriptions are bound to the VAPID key.\n\nREST: DELETE /v1/applications/{id}/push-credentials/{provider}",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "provider": {
+            "enum": [
+              "apns",
+              "fcm",
+              "web_push"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "provider"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": false,
+        "title": "Remove a push provider (User token only)"
+      },
+      "x_operation_id": "pushCredentials.delete",
+      "x_method": "DELETE",
+      "x_path": "/v1/applications/{id}/push-credentials/{provider}",
+      "x_path_params": [
+        "id",
+        "provider"
+      ],
+      "x_query_params": null,
+      "x_has_body": false,
+      "x_needs_idempotency_key": false,
+      "x_accepts_if_match": false
+    },
+    {
+      "name": "substratal_pushCredentials_get",
+      "title": "Fetch one provider's configuration",
+      "description": "Fetch one provider's configuration\n\nREST: GET /v1/applications/{id}/push-credentials/{provider}",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "provider": {
+            "enum": [
+              "apns",
+              "fcm",
+              "web_push"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "provider"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "Fetch one provider's configuration"
+      },
+      "x_operation_id": "pushCredentials.get",
+      "x_method": "GET",
+      "x_path": "/v1/applications/{id}/push-credentials/{provider}",
+      "x_path_params": [
+        "id",
+        "provider"
+      ],
+      "x_query_params": null,
+      "x_has_body": false,
+      "x_needs_idempotency_key": false,
+      "x_accepts_if_match": false
+    },
+    {
+      "name": "substratal_pushCredentials_list",
+      "title": "List the push providers an Application has configured (the owner, the app's own key, or applications.manage)",
+      "description": "List the push providers an Application has configured (the owner, the app's own key, or applications.manage)\n\nNever returns key material. At most one credential per provider, so the list isn't paginated.\n\nREST: GET /v1/applications/{id}/push-credentials",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "List the push providers an Application has configured (the owner, the app's own key, or applications.manage)"
+      },
+      "x_operation_id": "pushCredentials.list",
+      "x_method": "GET",
+      "x_path": "/v1/applications/{id}/push-credentials",
+      "x_path_params": [
+        "id"
+      ],
+      "x_query_params": null,
+      "x_has_body": false,
+      "x_needs_idempotency_key": false,
+      "x_accepts_if_match": false
+    },
+    {
+      "name": "substratal_pushCredentials_update",
+      "title": "Replace key material, change non-secret fields, or re-enable a failed credential (User token only)",
+      "description": "Replace key material, change non-secret fields, or re-enable a failed credential (User token only)\n\nWritable fields are the provider's own create fields, plus status (only failed → active). Any change to key material also returns a failed credential to active. The VAPID key pair can't be rotated in place: delete and recreate the web_push credential.\n\nREST: PATCH /v1/applications/{id}/push-credentials/{provider}",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "properties": {
+              "key_id": {
+                "maxLength": 10,
+                "minLength": 10,
+                "type": "string"
+              },
+              "private_key": {
+                "type": "string",
+                "writeOnly": true
+              },
+              "service_account": {
+                "type": "object",
+                "writeOnly": true
+              },
+              "status": {
+                "description": "Only failed → active.",
+                "enum": [
+                  "active"
+                ],
+                "type": "string"
+              },
+              "subject": {
+                "maxLength": 255,
+                "type": "string"
+              },
+              "team_id": {
+                "maxLength": 10,
+                "minLength": 10,
+                "type": "string"
+              },
+              "topic": {
+                "maxLength": 255,
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "id": {
+            "type": "string"
+          },
+          "if_match": {
+            "description": "ETag from a prior read; a mismatch returns 409 version_conflict.",
+            "type": "string"
+          },
+          "provider": {
+            "enum": [
+              "apns",
+              "fcm",
+              "web_push"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "provider",
+          "body"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": false,
+        "title": "Replace key material, change non-secret fields, or re-enable a failed credential (User token only)"
+      },
+      "x_operation_id": "pushCredentials.update",
+      "x_method": "PATCH",
+      "x_path": "/v1/applications/{id}/push-credentials/{provider}",
+      "x_path_params": [
+        "id",
+        "provider"
       ],
       "x_query_params": null,
       "x_has_body": true,
@@ -4768,6 +5937,11 @@
                         "organization.member_added",
                         "organization.member_removed",
                         "application.review_status_changed",
+                        "device.registered",
+                        "device.deactivated",
+                        "device.deleted",
+                        "notification.push_failed",
+                        "push_credential.failed",
                         "webhook.test"
                       ],
                       "type": "string"
@@ -5169,14 +6343,14 @@
       "name": "llms.txt",
       "description": "Machine-oriented index of every page of the Substratal Apps API specification.",
       "mimeType": "text/markdown",
-      "text": "# Substratal Apps — Platform API\n\n\u003e Substratal Apps is the user/organization/tenancy/settings/storage layer an\n\u003e app developer would otherwise have to build themselves — comparable in\n\u003e shape to Auth0, Clerk, or WorkOS, scoped around everything a multi-tenant\n\u003e app needs: accounts, roles and permissions, per-app settings, team/tenancy\n\u003e structure, and per-user storage, all behind one API. This site is the\n\u003e system of record for that API: users, roles, per-app access (the \"turn an\n\u003e app on/off for a user\" switch), profiles, and settings across every\n\u003e Application built on the platform. It is API-first: no user-facing\n\u003e interface is specified here — a dashboard for easier onboarding is\n\u003e planned, but it is a separate, later client of this API. Billing is each\n\u003e Application developer's own concern; this API tracks entitlement state,\n\u003e it does not process payments.\n\nThis site is the living specification. Treat it as authoritative over any\nolder single-file draft found elsewhere in the repository's history.\n\n## Start here\n\n- [Home](https://compositecode.github.io/substratalapps.com/): what Substratal Apps is and how this site is organized.\n- [Getting Started](https://compositecode.github.io/substratalapps.com/getting-started/): the fastest path to understanding the system before writing code against it.\n- [Quickstart](https://compositecode.github.io/substratalapps.com/quickstart/): a runnable curl walkthrough of the core access model.\n- [Domain Model](https://compositecode.github.io/substratalapps.com/domain-model/): the entities — User, Organization, Tenant, Application, Role, Permission, Entitlement, Profile, Setting, Order, Audit Event.\n- [Tenancy](https://compositecode.github.io/substratalapps.com/domain-model/tenancy/): the infrastructure-placement/data-isolation boundary for an Application owner — shared, isolated, or dedicated-region. Distinct from Organization.\n- [Access Control](https://compositecode.github.io/substratalapps.com/access-control/): how Entitlement (is the app on?) and Role (what can they do?) combine to decide every request, including Organization-vs-User precedence when an org-wide grant and a User's own standing could otherwise conflict.\n- [Database Schema](https://compositecode.github.io/substratalapps.com/domain-model/database-schema/): Postgres types, constraints, and indexes behind every entity — for implementers, not API callers.\n\n## API reference\n\n- [Conventions](https://compositecode.github.io/substratalapps.com/api-reference/conventions/): base URL, auth, pagination, idempotency, error shape, ID format.\n- [Auth](https://compositecode.github.io/substratalapps.com/api-reference/auth/): signup, login, MFA, sessions, password/email lifecycle, and how an Application obtains its per-app JWT.\n- [Users](https://compositecode.github.io/substratalapps.com/api-reference/users/)\n- [Profiles](https://compositecode.github.io/substratalapps.com/api-reference/profiles/)\n- [Settings](https://compositecode.github.io/substratalapps.com/api-reference/settings/)\n- [Applications](https://compositecode.github.io/substratalapps.com/api-reference/applications/)\n- [Entitlements](https://compositecode.github.io/substratalapps.com/api-reference/entitlements/): the on/off switch for a user's access to an app.\n- [Roles \u0026 Permissions](https://compositecode.github.io/substratalapps.com/api-reference/roles-and-permissions/)\n- [Organizations](https://compositecode.github.io/substratalapps.com/api-reference/organizations/)\n- [Tenancy](https://compositecode.github.io/substratalapps.com/api-reference/tenancy/): fetch a Tenant and request a tier change — support-only today, no customer self-service.\n- [Billing](https://compositecode.github.io/substratalapps.com/api-reference/billing/): the Application owner's own Substratal subscription — plan, usage, Stripe Checkout and Customer Portal.\n- [Audit](https://compositecode.github.io/substratalapps.com/api-reference/audit/)\n- [Webhooks](https://compositecode.github.io/substratalapps.com/api-reference/webhooks/)\n- [API Keys](https://compositecode.github.io/substratalapps.com/api-reference/api-keys/): service-to-service credentials.\n- [openapi.yaml](https://compositecode.github.io/substratalapps.com/openapi.yaml): the same API surface as a machine-readable OpenAPI 3.1 document.\n\n## Also useful\n\n- [Workflows](https://compositecode.github.io/substratalapps.com/workflows/): purchase-to-access, admin revokes access, role changes, end to end.\n- [Trust Model](https://compositecode.github.io/substratalapps.com/trust-model/): how a separately-hosted downstream app verifies a user's access against this API.\n- [MCP Server](https://compositecode.github.io/substratalapps.com/mcp-server/): a Model Context Protocol server that lets an AI agent call this API as tools, generated from openapi.yaml, using the same Bearer credential as every other caller — no new auth model.\n- [Non-Functional Requirements](https://compositecode.github.io/substratalapps.com/non-functional-requirements/)\n- [Compliance \u0026 Data Protection](https://compositecode.github.io/substratalapps.com/compliance/): which of SOC 2, HIPAA, GDPR, and CCPA apply, and when.\n- [Roadmap](https://compositecode.github.io/substratalapps.com/roadmap/): MVP through Phase 3.\n- [Pricing](https://compositecode.github.io/substratalapps.com/pricing/): Starter (free), Team (per-seat), and Enterprise (with a choice of Tenant tier) — what Substratal itself charges the Application-owner developer, distinct from what that developer charges their own end users.\n- [Changelog](https://compositecode.github.io/substratalapps.com/changelog/): what's changed in this spec over time.\n- [Glossary](https://compositecode.github.io/substratalapps.com/glossary/)\n- [Versions](https://compositecode.github.io/substratalapps.com/versions/): every released version of this spec; older versions are frozen copies under `/versions/\u003cversion\u003e/`.\n\nDeployment/infrastructure, the build plan, and other project-planning material are intentionally not part of this API-specification site — they live as plain Markdown in the repository root at https://github.com/CompositeCode/substratalapps.com, starting from its README.md.\n"
+      "text": "# Substratal Apps — Platform API\n\n\u003e Substratal Apps is the user/organization/tenancy/settings/storage layer an\n\u003e app developer would otherwise have to build themselves — comparable in\n\u003e shape to Auth0, Clerk, or WorkOS, scoped around everything a multi-tenant\n\u003e app needs: accounts, roles and permissions, per-app settings, team/tenancy\n\u003e structure, and per-user storage, all behind one API. This site is the\n\u003e system of record for that API: users, roles, per-app access (the \"turn an\n\u003e app on/off for a user\" switch), profiles, and settings across every\n\u003e Application built on the platform. It is API-first: no user-facing\n\u003e interface is specified here — a dashboard for easier onboarding is\n\u003e planned, but it is a separate, later client of this API. Billing is each\n\u003e Application developer's own concern; this API tracks entitlement state,\n\u003e it does not process payments.\n\nThis site is the living specification. Treat it as authoritative over any\nolder single-file draft found elsewhere in the repository's history.\n\n## Start here\n\n- [Home](https://compositecode.github.io/substratalapps.com/): what Substratal Apps is and how this site is organized.\n- [Getting Started](https://compositecode.github.io/substratalapps.com/getting-started/): the fastest path to understanding the system before writing code against it.\n- [Quickstart](https://compositecode.github.io/substratalapps.com/quickstart/): a runnable curl walkthrough of the core access model.\n- [Domain Model](https://compositecode.github.io/substratalapps.com/domain-model/): the entities — User, Organization, Tenant, Application, Role, Permission, Entitlement, Profile, Setting, Order, Audit Event.\n- [Tenancy](https://compositecode.github.io/substratalapps.com/domain-model/tenancy/): the infrastructure-placement/data-isolation boundary for an Application owner — shared, isolated, or dedicated-region. Distinct from Organization.\n- [Access Control](https://compositecode.github.io/substratalapps.com/access-control/): how Entitlement (is the app on?) and Role (what can they do?) combine to decide every request, including Organization-vs-User precedence when an org-wide grant and a User's own standing could otherwise conflict.\n- [Notifications](https://compositecode.github.io/substratalapps.com/domain-model/notifications/): the Device, PushCredential, Notification, and delivery records behind push notifications and the inbox.\n- [Database Schema](https://compositecode.github.io/substratalapps.com/domain-model/database-schema/): Postgres types, constraints, and indexes behind every entity — for implementers, not API callers.\n\n## API reference\n\n- [Conventions](https://compositecode.github.io/substratalapps.com/api-reference/conventions/): base URL, auth, pagination, idempotency, error shape, ID format.\n- [Auth](https://compositecode.github.io/substratalapps.com/api-reference/auth/): signup, login, MFA, sessions, password/email lifecycle, and how an Application obtains its per-app JWT.\n- [Users](https://compositecode.github.io/substratalapps.com/api-reference/users/)\n- [Profiles](https://compositecode.github.io/substratalapps.com/api-reference/profiles/)\n- [Settings](https://compositecode.github.io/substratalapps.com/api-reference/settings/)\n- [Applications](https://compositecode.github.io/substratalapps.com/api-reference/applications/)\n- [Entitlements](https://compositecode.github.io/substratalapps.com/api-reference/entitlements/): the on/off switch for a user's access to an app.\n- [Roles \u0026 Permissions](https://compositecode.github.io/substratalapps.com/api-reference/roles-and-permissions/)\n- [Organizations](https://compositecode.github.io/substratalapps.com/api-reference/organizations/)\n- [Tenancy](https://compositecode.github.io/substratalapps.com/api-reference/tenancy/): fetch a Tenant and request a tier change — support-only today, no customer self-service.\n- [Billing](https://compositecode.github.io/substratalapps.com/api-reference/billing/): the Free/Standard subscription — Stripe Checkout and Customer Portal. Being reworked for subscriber billing (DECISIONS.md #39).\n- [Audit](https://compositecode.github.io/substratalapps.com/api-reference/audit/)\n- [Webhooks](https://compositecode.github.io/substratalapps.com/api-reference/webhooks/)\n- [Push Notifications](https://compositecode.github.io/substratalapps.com/api-reference/notifications/): alerts and updates to a User's devices through APNs, FCM, and Web Push, plus their notification inbox — device registration, an Application's push credentials, sending, and platform alerts.\n- [API Keys](https://compositecode.github.io/substratalapps.com/api-reference/api-keys/): service-to-service credentials.\n- [openapi.yaml](https://compositecode.github.io/substratalapps.com/openapi.yaml): the same API surface as a machine-readable OpenAPI 3.1 document.\n- [OpenAPI Specification](https://compositecode.github.io/substratalapps.com/openapi/): the same document rendered as interactive Swagger UI, with how to use it to build against the API.\n\n## Also useful\n\n- [Workflows](https://compositecode.github.io/substratalapps.com/workflows/): purchase-to-access, admin revokes access, role changes, end to end.\n- [Trust Model](https://compositecode.github.io/substratalapps.com/trust-model/): how a separately-hosted downstream app verifies a user's access against this API.\n- [MCP Server](https://compositecode.github.io/substratalapps.com/mcp-server/): a Model Context Protocol server that lets an AI agent call this API as tools, generated from openapi.yaml, using the same Bearer credential as every other caller — no new auth model.\n- [Non-Functional Requirements](https://compositecode.github.io/substratalapps.com/non-functional-requirements/)\n- [Compliance \u0026 Data Protection](https://compositecode.github.io/substratalapps.com/compliance/): which of SOC 2, HIPAA, GDPR, and CCPA apply, and when.\n- [Roadmap](https://compositecode.github.io/substratalapps.com/roadmap/): MVP through Phase 3.\n- [Pricing](https://compositecode.github.io/substratalapps.com/pricing/): Free, and Standard at $6 per user per month — what people using Substratal's own apps pay, individually or through an Organization. Business and Enterprise pricing comes later.\n- [Changelog](https://compositecode.github.io/substratalapps.com/changelog/): what's changed in this spec over time.\n- [Glossary](https://compositecode.github.io/substratalapps.com/glossary/)\n- [Versions](https://compositecode.github.io/substratalapps.com/versions/): every released version of this spec; older versions are frozen copies under `/versions/\u003cversion\u003e/`.\n\nDeployment/infrastructure, the build plan, and other project-planning material are intentionally not part of this API-specification site — they live as plain Markdown in the repository root at https://github.com/CompositeCode/substratalapps.com, starting from its README.md.\n"
     },
     {
       "uri": "https://compositecode.github.io/substratalapps.com/glossary/",
       "name": "Glossary",
       "description": "Precise definitions for every term the API uses.",
       "mimeType": "text/markdown",
-      "text": "# Glossary\n{: .no_toc }\n\nPrecise definitions for every term used across this site. If a page uses a capitalized term (`Entitlement`, `AppRole`) without defining it inline, it means exactly what's written here.\n{: .fs-6 .fw-300 }\n\n---\n\n#### Access path\nOne way a User reaches an Application: their own personal [Entitlement](#entitlement), or an org-wide grant from an [Organization](#organization) that includes them. Resolved access is the union of every active path. See [Access Control](../access-control/#the-algorithm).\n\n#### API Key\nA long-lived service credential (`satk_live_…`/`satk_test_…`), scoped to the platform or to one Application. An app-scoped key can only ever touch its own Application's rows. See [API Keys](../api-reference/api-keys/).\n\n#### App token\nThe short-lived (5-minute) JWT an Application verifies locally, with `aud` set to that Application. Carries `entitlement_status` and `effective_permissions`. See [Auth → The app token](../api-reference/auth/#the-app-token).\n\n#### Application\n(also \"App\") One developer's separately-hosted app (web, iOS, macOS, Windows, Linux, …) that uses Substratal Apps for its users, settings, organizations, tenancy, and storage. This is its catalog entry. See [Domain Model → Applications](../domain-model/applications/).\n\n#### AppProfile\nPer-app identity data for one user — e.g. a display handle meaningful only inside that one app. Distinct from the global [Profile](#profile).\n\n#### AppRole\nA [Role](#role) scoped to one Application, defined by that app's own catalog entry rather than by the platform. See [Domain Model → Roles \u0026 Permissions](../domain-model/roles-and-permissions/).\n\n#### AppSettings\nPer-app configuration for one user, layered over that user's global [Settings](#settings) and the Application's declared defaults. See [Workflows → Settings resolution](../workflows/#settings-resolution-in-practice).\n\n#### Audit Event\nAn immutable record of who changed what access, when. See [Domain Model → Orders \u0026 Audit](../domain-model/orders-and-audit/).\n\n#### Effective permissions\nThe resolved set of [Permissions](#permission) a user holds for a given Application — the union of the permissions on their app-scoped Roles for that app (explicit assignments plus the app's `default_app_role`), and empty unless the User and their Entitlement are both active. Only that app's own `app.\u003cslug\u003e.*` keys ever appear; platform Roles govern the hub, not apps. See [Access Control](../access-control/#step-2-effective-permissions).\n\n#### Entitlement\nThe join record between a User (or Organization) and an Application: do they own it, and is it currently switched on. The record behind \"turn an app on/off for a user.\" See [Domain Model → Entitlements](../domain-model/entitlements/).\n\n#### Hub\nShorthand used throughout this site for Substratal Apps itself — the platform this API belongs to.\n\n#### MCP\nModel Context Protocol — the standard this site's AI-agent-facing tool-call interface implements. See [MCP Server](../mcp-server/). Introduces no new authorization model of its own; see [Authentication — no new model](../mcp-server/#authentication--no-new-model).\n\n#### Order\nNot an entity of this API. It's the developer's own commerce record, in their own billing system. An [Entitlement](#entitlement) carries only an opaque `order_id` reference to it. See [Domain Model → Orders \u0026 Audit](../domain-model/orders-and-audit/#order).\n\n#### Organization\nA domain/grouping object for Users — a company, or a group within a company — used to organize shared admin standing and group-wide Application access. Decoupled from infrastructure placement; see [Tenant](#tenant) and [Tenant vs. Organization](../domain-model/tenancy/#tenant-vs-organization). Pulled into [Phase 2](../roadmap/#phase-2); see [Organizations](../domain-model/users-and-organizations/#organization).\n\n#### OrganizationMembership\nThe join record between a User and an Organization, carrying that User's standing *within* that one Organization (`org_admin` or `member`) and whether it's `pending` (invited, not yet accepted) or `active` — a User can hold this for any number of Organizations at once. See [Domain Model → Users \u0026 Organizations](../domain-model/users-and-organizations/#organizationmembership).\n\n#### Permission\nAn atomic, checkable capability, written as a dotted key (`billing.manage`, `app.timetrack.export`). Never assigned directly to a user — always granted through a [Role](#role).\n\n#### Plan\nThe commercial subscription on a [Tenant](#tenant): `starter`, `team`, or `enterprise`. Independent of [Tier](#tier). See [Pricing](../pricing/).\n\n#### PlatformRole\nA [Role](#role) that applies across the whole hub rather than one Application — `superadmin`, `support`, `billing_admin`, `member`.\n\n#### Profile\nGlobal, cross-app identity and contact data for a User — name, avatar, email, locale. Distinct from [AppProfile](#appprofile).\n\n#### Restricted\nThe state of a [Tenant](#tenant) whose subscription lapsed while its usage exceeded what it could drop to. Existing access keeps working; new usage returns `402`. See [Pricing → Subscription lapse](../pricing/#subscription-lapse--downgrades).\n\n#### Role\nA named bundle of [Permissions](#permission). Either a [PlatformRole](#platformrole) or an [AppRole](#approle).\n\n#### Seat\nA distinct User with active resolved access to at least one Application a [Tenant](#tenant) owns. The unit Team and Enterprise are billed on. See [Pricing](../pricing/#what-seat-means-here).\n\n#### Session\nOne successful login (`ses_…`). Every refresh token and app token minted from it carries its id as `sid`, and revoking it ends them all. See [Auth → Sessions](../api-reference/auth/#sessions).\n\n#### Settings\nGlobal, cross-app configuration for a User — locale, timezone, notification preferences. Distinct from [AppSettings](#appsettings).\n\n#### Tenant\nThe infrastructure-placement and data-isolation boundary for one of Substratal's own paying customers — the owner of an Application's catalog entry. `shared` (default), `isolated`, or `dedicated_region`. Not the same thing as [Organization](#organization) — see [Tenant vs. Organization](../domain-model/tenancy/#tenant-vs-organization). See [Domain Model → Tenancy](../domain-model/tenancy/).\n\n#### Tier\nWhere a [Tenant](#tenant)'s data physically lives: `shared`, `isolated`, or `dedicated_region`. Independent of [Plan](#plan), except that the non-`shared` tiers require Enterprise.\n\n#### User\nA person with an account on Substratal. One identity, used everywhere in the hub and, via the [Trust Model](../trust-model/), in every app they launch from it.\n\n#### Webhook\nA signed HTTPS POST the hub sends an Application when something changes. `access.revoked` and `role.removed` are required subscriptions. See [Webhooks](../api-reference/webhooks/).\n"
+      "text": "# Glossary\n{: .no_toc }\n\nPrecise definitions for every term used across this site. If a page uses a capitalized term (`Entitlement`, `AppRole`) without defining it inline, it means exactly what's written here.\n{: .fs-6 .fw-300 }\n\n---\n\n#### Access path\nOne way a User reaches an Application: their own personal [Entitlement](#entitlement), or an org-wide grant from an [Organization](#organization) that includes them. Resolved access is the union of every active path. See [Access Control](../access-control/#the-algorithm).\n\n#### API Key\nA long-lived service credential (`satk_live_…`/`satk_test_…`), scoped to the platform or to one Application. An app-scoped key can only ever touch its own Application's rows. See [API Keys](../api-reference/api-keys/).\n\n#### App token\nThe short-lived (5-minute) JWT an Application verifies locally, with `aud` set to that Application. Carries `entitlement_status` and `effective_permissions`. See [Auth → The app token](../api-reference/auth/#the-app-token).\n\n#### Application\n(also \"App\") One developer's separately-hosted app (web, iOS, macOS, Windows, Linux, …) that uses Substratal Apps for its users, settings, organizations, tenancy, and storage. This is its catalog entry. See [Domain Model → Applications](../domain-model/applications/).\n\n#### AppProfile\nPer-app identity data for one user — e.g. a display handle meaningful only inside that one app. Distinct from the global [Profile](#profile).\n\n#### AppRole\nA [Role](#role) scoped to one Application, defined by that app's own catalog entry rather than by the platform. See [Domain Model → Roles \u0026 Permissions](../domain-model/roles-and-permissions/).\n\n#### AppSettings\nPer-app configuration for one user, layered over that user's global [Settings](#settings) and the Application's declared defaults. See [Workflows → Settings resolution](../workflows/#settings-resolution-in-practice).\n\n#### Audit Event\nAn immutable record of who changed what access, when. See [Domain Model → Orders \u0026 Audit](../domain-model/orders-and-audit/).\n\n#### Device\nOne install of an [Application](#application) on one device, signed in as one [User](#user), with the APNs, FCM, or Web Push token that reaches it (`dvc_…`). Tied to the [Session](#session) that registered it, so signing out stops its pushes. See [Push Notifications → Devices](../api-reference/notifications/#devices).\n\n#### Effective permissions\nThe resolved set of [Permissions](#permission) a user holds for a given Application — the union of the permissions on their app-scoped Roles for that app (explicit assignments plus the app's `default_app_role`), and empty unless the User and their Entitlement are both active. Only that app's own `app.\u003cslug\u003e.*` keys ever appear; platform Roles govern the hub, not apps. See [Access Control](../access-control/#step-2-effective-permissions).\n\n#### Entitlement\nThe join record between a User (or Organization) and an Application: do they own it, and is it currently switched on. The record behind \"turn an app on/off for a user.\" See [Domain Model → Entitlements](../domain-model/entitlements/).\n\n#### Hub\nShorthand used throughout this site for Substratal Apps itself — the platform this API belongs to.\n\n#### MCP\nModel Context Protocol — the standard this site's AI-agent-facing tool-call interface implements. See [MCP Server](../mcp-server/). Introduces no new authorization model of its own; see [Authentication — no new model](../mcp-server/#authentication--no-new-model).\n\n#### Notification\nOne alert or update to one User (`ntf_…`), from an Application or from the platform. Pushed to the User's [Devices](#device) when it can be, and always kept in their inbox for 90 days. See [Push Notifications](../api-reference/notifications/).\n\n#### Order\nNot an entity of this API. It's the developer's own commerce record, in their own billing system. An [Entitlement](#entitlement) carries only an opaque `order_id` reference to it. See [Domain Model → Orders \u0026 Audit](../domain-model/orders-and-audit/#order).\n\n#### Organization\nA domain/grouping object for Users — a company, or a group within a company — used to organize shared admin standing and group-wide Application access. Decoupled from infrastructure placement; see [Tenant](#tenant) and [Tenant vs. Organization](../domain-model/tenancy/#tenant-vs-organization). Pulled into [Phase 2](../roadmap/#phase-2); see [Organizations](../domain-model/users-and-organizations/#organization).\n\n#### OrganizationMembership\nThe join record between a User and an Organization, carrying that User's standing *within* that one Organization (`org_admin` or `member`) and whether it's `pending` (invited, not yet accepted) or `active` — a User can hold this for any number of Organizations at once. See [Domain Model → Users \u0026 Organizations](../domain-model/users-and-organizations/#organizationmembership).\n\n#### Permission\nAn atomic, checkable capability, written as a dotted key (`billing.manage`, `app.timetrack.export`). Never assigned directly to a user — always granted through a [Role](#role).\n\n#### Plan\nThe subscription tier covering a User: `free` or `standard`. A User is on Standard through their own subscription or an Organization's. Business and Enterprise plans come later. Independent of [Tier](#tier). See [Pricing](../pricing/).\n\n#### Platform alert\nA [Notification](#notification) the platform raises itself about the User's account, such as a new sign-in or a changed password. Its category is from a fixed catalog under `security.` and `account.`. See [Push Notifications → Platform alerts](../api-reference/notifications/#platform-alerts).\n\n#### PlatformRole\nA [Role](#role) that applies across the whole hub rather than one Application — `superadmin`, `support`, `billing_admin`, `member`.\n\n#### Profile\nGlobal, cross-app identity and contact data for a User — name, avatar, email, locale. Distinct from [AppProfile](#appprofile).\n\n#### Push credential\nAn Application's own key for one push provider: an APNs `.p8` key, an FCM service account, or a Web Push (VAPID) key pair (`pcr_…`). Write-only and KMS-encrypted. Providers deliver only for the app a token was issued to, so every Application brings its own. See [Push Notifications → Push credentials](../api-reference/notifications/#push-credentials).\n\n#### Role\nA named bundle of [Permissions](#permission). Either a [PlatformRole](#platformrole) or an [AppRole](#approle).\n\n#### Seat\nA covered member of an Organization with a Standard subscription: a distinct, active, non-test-mode member included by the subscription's member selection. The unit an Organization is billed on, $6 each per month. See [Pricing](../pricing/#what-a-user-means-for-an-organization).\n\n#### Session\nOne successful login (`ses_…`). Every refresh token and app token minted from it carries its id as `sid`, and revoking it ends them all. See [Auth → Sessions](../api-reference/auth/#sessions).\n\n#### Settings\nGlobal, cross-app configuration for a User — locale, timezone, notification preferences. Distinct from [AppSettings](#appsettings).\n\n#### Tenant\nThe infrastructure-placement and data-isolation boundary for one of Substratal's own paying customers — the owner of an Application's catalog entry. `shared` (default), `isolated`, or `dedicated_region`. Not the same thing as [Organization](#organization) — see [Tenant vs. Organization](../domain-model/tenancy/#tenant-vs-organization). See [Domain Model → Tenancy](../domain-model/tenancy/).\n\n#### Tier\nWhere a [Tenant](#tenant)'s data physically lives: `shared`, `isolated`, or `dedicated_region`. Independent of [Plan](#plan). The non-`shared` tiers are reserved for business and enterprise pricing, which isn't offered yet.\n\n#### User\nA person with an account on Substratal. One identity, used everywhere in the hub and, via the [Trust Model](../trust-model/), in every app they launch from it.\n\n#### Webhook\nA signed HTTPS POST the hub sends an Application when something changes. `access.revoked` and `role.removed` are required subscriptions. See [Webhooks](../api-reference/webhooks/).\n"
     }
   ]
 }

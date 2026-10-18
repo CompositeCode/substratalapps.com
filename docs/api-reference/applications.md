@@ -53,6 +53,7 @@ Applications that aren't `approved` are visible only to their owner, their own k
   ],
   "support_url": "https://timetrack.substratalapps.com/support",
   "email_from_name": "TimeTrack",
+  "receives_platform_notifications": false,
   "settings_schema": {
     "type": "object",
     "properties": {
@@ -88,6 +89,7 @@ Applications that aren't `approved` are visible only to their owner, their own k
 | `launch_url` | `https` URL. Where the future dashboard sends a user to open the app. |
 | `redirect_uris` | 0–10 entries, each an exact-match string: an `https://` URL, or a private-use URI scheme for native apps (reverse-DNS, `com.example.app:/path`). `http://localhost` and `http://127.0.0.1` with any port are allowed for development only on a `test_mode` Application. Required (non-empty) before the hosted authorization-code flow will issue a code — see [Auth](../auth/#post-v1authoauthauthorization-codes). |
 | `support_url`, `email_from_name` | Optional. Used in transactional emails sent on behalf of this app. `email_from_name` is 1–50 characters; the sending address is always Substratal's own. |
+| `receives_platform_notifications` | Boolean, default `false`, writable by the owner. Whether this app's devices also get pushes for [platform alerts](../notifications/#platform-alerts). The app's push credentials are managed separately, under [`/v1/applications/{id}/push-credentials`](../notifications/#push-credentials). |
 | `settings_schema` | See [Domain Model → Settings → `settings_schema` rules](../../domain-model/settings/#settings_schema-rules). |
 | `settings_schema_stats` | Read-only. `stale_override_counts` is a key → count map of how many users hold overrides that no longer validate. |
 | `permissions` | The Application's own permission catalog, 0–100 entries. Each `key` must start with `app.<slug>.`, then match `[a-z0-9_.]{1,64}`. `description` is up to 255 characters. This is what `GET /v1/permissions` lists, and it's the only set an AppRole may draw from. |
@@ -181,8 +183,11 @@ The Roles `role_invoicer_admin` and `role_invoicer_member` now exist with no per
 - `slug`, `name`, `launch_url`, and exactly one of `owner_user_id`/`owner_organization_id` are required. Everything else is optional.
 - Resolves the owner's [Tenant](../tenancy/), creating one if needed. A new Tenant gets `tier: shared`, and `plan: starter` for a User owner or `plan: team` for an Organization owner.
 - **Seeds the app's Roles.** For each name in `available_app_roles`, a Role `role_<slug>_<name>` is created with no permissions, and the owner then fills them in with `PATCH /v1/roles/{id}`. Because every app-scoped Role must use a name from `available_app_roles`, the plan's **AppRoles limit** (Starter 3, Team and Enterprise unlimited) is simply a cap on the length of `available_app_roles`. Exceeding it on `POST` or `PATCH` returns `409 plan_limit_reached` (`resource: "app_roles"`; see [Conventions → Plan limit errors](../conventions/#plan-limit-errors)).
-- Rejected with `409 plan_limit_reached` if the owner's Tenant is already at its plan's Applications cap (1/5/unlimited). Rejected with `402 subscription_required` if the Tenant is `restricted`. Both are independent of the caller's own permission. See [Pricing → Enforcement](../../pricing/#enforcement).
+- Rejected with `409 plan_limit_reached` if the owner's Tenant is already at its plan's Applications cap (1/5/unlimited). Rejected with `402 subscription_required` if the Tenant is `restricted`. Both are independent of the caller's own permission. See [Pricing → Enforcement](../../pricing/#the-tiers).
 - Writes `application.created`.
+
+{: .decision }
+**API changes awaiting review** ([DECISIONS.md #39](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#39-subscriber-billing-api)). #39 proposes an `access_tier` field (`free` | `standard`) on every Application, and removing the per-plan Applications and AppRoles caps and the `402 subscription_required` check above.
 
 ## `PATCH /v1/applications/{id}`
 
@@ -287,6 +292,9 @@ A reserved slug is `{ "field": "slug", "code": "unknown_value", "allowed": "anyt
 ## Owner onboarding, end to end
 
 What a paying customer does after staff have created their Application (concierge onboarding), all with their own User token and no platform permission:
+
+{: .decision }
+**API changes awaiting review** ([DECISIONS.md #39](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#39-subscriber-billing-api)). Step 6 still refers to developer plans. Under #39, owners aren't billed for their Applications.
 
 1. **Find your Tenant:** `GET /v1/tenants` returns the one Tenant you own, with its `plan` and `tier`. `GET /v1/applications?owned=true` lists your Applications.
 2. **Configure the app:** `PATCH /v1/applications/app_invoicer` with your `redirect_uris`, `settings_schema`, `permissions`, and `available_app_roles`. Then give each seeded Role its permissions with `PATCH /v1/roles/role_invoicer_admin` `{"permissions": ["app.invoicer.view", "app.invoicer.send"]}`.

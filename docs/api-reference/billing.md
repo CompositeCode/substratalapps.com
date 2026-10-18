@@ -16,6 +16,9 @@ The Application owner's **platform subscription**: what Substratal charges the d
 
 ---
 
+{: .decision }
+**API changes awaiting review** ([DECISIONS.md #39](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#39-subscriber-billing-api)). This page still describes the previous model, where Substratal billed the Application owner's Tenant for Starter/Team/Enterprise. [Pricing](../../pricing/) now has two tiers, Free and Standard ($6 per user per month), billed to individual Users and Organizations. #39 proposes replacing these Tenant billing endpoints with User and Organization subscription endpoints.
+
 ## How it fits together
 
 - Every [Tenant](../tenancy/) has one Stripe Customer, created when the Tenant is created.
@@ -73,8 +76,8 @@ Stripe tells this API about every change through its webhook. This API never tak
 | Field | Notes |
 |---|---|
 | `subscription_status` | `none` (Starter), `active`, `trialing`, `past_due`, `canceled`, `unpaid`, `incomplete`, `incomplete_expired`, or `paused`. Mirrors Stripe. New values may be added; see [Non-Functional Requirements → Versioning](../../non-functional-requirements/#versioning). |
-| `restricted` | `true` once a subscription has lapsed while usage exceeds what the Tenant can drop to. See [Pricing → Subscription lapse](../../pricing/#subscription-lapse--downgrades). |
-| `seats.current` | Computed live. See [Pricing → What "seat" means](../../pricing/#what-seat-means-here). |
+| `restricted` | `true` once a subscription has lapsed while usage exceeds what the Tenant can drop to. See [Pricing → Subscription lapse](../../pricing/#when-a-subscription-lapses). |
+| `seats.current` | Computed live. See [Pricing → What "seat" means](../../pricing/#what-a-user-means-for-an-organization). |
 | `seats.billable` | Seats over the included count. It's what the next Team or Enterprise invoice will charge for, based on the last daily sync. |
 | `add_ons` | Enterprise only: `[{"code": "isolated_tenancy", "amount": 75000}]` or `[{"code": "dedicated_region_tenancy", "amount": 150000}]`. Amounts are in cents. |
 
@@ -135,7 +138,7 @@ Invoices and receipts aren't mirrored here. Stripe is the system of record for t
 { "url": "https://billing.stripe.com/p/session/live_YWNjdF8x...", "expires_at": "2026-10-05T12:05:00Z" }
 ```
 
-The Portal is configured to allow updating the payment method, viewing invoices, and cancelling at period end. It does **not** allow switching plans, because a downgrade has to be checked against plan limits (see [Pricing → Subscription lapse](../../pricing/#subscription-lapse--downgrades)). A Starter Tenant with no payment history gets `409 no_billing_account`, since there's nothing to manage yet.
+The Portal is configured to allow updating the payment method, viewing invoices, and cancelling at period end. It does **not** allow switching plans, because a downgrade has to be checked against plan limits (see [Pricing → Subscription lapse](../../pricing/#when-a-subscription-lapses)). A Starter Tenant with no payment history gets `409 no_billing_account`, since there's nothing to manage yet.
 
 ## Webhook events
 

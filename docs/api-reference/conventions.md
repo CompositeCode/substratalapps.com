@@ -18,7 +18,7 @@ Read once, applies to every page in this section.
 
 ## Machine-readable
 
-Everything on this and the following pages is also available as a single [OpenAPI 3.1 document](../../openapi.yaml) — generate a client, import into an API tool, or diff it against an implementation to check drift. The prose here is authoritative when the two disagree; the YAML is kept in sync by hand, not generated from this site.
+Everything on this and the following pages is also available as a single [OpenAPI 3.1 document](../../openapi.yaml), browsable in the [Interactive Reference](../../openapi/reference/) and explained in [OpenAPI Specification](../../openapi/) — generate a client, import into an API tool, or diff it against an implementation to check drift. The prose here is authoritative when the two disagree; the YAML is kept in sync by hand, not generated from this site.
 
 ## Base URL
 
@@ -61,6 +61,10 @@ Every resource ID is prefixed by type. Most are the prefix plus a ULID (26 Crock
 | `ses_` | Session — see [Auth → Sessions](../auth/#sessions) |
 | `wev_` | Webhook event (one delivered event payload) — see [Webhooks](../webhooks/#delivery). Distinct from `evt_`, an Audit Event. |
 | `dlv_` | Webhook delivery attempt — see [Webhooks](../webhooks/#delivery-log) |
+| `dvc_` | Device (a push-notification endpoint) — see [Push Notifications](../notifications/#devices) |
+| `pcr_` | Push credential — see [Push Notifications](../notifications/#push-credentials) |
+| `ntf_` | Notification — see [Push Notifications](../notifications/#sending-a-notification) |
+| `ndl_` | Notification delivery (one push to one device) — see [Push Notifications](../notifications/#get-v1usersidnotificationsnotificationid) |
 
 An [Erasure request](../users/#post-v1usersiderasure-requests) has no id of its own: there's at most one per User, so it's addressed by the User's id (`/v1/users/{id}/erasure-requests/current`).
 
@@ -134,6 +138,9 @@ List endpoints that support filtering take plain query parameters named after th
 | Organization member | **Hard.** The [OrganizationMembership](../../domain-model/users-and-organizations/#organizationmembership) join row is removed outright, whether it was `pending` or `active`. Membership has no "soft-removed" state of its own. |
 | Role assignment | **Hard.** The [UserRoleAssignment](../../domain-model/roles-and-permissions/#userroleassignment) join row is removed outright; idempotent (removing an already-gone assignment still returns `204`). |
 | [Webhook](../webhooks/) subscription | **Hard.** Unsubscribing removes the subscription and its delivery log. Deliveries already in the retry queue are dropped, and nothing new is enqueued. |
+| [Device](../notifications/#devices) | **Hard.** Unregistering removes the Device and drops its pending deliveries. Past deliveries keep their record with `device_id: null`. |
+| [Push credential](../notifications/#push-credentials) | **Hard.** The encrypted key material is deleted. Devices are kept, except `web_push` devices, which become `inactive` because their subscriptions are bound to the deleted key. |
+| [Notification](../notifications/#the-inbox) | No `DELETE` endpoint. A User archives one with `PATCH state: archived`, and every notification is deleted 90 days after it was sent. |
 | [Application](../applications/), [Organization](../organizations/), [Role](../roles-and-permissions/) (the definition), [Tenant](../tenancy/) | **No `DELETE` endpoint at all.** Each has its own terminal-but-not-deleted state instead — `review_status: suspended`/`rejected` for an Application, `status: suspended` for an Organization (via `PATCH`) — because removing the catalog/definition entry itself would orphan everything that still references it (Entitlements, Role assignments, Roles scoped to it). |
 | [Profile](../../domain-model/profiles/) | No `DELETE` endpoint. Deleted outright, but only as step 2 of the [hard-delete cascade](../../non-functional-requirements/#hard-delete-cascade) above — never independently. |
 | [AppProfile](../../domain-model/profiles/#appprofile) / [AppSettings](../../domain-model/settings/#appsettings) | No `DELETE` endpoint. The hard-delete cascade's step 3 clears personal data in place: all of an AppProfile (`display_handle` set to `null`, `custom` to `{}`), and only the `x-pii`-marked keys of AppSettings `overrides`. The rows themselves are retained even then. |
@@ -167,6 +174,7 @@ Every single-resource `GET` and every successful write returns an `ETag` header,
 | `AppProfile.custom`, `AppSettings.overrides` | 16 KB serialized each | same |
 | `member_overrides` | 1,000 user ids | same |
 | `redirect_uris` | 10 entries | same |
+| A notification's `title` / `body` / `data` | 120 characters / 1,000 characters / 20 string values in 2 KB, and the whole push payload in 4 KB | `422 validation_failed`, or `422 notification_too_large` for the payload |
 | Webhook subscriptions' `events` | every event type, no duplicates | same |
 | List `limit` | 1–100 (default 25) | values above 100 are clamped to 100, not rejected |
 
@@ -205,12 +213,12 @@ A single resource is returned as a bare JSON object — no envelope:
 | `forbidden` | 403 | Authenticated, but the caller lacks the required permission. `details.required_permission` names it. |
 | `tenant_suspended` | 403 | The Tenant that owns the data being written (or the Application an app token is requested for) is `suspended` by the platform. See [Tenancy](../../domain-model/tenancy/#fields). |
 | `destructive_operation_restricted` | 403 | A `restrict_destructive` API Key attempted a destructive operation — see [API Keys](../api-keys/#agent-keys--restrict_destructive). |
-| `subscription_required` | 402 | The owning Tenant is `restricted` after a lapsed subscription, and this write would add usage — see [Pricing → Subscription lapse](../../pricing/#subscription-lapse--downgrades). |
+| `subscription_required` | 402 | The owning Tenant is `restricted` after a lapsed subscription, and this write would add usage — see [Pricing → Subscription lapse](../../pricing/#when-a-subscription-lapses). |
 | `not_found` | 404 | Generic not-found for a path that matches no route. Resource pages define their own `<resource>_not_found` codes. |
 | `version_conflict` | 409 | `If-Match` didn't match the current `ETag`. |
 | `idempotency_key_reused` | 409 | Same `Idempotency-Key`, different request body. |
 | `idempotency_key_in_flight` | 409 | The first request with this `Idempotency-Key` is still being processed. Retry after a second. |
-| `plan_limit_reached` | 409 | The owning Tenant is at a plan limit — see [Plan limit errors](#plan-limit-errors) below and [Pricing → Enforcement](../../pricing/#enforcement). |
+| `plan_limit_reached` | 409 | The owning Tenant is at a plan limit — see [Plan limit errors](#plan-limit-errors) below and [Pricing → Enforcement](../../pricing/#the-tiers). |
 | `payload_too_large` | 413 | Body over 1 MB. |
 | `validation_failed` | 422 | One or more fields fail validation. Uses `details.fields` — see below. |
 | `read_only_field` | 422 | A `PATCH` body included a read-only field. |
@@ -258,6 +266,9 @@ Each entry's `code` is one of a small fixed set: `required`, `invalid_format`, `
 
 ### Plan limit errors
 
+{: .decision }
+**API changes awaiting review** ([DECISIONS.md #39](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#39-subscriber-billing-api)). With developer plans retired, #39 proposes removing the Applications, AppRoles, webhooks, and seat caps that produce `plan_limit_reached`, and reserving the code for business and enterprise limits.
+
 `409 plan_limit_reached` always carries the same `details`, so a client can render one "upgrade to continue" screen for every limit:
 
 ```json
@@ -276,7 +287,7 @@ Each entry's `code` is one of a small fixed set: `required`, `invalid_format`, `
 }
 ```
 
-`resource` is one of `applications`, `app_roles`, `webhooks`, or `seats`. These are the same keys [`GET /v1/tenants/{id}/usage`](../billing/#get-v1tenantsidusage) reports under `limits`, so the error and the usage screen always agree on names. See [Pricing → Enforcement](../../pricing/#enforcement) for what each one counts.
+`resource` is one of `applications`, `app_roles`, `webhooks`, or `seats`. These are the same keys [`GET /v1/tenants/{id}/usage`](../billing/#get-v1tenantsidusage) reports under `limits`, so the error and the usage screen always agree on names. See [Pricing → Enforcement](../../pricing/#the-tiers) for what each one counts.
 
 ## Idempotency
 

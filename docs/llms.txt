@@ -28,6 +28,7 @@ older single-file draft found elsewhere in the repository's history.
 - [Domain Model]({{ site.url }}{{ site.baseurl }}/domain-model/): the entities — User, Organization, Tenant, Application, Role, Permission, Entitlement, Profile, Setting, Order, Audit Event.
 - [Tenancy]({{ site.url }}{{ site.baseurl }}/domain-model/tenancy/): the infrastructure-placement/data-isolation boundary for an Application owner — shared, isolated, or dedicated-region. Distinct from Organization.
 - [Access Control]({{ site.url }}{{ site.baseurl }}/access-control/): how Entitlement (is the app on?) and Role (what can they do?) combine to decide every request, including Organization-vs-User precedence when an org-wide grant and a User's own standing could otherwise conflict.
+- [Notifications]({{ site.url }}{{ site.baseurl }}/domain-model/notifications/): the Device, PushCredential, Notification, and delivery records behind push notifications and the inbox.
 - [Database Schema]({{ site.url }}{{ site.baseurl }}/domain-model/database-schema/): Postgres types, constraints, and indexes behind every entity — for implementers, not API callers.
 
 ## API reference
@@ -42,11 +43,13 @@ older single-file draft found elsewhere in the repository's history.
 - [Roles & Permissions]({{ site.url }}{{ site.baseurl }}/api-reference/roles-and-permissions/)
 - [Organizations]({{ site.url }}{{ site.baseurl }}/api-reference/organizations/)
 - [Tenancy]({{ site.url }}{{ site.baseurl }}/api-reference/tenancy/): fetch a Tenant and request a tier change — support-only today, no customer self-service.
-- [Billing]({{ site.url }}{{ site.baseurl }}/api-reference/billing/): the Application owner's own Substratal subscription — plan, usage, Stripe Checkout and Customer Portal.
+- [Billing]({{ site.url }}{{ site.baseurl }}/api-reference/billing/): the Free/Standard subscription — Stripe Checkout and Customer Portal. Being reworked for subscriber billing (DECISIONS.md #39).
 - [Audit]({{ site.url }}{{ site.baseurl }}/api-reference/audit/)
 - [Webhooks]({{ site.url }}{{ site.baseurl }}/api-reference/webhooks/)
+- [Push Notifications]({{ site.url }}{{ site.baseurl }}/api-reference/notifications/): alerts and updates to a User's devices through APNs, FCM, and Web Push, plus their notification inbox — device registration, an Application's push credentials, sending, and platform alerts.
 - [API Keys]({{ site.url }}{{ site.baseurl }}/api-reference/api-keys/): service-to-service credentials.
 - [openapi.yaml]({{ site.url }}{{ site.baseurl }}/openapi.yaml): the same API surface as a machine-readable OpenAPI 3.1 document.
+- [OpenAPI Specification]({{ site.url }}{{ site.baseurl }}/openapi/): the same document rendered as interactive Swagger UI, with how to use it to build against the API.
 
 ## Also useful
 
@@ -56,7 +59,7 @@ older single-file draft found elsewhere in the repository's history.
 - [Non-Functional Requirements]({{ site.url }}{{ site.baseurl }}/non-functional-requirements/)
 - [Compliance & Data Protection]({{ site.url }}{{ site.baseurl }}/compliance/): which of SOC 2, HIPAA, GDPR, and CCPA apply, and when.
 - [Roadmap]({{ site.url }}{{ site.baseurl }}/roadmap/): MVP through Phase 3.
-- [Pricing]({{ site.url }}{{ site.baseurl }}/pricing/): Starter (free), Team (per-seat), and Enterprise (with a choice of Tenant tier) — what Substratal itself charges the Application-owner developer, distinct from what that developer charges their own end users.
+- [Pricing]({{ site.url }}{{ site.baseurl }}/pricing/): Free, and Standard at $6 per user per month — what people using Substratal's own apps pay, individually or through an Organization. Business and Enterprise pricing comes later.
 - [Changelog]({{ site.url }}{{ site.baseurl }}/changelog/): what's changed in this spec over time.
 - [Glossary]({{ site.url }}{{ site.baseurl }}/glossary/)
 - [Versions]({{ site.url }}{{ site.baseurl }}/versions/): every released version of this spec; older versions are frozen copies under `/versions/<version>/`.

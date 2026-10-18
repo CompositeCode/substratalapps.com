@@ -51,6 +51,7 @@ Platform-scoped keys (fixed, built in, with descriptions summarized from the aut
     { "key": "webhooks.manage", "scope": "platform", "description": "Manage any webhook subscription, and create platform-scoped ones." },
     { "key": "api_keys.manage", "scope": "platform", "description": "Create, rotate, and revoke any API Key." },
     { "key": "tenants.manage", "scope": "platform", "description": "View any Tenant and request a tier change on a customer's behalf." },
+    { "key": "notifications.send", "scope": "platform", "description": "Send notifications to any User on behalf of any Application. On an app-scoped key, confined to that Application's own users." },
     { "key": "app.timetrack.export", "scope": "app_timetrack", "description": "Export timesheets as CSV/PDF." },
     { "key": "app.timetrack.manage_members", "scope": "app_timetrack", "description": "Add and remove team members inside TimeTrack." }
   ],
@@ -87,7 +88,7 @@ Filter with `?scope=platform` or `?scope=app_timetrack`. An app-scoped key sees 
 // Response — 200
 {
   "data": [
-    { "id": "role_platform_superadmin", "name": "superadmin", "scope": "platform", "seed": true, "permissions": ["users.list", "users.manage", "entitlements.manage", "applications.manage", "roles.manage", "organizations.manage", "billing.manage", "billing.refund", "audit.view", "webhooks.manage", "api_keys.manage", "tenants.manage"] },
+    { "id": "role_platform_superadmin", "name": "superadmin", "scope": "platform", "seed": true, "permissions": ["users.list", "users.manage", "entitlements.manage", "applications.manage", "roles.manage", "organizations.manage", "billing.manage", "billing.refund", "audit.view", "webhooks.manage", "api_keys.manage", "tenants.manage", "notifications.send"] },
     { "id": "role_platform_support", "name": "support", "scope": "platform", "seed": true, "permissions": ["users.list", "entitlements.manage", "audit.view", "tenants.manage", "billing.manage"] },
     { "id": "role_timetrack_admin", "name": "admin", "scope": "app_timetrack", "seed": false, "permissions": ["app.timetrack.export", "app.timetrack.manage_members"] }
   ],
@@ -256,4 +257,4 @@ The live introspection check described throughout [Trust Model](../../trust-mode
 | `seed_role_immutable` | 403 | `PATCH`/`DELETE` on a seed Role. |
 | `role_in_use` | 409 | `DELETE` on a Role with assignments. |
 | `member_role_required` | 409 | Removing a user's `member` platform Role. |
-| `plan_limit_reached` | 409 | Exceeding the AppRoles cap — see [Pricing → Enforcement](../../pricing/#enforcement). |
+| `plan_limit_reached` | 409 | Exceeding the AppRoles cap — see [Pricing → Enforcement](../../pricing/#the-tiers). |

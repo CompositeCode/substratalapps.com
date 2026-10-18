@@ -19,7 +19,7 @@ nav_order: 10
 - **Brute-force protection:** per-account lockout (5 failures in 15 minutes locks the account for 15 minutes), plus per-IP limits on every unauthenticated auth endpoint (see [Rate limiting](#rate-limiting)). Login errors never reveal whether an account exists.
 - **MFA:** optional TOTP (RFC 6238) for `password` identities, with 10 single-use recovery codes. TOTP secrets are encrypted with KMS at rest. An SSO identity's MFA belongs to its IdP.
 - **Service-to-service:** billing → hub, app → hub, and any other backend caller authenticates with a scoped [API Key](../api-reference/api-keys/), never user credentials. mTLS isn't offered.
-- **Secrets at rest:** every bearer credential (refresh tokens, API Key secrets, emailed tokens, recovery codes) is stored only as a hash. Webhook signing secrets and TOTP secrets must be usable by the server, so they're KMS-encrypted instead.
+- **Secrets at rest:** every bearer credential (refresh tokens, API Key secrets, emailed tokens, recovery codes) is stored only as a hash. Webhook signing secrets, TOTP secrets, and [push credentials](../api-reference/notifications/#push-credentials) must be usable by the server, so they're KMS-encrypted instead. So are push device tokens: they aren't credentials, but they're personal data the server has to send to.
 - **Bootstrapping:** the very first `superadmin` cannot be created through the public API — nothing can call `POST /v1/users/{id}/roles/{roleId}` with `roles.manage` before a `superadmin` exists to grant it. It's seeded directly against the database (or via a one-time, non-API admin CLI command) as part of standing up a new environment, not specified as an endpoint.
 - **MCP:** the [MCP Server](../mcp-server/) is not a separate auth surface — it carries and forwards the same Bearer credential (user token or API Key) as any other caller. No new rule in this section applies to it that doesn't already apply here.
 
@@ -70,6 +70,8 @@ Per-API-key token bucket, returning `429` with a `Retry-After` header on exhaust
 | `POST /v1/auth/token/refresh` | 30 requests/minute per session |
 | `GET /v1/users/{id}/export` | 5 per user per day |
 | `POST /v1/organizations` | 10 per user per day |
+| `POST /v1/users/{id}/notifications` | 600 requests/minute per API Key, and 60 notifications per recipient User per Application per rolling hour (`429 rate_limited`, `details.scope: "recipient"`). Platform alerts don't count toward the per-recipient limit. |
+| `POST /v1/users/{id}/devices/{deviceId}/test` | 10 per device per hour |
 
 Every response carries `RateLimit-Limit`, `RateLimit-Remaining`, and `RateLimit-Reset` (seconds until the bucket refills). A `429` also carries `Retry-After`.
 
@@ -89,6 +91,7 @@ Targets for the API itself, measured monthly at the API Gateway. They're publish
 | `effective-permissions`, `app-tokens`, `oauth/token` latency | p95 < 150 ms, p99 < 400 ms |
 | All other endpoints | p95 < 400 ms |
 | Webhook dispatch (commit → first attempt) | p95 < 10 s |
+| Push notification dispatch (commit → first provider attempt) | p95 < 10 s |
 | JWKS availability | 99.99% (served from CloudFront with a 1-hour cache, so it survives an API outage) |
 
 ## Versioning
@@ -112,26 +115,31 @@ Every response carries an `X-Request-Id` (server-generated if the caller didn't 
 
 ## Data retention
 
-- Audit Events: retained indefinitely (compliance system of record) — see [Audit log lifecycle](#audit-log-lifecycle) immediately below for how that stays true without every plan paying for the same amount of hot, directly-queryable storage.
+- Audit Events: retained indefinitely (compliance system of record) — see [Audit log lifecycle](#audit-log-lifecycle) immediately below for how that stays true without keeping every Audit Event in hot, directly-queryable storage forever.
 - Disabled/revoked Entitlements: retained, not deleted — re-enabling or investigating a dispute depends on the history.
+- [Notifications](../domain-model/notifications/#notification): 90 days, then deleted, whatever their read state. Notification delivery results: 30 days. Push devices: deleted 30 days after they become `inactive`.
 - Deleted Users: soft-deleted first (status transition), with a separate, deliberate hard-delete process for right-to-erasure requests — see [Hard-delete cascade](#hard-delete-cascade) immediately below for what that process actually does, not just that it exists.
 
 ### Audit log lifecycle
 
-"Retained indefinitely" and [Pricing](../pricing/#enforcement)'s plan-tiered "audit log hot-storage window" (30 days Starter / 1 year Team / negotiated Enterprise) are two different axes, not a contradiction:
+"Retained indefinitely" and the audit log's **hot-storage window** are two different axes, not a contradiction. The hot window is one year for every Tenant; business and enterprise pricing may negotiate a longer one when it ships.
+
+{: .decision }
+**Proposed — confirm** ([DECISIONS.md #39](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#39-subscriber-billing-api)). The hot window used to vary by the developer's plan (30 days Starter, 1 year Team). With developer plans retired, #39 proposes one year for everyone. The archival job still reads the old per-plan windows until #39 is applied.
+
 
 1. **Hot storage.** A freshly-written Audit Event lives in the primary `audit_events` table (Aurora Postgres) with its full `before`/`after` snapshot — queryable via [API Reference → Audit](../api-reference/audit/) exactly as specified elsewhere on this page.
-2. **Archival, at the end of the plan's hot window.** A scheduled job (see [Deployment Architecture → Audit log archival](https://github.com/CompositeCode/substratalapps.com/blob/main/DEPLOYMENT.md)) moves every Audit Event older than the owning Tenant's hot window out of the hot table: `action`, `timestamp`, `actor_type`/`actor_id`, `target_type`/`target_id`, and every other shape field move to cheap, indefinite cold storage; the `before`/`after` snapshot values — the one place the row could hold personal data — are dropped at this point rather than carried forward, the same redaction [Hard-delete cascade](#hard-delete-cascade) step 4 already performs for a deleted User, just applied uniformly by age instead of by erasure request.
+2. **Archival, at the end of the hot window.** A scheduled job (see [Deployment Architecture → Audit log archival](https://github.com/CompositeCode/substratalapps.com/blob/main/DEPLOYMENT.md)) moves every Audit Event older than the hot window out of the hot table: `action`, `timestamp`, `actor_type`/`actor_id`, `target_type`/`target_id`, and every other shape field move to cheap, indefinite cold storage; the `before`/`after` snapshot values — the one place the row could hold personal data — are dropped at this point rather than carried forward, the same redaction [Hard-delete cascade](#hard-delete-cascade) step 4 already performs for a deleted User, just applied uniformly by age instead of by erasure request.
 3. **Cold storage, forever.** The shape-only archive is never deleted, satisfying "retained indefinitely" literally — what's indefinite is the record that something happened, not a guarantee that its full payload stays warm (or stays at all) past the hot window. Retrieving an archived event for a dispute or investigation is a deliberately manual, support-mediated process, not a live API path — see [Deployment Architecture](https://github.com/CompositeCode/substratalapps.com/blob/main/DEPLOYMENT.md) for the actual retrieval SLA.
 
-This is also why the hot/cold split doesn't weaken [Audit trail vs. erasure tension](../compliance/#gdpr-and-ccpa--build-for-it-now): a snapshot value is gone (not just hidden) the moment it leaves hot storage, on every plan, regardless of whether a User ever requests erasure.
+This is also why the hot/cold split doesn't weaken [Audit trail vs. erasure tension](../compliance/#gdpr-and-ccpa--build-for-it-now): a snapshot value is gone (not just hidden) the moment it leaves hot storage, for every Tenant, regardless of whether a User ever requests erasure.
 
 ### Hard-delete cascade
 
 Triggered by `POST /v1/users/{id}/erasure-requests` (see [Users](../api-reference/users/#post-v1usersiderasure-requests)) and run by a scheduled job **7 days** after the request, well within GDPR Article 12(3)'s 30-day ceiling. The 7-day gap is a window to cancel a request made in error or under account takeover. Soft-delete (the `status: deleted` transition) happens immediately when the request arrives; this cascade is the follow-up. Runs in this order, each step committed before the next:
 
 1. Delete `password_hash`, `mfa_secret`, and `mfa_pending_secret` from every [UserIdentity](../domain-model/users-and-organizations/#useridentity) row the User holds, and delete their `mfa_recovery_codes`. The credential goes, not the row: the row's `method`/`created_at` stays as a record that an identity of that kind existed. Null `external_subject_id`.
-2. Delete the User's [Profile](../domain-model/profiles/) row outright, and every `sessions`, `refresh_tokens`, and `auth_tokens` row (sessions hold IP addresses and user agents).
+2. Delete the User's [Profile](../domain-model/profiles/) row outright, and every `sessions`, `refresh_tokens`, and `auth_tokens` row (sessions hold IP addresses and user agents). Delete every [Device](../domain-model/notifications/#device) (push tokens), [Notification](../domain-model/notifications/#notification), and notification delivery the User holds.
 3. For every [AppProfile](../domain-model/profiles/#appprofile) the User holds, set `display_handle` to `null` and `custom` to `{}`. AppProfile is identity data, so all of it is treated as personal. For every [AppSettings](../domain-model/settings/#appsettings) row, remove only the keys the Application's `settings_schema` marks `x-pii: true` (see [`settings_schema` rules](../domain-model/settings/#settings_schema-rules)), and keep structural preferences such as `week_start`. The rows themselves are retained, since an Application may have a legitimate reason to know an entitlement-shaped record existed.
 4. Redact `before`/`after` snapshot values (not the whole row) on every [Audit Event](../domain-model/orders-and-audit/#audit-event) where this User is `target_user_id`. That preserves `action`/`timestamp`/`actor` (the *shape* of what happened) while removing the one place a deleted field's value could otherwise still be read back.
 5. Remove the User from every Organization: delete their `organization_memberships` rows (`pending` or `active`), and remove their id from every org-wide Entitlement's `member_overrides`. A plain soft-delete leaves both in place, so a restored User comes back exactly as they were. If this removes an Organization's last active `org_admin`, its longest-standing active member is promoted, so the Organization is never left unmanageable (the `last_org_admin` guard can't apply to a cascade that has to complete). On `users`: set `email` to `erased+<id>@invalid.substratal`, null `pending_email`, and keep `status: deleted`. The row must survive as the foreign-key target of the history in step 6.

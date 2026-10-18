@@ -25,7 +25,7 @@ A long-lived credential scoped to either one Application (for an app's own backe
 | `id` | string | `key_` prefix. |
 | `name` | string | Human label, e.g. `"billing-webhook-handler"`. |
 | `scope` | string | `"platform"` or an `application_id` — same shape as [Role scope](../../domain-model/roles-and-permissions/#role). |
-| `permissions` | array of strings | Permission keys this key carries. For an app-scoped key, limited to that Application's own `app.<slug>.*` keys plus the four [app-confined](#app-confined-permissions) platform permissions. |
+| `permissions` | array of strings | Permission keys this key carries. For an app-scoped key, limited to that Application's own `app.<slug>.*` keys plus the five [app-confined](#app-confined-permissions) platform permissions. |
 | `mode` | enum | `live` \| `test` — see [Test vs. live](#test-vs-live) below. Fixed at creation; a key can't switch modes, only be replaced. |
 | `intended_use` | enum | `service` \| `agent` — see [Agent keys & `restrict_destructive`](#agent-keys--restrict_destructive) below. Metadata with one real effect: it sets the default for `restrict_destructive`. |
 | `restrict_destructive` | boolean | Default follows `intended_use` (`true` for `agent`, `false` for `service`) unless set explicitly. See below. |
@@ -171,7 +171,7 @@ This is how an Application's developer integration-tests against the real API wi
 
 Why app-scoped keys can carry these permissions at all: a developer's backend has to reflect its own billing outcomes into Entitlements (see [Billing system of record](../../domain-model/orders-and-audit/#billing-system-of-record)). Without app confinement it would have no safe credential to do that with. An app-scoped key couldn't hold `entitlements.manage`, and a platform-scoped key that could would reach every Application. Confinement keeps the safety property: a compromised app key still can't touch a *different* Application or escalate anyone's platform standing. A platform-run "billing bridge" for developers to post outcomes to was considered and not chosen, because it adds a component without reducing risk.
 
-An app-scoped key may carry its Application's own `app.<slug>.*` keys, plus four platform permissions in **confined** form. The server automatically restricts each one to rows belonging to the key's own Application:
+An app-scoped key may carry its Application's own `app.<slug>.*` keys, plus five platform permissions in **confined** form. The server automatically restricts each one to rows belonging to the key's own Application:
 
 | Permission | What the app key can do with it |
 |---|---|
@@ -179,8 +179,9 @@ An app-scoped key may carry its Application's own `app.<slug>.*` keys, plus four
 | `roles.manage` | Define its own Application's Roles, and assign or remove them on users. |
 | `users.list` | List and read Users with any access path to its Application, and read their global Profile (read-only). |
 | `audit.view` | Read Audit Events whose `application_id` is its Application. |
+| `notifications.send` | Send [notifications](../notifications/#sending-a-notification) from its own Application, only to users with active access to it. |
 
-Without any extra permission, every app-scoped key can also read and write its own users' [AppProfile](../profiles/) and [AppSettings](../settings/), read their [effective permissions](../roles-and-permissions/#get-v1usersidappsappideffective-permissions) for its Application, and manage its Application's [webhooks](../webhooks/).
+Without any extra permission, every app-scoped key can also read and write its own users' [AppProfile](../profiles/) and [AppSettings](../settings/), read their [effective permissions](../roles-and-permissions/#get-v1usersidappsappideffective-permissions) for its Application, manage its Application's [webhooks](../webhooks/), register and manage its users' [devices](../notifications/#devices) for its Application, read their inbox for its Application, and read (never change) its [push credentials](../notifications/#push-credentials).
 
 {: .important }
 An app-scoped key can **never** carry `users.manage`, `applications.manage`, `organizations.manage`, `api_keys.manage`, `tenants.manage`, `webhooks.manage`, `billing.manage`, or `billing.refund`. Asking for one returns `422 permission_not_grantable_to_scope`. Any attempt to touch another Application's rows returns `404`, as though the row didn't exist. That's what makes it safe for an Application's backend, or a third party's, to hold one: a compromised key can't grant access to a different app, disable another app's Entitlements, or change anyone's platform standing.

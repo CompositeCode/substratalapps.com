@@ -47,7 +47,7 @@ The database row also carries `version` (the source of the `ETag`) and `deleted_
                                               hard-deleted (cascade, `user.erased`)
 ```
 
-Signup (`POST /v1/auth/signup`) creates a User directly in `active`. An admin invite (`POST /v1/users`) or an org-membership invite by email creates an `invited` one. Suspension and deletion revoke every session and fire `access.revoked` for every Application the user had active access to.
+Signup (`POST /v1/auth/signup`) creates a User directly in `active`. An admin invite (`POST /v1/users`) or an org-membership invite by email creates an `invited` one. Suspension and deletion revoke every session, deactivate every push [Device](../notifications/#device), and fire `access.revoked` for every Application the user had active access to.
 
 An `invited` user has an account shell (so an Entitlement or Role can be assigned before they've logged in once) but can't authenticate until they complete signup. `suspended` blocks login but preserves every record — Entitlements, Roles, Profile, Settings — unlike `deleted`, which is the start of actual data removal. A soft-deleted User can still be **restored** by `users.manage` (`PATCH status: active`) as long as no erasure request is scheduled and their email hasn't been taken by a new signup; once the erasure cascade completes, there's nothing to restore. See [Users → `PATCH`](../../api-reference/users/#patch-v1usersid). See [Non-Functional Requirements → Data retention](../../non-functional-requirements/#data-retention).
 
@@ -90,7 +90,7 @@ How a User actually authenticates isn't a field on `User` either, for the same r
 
 ### Session
 
-One successful login. Refresh tokens, app refresh tokens, and app-token `sid` claims all point at it, so revoking it ends everything that came from that login at once. See [Auth → Sessions](../../api-reference/auth/#sessions).
+One successful login. Refresh tokens, app refresh tokens, and app-token `sid` claims all point at it, so revoking it ends everything that came from that login at once. Push [Devices](../notifications/#device) registered with it are deactivated too. See [Auth → Sessions](../../api-reference/auth/#sessions).
 
 | Field | Type | Notes |
 |---|---|---|

@@ -332,6 +332,7 @@ const (
 	AuditActionApplicationCreated                AuditAction = "application.created"
 	AuditActionApplicationReviewStatusChanged    AuditAction = "application.review_status_changed"
 	AuditActionApplicationUpdated                AuditAction = "application.updated"
+	AuditActionDeviceDeleted                     AuditAction = "device.deleted"
 	AuditActionEntitlementDeleted                AuditAction = "entitlement.deleted"
 	AuditActionEntitlementDisabled               AuditAction = "entitlement.disabled"
 	AuditActionEntitlementExpired                AuditAction = "entitlement.expired"
@@ -346,6 +347,9 @@ const (
 	AuditActionOrganizationMemberRoleChanged     AuditAction = "organization.member_role_changed"
 	AuditActionOrganizationUpdated               AuditAction = "organization.updated"
 	AuditActionProfileUpdated                    AuditAction = "profile.updated"
+	AuditActionPushCredentialCreated             AuditAction = "push_credential.created"
+	AuditActionPushCredentialDeleted             AuditAction = "push_credential.deleted"
+	AuditActionPushCredentialUpdated             AuditAction = "push_credential.updated"
 	AuditActionRoleAssigned                      AuditAction = "role.assigned"
 	AuditActionRoleCreated                       AuditAction = "role.created"
 	AuditActionRoleDeleted                       AuditAction = "role.deleted"
@@ -396,6 +400,8 @@ func (e AuditAction) Valid() bool {
 		return true
 	case AuditActionApplicationUpdated:
 		return true
+	case AuditActionDeviceDeleted:
+		return true
 	case AuditActionEntitlementDeleted:
 		return true
 	case AuditActionEntitlementDisabled:
@@ -423,6 +429,12 @@ func (e AuditAction) Valid() bool {
 	case AuditActionOrganizationUpdated:
 		return true
 	case AuditActionProfileUpdated:
+		return true
+	case AuditActionPushCredentialCreated:
+		return true
+	case AuditActionPushCredentialDeleted:
+		return true
+	case AuditActionPushCredentialUpdated:
 		return true
 	case AuditActionRoleAssigned:
 		return true
@@ -491,8 +503,10 @@ func (e AuditAction) Valid() bool {
 const (
 	AuditTargetTypeApiKey            AuditTargetType = "api_key"
 	AuditTargetTypeApplication       AuditTargetType = "application"
+	AuditTargetTypeDevice            AuditTargetType = "device"
 	AuditTargetTypeEntitlement       AuditTargetType = "entitlement"
 	AuditTargetTypeOrganization      AuditTargetType = "organization"
+	AuditTargetTypePushCredential    AuditTargetType = "push_credential"
 	AuditTargetTypeRole              AuditTargetType = "role"
 	AuditTargetTypeRoleAssignment    AuditTargetType = "role_assignment"
 	AuditTargetTypeTenant            AuditTargetType = "tenant"
@@ -508,9 +522,13 @@ func (e AuditTargetType) Valid() bool {
 		return true
 	case AuditTargetTypeApplication:
 		return true
+	case AuditTargetTypeDevice:
+		return true
 	case AuditTargetTypeEntitlement:
 		return true
 	case AuditTargetTypeOrganization:
+		return true
+	case AuditTargetTypePushCredential:
 		return true
 	case AuditTargetTypeRole:
 		return true
@@ -538,6 +556,132 @@ const (
 func (e AuthSessionTokenType) Valid() bool {
 	switch e {
 	case AuthSessionTokenTypeBearer:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DeviceEnvironment.
+const (
+	DeviceEnvironmentLessThannil DeviceEnvironment = "<nil>"
+	DeviceEnvironmentProduction  DeviceEnvironment = "production"
+	DeviceEnvironmentSandbox     DeviceEnvironment = "sandbox"
+)
+
+// Valid indicates whether the value is a known member of the DeviceEnvironment enum.
+func (e DeviceEnvironment) Valid() bool {
+	switch e {
+	case DeviceEnvironmentLessThannil:
+		return true
+	case DeviceEnvironmentProduction:
+		return true
+	case DeviceEnvironmentSandbox:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DeviceInactiveReason.
+const (
+	DeviceInactiveReasonCredentialRemoved DeviceInactiveReason = "credential_removed"
+	DeviceInactiveReasonLimit             DeviceInactiveReason = "limit"
+	DeviceInactiveReasonSessionRevoked    DeviceInactiveReason = "session_revoked"
+	DeviceInactiveReasonStale             DeviceInactiveReason = "stale"
+	DeviceInactiveReasonUnregistered      DeviceInactiveReason = "unregistered"
+	DeviceInactiveReasonUserDeleted       DeviceInactiveReason = "user_deleted"
+	DeviceInactiveReasonUserSuspended     DeviceInactiveReason = "user_suspended"
+)
+
+// Valid indicates whether the value is a known member of the DeviceInactiveReason enum.
+func (e DeviceInactiveReason) Valid() bool {
+	switch e {
+	case DeviceInactiveReasonCredentialRemoved:
+		return true
+	case DeviceInactiveReasonLimit:
+		return true
+	case DeviceInactiveReasonSessionRevoked:
+		return true
+	case DeviceInactiveReasonStale:
+		return true
+	case DeviceInactiveReasonUnregistered:
+		return true
+	case DeviceInactiveReasonUserDeleted:
+		return true
+	case DeviceInactiveReasonUserSuspended:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DeviceRegistrationEnvironment.
+const (
+	DeviceRegistrationEnvironmentProduction DeviceRegistrationEnvironment = "production"
+	DeviceRegistrationEnvironmentSandbox    DeviceRegistrationEnvironment = "sandbox"
+)
+
+// Valid indicates whether the value is a known member of the DeviceRegistrationEnvironment enum.
+func (e DeviceRegistrationEnvironment) Valid() bool {
+	switch e {
+	case DeviceRegistrationEnvironmentProduction:
+		return true
+	case DeviceRegistrationEnvironmentSandbox:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DeviceStatus.
+const (
+	DeviceStatusActive   DeviceStatus = "active"
+	DeviceStatusInactive DeviceStatus = "inactive"
+)
+
+// Valid indicates whether the value is a known member of the DeviceStatus enum.
+func (e DeviceStatus) Valid() bool {
+	switch e {
+	case DeviceStatusActive:
+		return true
+	case DeviceStatusInactive:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DeviceTestResultStatus.
+const (
+	DeviceTestResultStatusFailed DeviceTestResultStatus = "failed"
+	DeviceTestResultStatusSent   DeviceTestResultStatus = "sent"
+)
+
+// Valid indicates whether the value is a known member of the DeviceTestResultStatus enum.
+func (e DeviceTestResultStatus) Valid() bool {
+	switch e {
+	case DeviceTestResultStatusFailed:
+		return true
+	case DeviceTestResultStatusSent:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DeviceUpdateEnvironment.
+const (
+	DeviceUpdateEnvironmentProduction DeviceUpdateEnvironment = "production"
+	DeviceUpdateEnvironmentSandbox    DeviceUpdateEnvironment = "sandbox"
+)
+
+// Valid indicates whether the value is a known member of the DeviceUpdateEnvironment enum.
+func (e DeviceUpdateEnvironment) Valid() bool {
+	switch e {
+	case DeviceUpdateEnvironmentProduction:
+		return true
+	case DeviceUpdateEnvironmentSandbox:
 		return true
 	default:
 		return false
@@ -712,6 +856,201 @@ func (e MfaChallengeMfaRequired) Valid() bool {
 	}
 }
 
+// Defines values for NotificationSenderType.
+const (
+	NotificationSenderTypeApiKey NotificationSenderType = "api_key"
+	NotificationSenderTypeSystem NotificationSenderType = "system"
+	NotificationSenderTypeUser   NotificationSenderType = "user"
+)
+
+// Valid indicates whether the value is a known member of the NotificationSenderType enum.
+func (e NotificationSenderType) Valid() bool {
+	switch e {
+	case NotificationSenderTypeApiKey:
+		return true
+	case NotificationSenderTypeSystem:
+		return true
+	case NotificationSenderTypeUser:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for NotificationCreateSound.
+const (
+	NotificationCreateSoundDefault     NotificationCreateSound = "default"
+	NotificationCreateSoundLessThannil NotificationCreateSound = "<nil>"
+)
+
+// Valid indicates whether the value is a known member of the NotificationCreateSound enum.
+func (e NotificationCreateSound) Valid() bool {
+	switch e {
+	case NotificationCreateSoundDefault:
+		return true
+	case NotificationCreateSoundLessThannil:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for NotificationDeliveryStatus.
+const (
+	NotificationDeliveryStatusFailed  NotificationDeliveryStatus = "failed"
+	NotificationDeliveryStatusPending NotificationDeliveryStatus = "pending"
+	NotificationDeliveryStatusSent    NotificationDeliveryStatus = "sent"
+	NotificationDeliveryStatusSkipped NotificationDeliveryStatus = "skipped"
+)
+
+// Valid indicates whether the value is a known member of the NotificationDeliveryStatus enum.
+func (e NotificationDeliveryStatus) Valid() bool {
+	switch e {
+	case NotificationDeliveryStatusFailed:
+		return true
+	case NotificationDeliveryStatusPending:
+		return true
+	case NotificationDeliveryStatusSent:
+		return true
+	case NotificationDeliveryStatusSkipped:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for NotificationPriority.
+const (
+	High   NotificationPriority = "high"
+	Normal NotificationPriority = "normal"
+)
+
+// Valid indicates whether the value is a known member of the NotificationPriority enum.
+func (e NotificationPriority) Valid() bool {
+	switch e {
+	case High:
+		return true
+	case Normal:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for NotificationPushStatus.
+const (
+	NotificationPushStatusFailed  NotificationPushStatus = "failed"
+	NotificationPushStatusQueued  NotificationPushStatus = "queued"
+	NotificationPushStatusSent    NotificationPushStatus = "sent"
+	NotificationPushStatusSkipped NotificationPushStatus = "skipped"
+)
+
+// Valid indicates whether the value is a known member of the NotificationPushStatus enum.
+func (e NotificationPushStatus) Valid() bool {
+	switch e {
+	case NotificationPushStatusFailed:
+		return true
+	case NotificationPushStatusQueued:
+		return true
+	case NotificationPushStatusSent:
+		return true
+	case NotificationPushStatusSkipped:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for NotificationSkipReason.
+const (
+	NotificationSkipReasonCredentialFailed NotificationSkipReason = "credential_failed"
+	NotificationSkipReasonExpired          NotificationSkipReason = "expired"
+	NotificationSkipReasonNoCredentials    NotificationSkipReason = "no_credentials"
+	NotificationSkipReasonNoDevices        NotificationSkipReason = "no_devices"
+	NotificationSkipReasonPushDisabled     NotificationSkipReason = "push_disabled"
+	NotificationSkipReasonPushNotRequested NotificationSkipReason = "push_not_requested"
+)
+
+// Valid indicates whether the value is a known member of the NotificationSkipReason enum.
+func (e NotificationSkipReason) Valid() bool {
+	switch e {
+	case NotificationSkipReasonCredentialFailed:
+		return true
+	case NotificationSkipReasonExpired:
+		return true
+	case NotificationSkipReasonNoCredentials:
+		return true
+	case NotificationSkipReasonNoDevices:
+		return true
+	case NotificationSkipReasonPushDisabled:
+		return true
+	case NotificationSkipReasonPushNotRequested:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for NotificationSource.
+const (
+	NotificationSourceApplication NotificationSource = "application"
+	NotificationSourcePlatform    NotificationSource = "platform"
+)
+
+// Valid indicates whether the value is a known member of the NotificationSource enum.
+func (e NotificationSource) Valid() bool {
+	switch e {
+	case NotificationSourceApplication:
+		return true
+	case NotificationSourcePlatform:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for NotificationState.
+const (
+	Archived NotificationState = "archived"
+	Read     NotificationState = "read"
+	Unread   NotificationState = "unread"
+)
+
+// Valid indicates whether the value is a known member of the NotificationState enum.
+func (e NotificationState) Valid() bool {
+	switch e {
+	case Archived:
+		return true
+	case Read:
+		return true
+	case Unread:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for NotificationWithDeliveriesSenderType.
+const (
+	NotificationWithDeliveriesSenderTypeApiKey NotificationWithDeliveriesSenderType = "api_key"
+	NotificationWithDeliveriesSenderTypeSystem NotificationWithDeliveriesSenderType = "system"
+	NotificationWithDeliveriesSenderTypeUser   NotificationWithDeliveriesSenderType = "user"
+)
+
+// Valid indicates whether the value is a known member of the NotificationWithDeliveriesSenderType enum.
+func (e NotificationWithDeliveriesSenderType) Valid() bool {
+	switch e {
+	case NotificationWithDeliveriesSenderTypeApiKey:
+		return true
+	case NotificationWithDeliveriesSenderTypeSystem:
+		return true
+	case NotificationWithDeliveriesSenderTypeUser:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for OAuthErrorError.
 const (
 	AccessDenied         OAuthErrorError = "access_denied"
@@ -805,6 +1144,60 @@ func (e OrganizationMembershipStatus) Valid() bool {
 	case OrganizationMembershipStatusActive:
 		return true
 	case OrganizationMembershipStatusPending:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PushCredentialStatus.
+const (
+	PushCredentialStatusActive PushCredentialStatus = "active"
+	PushCredentialStatusFailed PushCredentialStatus = "failed"
+)
+
+// Valid indicates whether the value is a known member of the PushCredentialStatus enum.
+func (e PushCredentialStatus) Valid() bool {
+	switch e {
+	case PushCredentialStatusActive:
+		return true
+	case PushCredentialStatusFailed:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PushCredentialUpdateStatus.
+const (
+	PushCredentialUpdateStatusActive PushCredentialUpdateStatus = "active"
+)
+
+// Valid indicates whether the value is a known member of the PushCredentialUpdateStatus enum.
+func (e PushCredentialUpdateStatus) Valid() bool {
+	switch e {
+	case PushCredentialUpdateStatusActive:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PushProvider.
+const (
+	Apns    PushProvider = "apns"
+	Fcm     PushProvider = "fcm"
+	WebPush PushProvider = "web_push"
+)
+
+// Valid indicates whether the value is a known member of the PushProvider enum.
+func (e PushProvider) Valid() bool {
+	switch e {
+	case Apns:
+		return true
+	case Fcm:
+		return true
+	case WebPush:
 		return true
 	default:
 		return false
@@ -1182,6 +1575,9 @@ const (
 	WebhookEventAccessGranted                  WebhookEvent = "access.granted"
 	WebhookEventAccessRevoked                  WebhookEvent = "access.revoked"
 	WebhookEventApplicationReviewStatusChanged WebhookEvent = "application.review_status_changed"
+	WebhookEventDeviceDeactivated              WebhookEvent = "device.deactivated"
+	WebhookEventDeviceDeleted                  WebhookEvent = "device.deleted"
+	WebhookEventDeviceRegistered               WebhookEvent = "device.registered"
 	WebhookEventEntitlementDeleted             WebhookEvent = "entitlement.deleted"
 	WebhookEventEntitlementDisabled            WebhookEvent = "entitlement.disabled"
 	WebhookEventEntitlementExpired             WebhookEvent = "entitlement.expired"
@@ -1189,8 +1585,10 @@ const (
 	WebhookEventEntitlementMemberScopeChanged  WebhookEvent = "entitlement.member_scope_changed"
 	WebhookEventEntitlementRevoked             WebhookEvent = "entitlement.revoked"
 	WebhookEventEntitlementUpdated             WebhookEvent = "entitlement.updated"
+	WebhookEventNotificationPushFailed         WebhookEvent = "notification.push_failed"
 	WebhookEventOrganizationMemberAdded        WebhookEvent = "organization.member_added"
 	WebhookEventOrganizationMemberRemoved      WebhookEvent = "organization.member_removed"
+	WebhookEventPushCredentialFailed           WebhookEvent = "push_credential.failed"
 	WebhookEventRoleAssigned                   WebhookEvent = "role.assigned"
 	WebhookEventRoleRemoved                    WebhookEvent = "role.removed"
 	WebhookEventUserDeleted                    WebhookEvent = "user.deleted"
@@ -1208,6 +1606,12 @@ func (e WebhookEvent) Valid() bool {
 		return true
 	case WebhookEventApplicationReviewStatusChanged:
 		return true
+	case WebhookEventDeviceDeactivated:
+		return true
+	case WebhookEventDeviceDeleted:
+		return true
+	case WebhookEventDeviceRegistered:
+		return true
 	case WebhookEventEntitlementDeleted:
 		return true
 	case WebhookEventEntitlementDisabled:
@@ -1222,9 +1626,13 @@ func (e WebhookEvent) Valid() bool {
 		return true
 	case WebhookEventEntitlementUpdated:
 		return true
+	case WebhookEventNotificationPushFailed:
+		return true
 	case WebhookEventOrganizationMemberAdded:
 		return true
 	case WebhookEventOrganizationMemberRemoved:
+		return true
+	case WebhookEventPushCredentialFailed:
 		return true
 	case WebhookEventRoleAssigned:
 		return true
@@ -1800,9 +2208,12 @@ type Application struct {
 	OwnerOrganizationId *string                  `json:"owner_organization_id,omitempty"`
 	OwnerUserId         *string                  `json:"owner_user_id,omitempty"`
 	Permissions         *[]ApplicationPermission `json:"permissions,omitempty"`
-	RedirectUris        *[]string                `json:"redirect_uris,omitempty"`
-	ReviewNotes         *string                  `json:"review_notes,omitempty"`
-	ReviewStatus        *ApplicationReviewStatus `json:"review_status,omitempty"`
+
+	// ReceivesPlatformNotifications When true, this Application's devices also receive pushes for platform alerts (security and account notices). A configuration field the owner may set.
+	ReceivesPlatformNotifications *bool                    `json:"receives_platform_notifications,omitempty"`
+	RedirectUris                  *[]string                `json:"redirect_uris,omitempty"`
+	ReviewNotes                   *string                  `json:"review_notes,omitempty"`
+	ReviewStatus                  *ApplicationReviewStatus `json:"review_status,omitempty"`
 
 	// SettingsSchema JSON Schema 2020-12 subset — see Domain Model → Settings → settings_schema rules
 	SettingsSchema      *map[string]interface{} `json:"settings_schema,omitempty"`
@@ -1860,9 +2271,12 @@ type ApplicationWrite struct {
 	OwnerOrganizationId *string                  `json:"owner_organization_id,omitempty"`
 	OwnerUserId         *string                  `json:"owner_user_id,omitempty"`
 	Permissions         *[]ApplicationPermission `json:"permissions,omitempty"`
-	RedirectUris        *[]string                `json:"redirect_uris,omitempty"`
-	ReviewNotes         *string                  `json:"review_notes,omitempty"`
-	ReviewStatus        *ApplicationReviewStatus `json:"review_status,omitempty"`
+
+	// ReceivesPlatformNotifications When true, this Application's devices also receive pushes for platform alerts (security and account notices). A configuration field the owner may set.
+	ReceivesPlatformNotifications *bool                    `json:"receives_platform_notifications,omitempty"`
+	RedirectUris                  *[]string                `json:"redirect_uris,omitempty"`
+	ReviewNotes                   *string                  `json:"review_notes,omitempty"`
+	ReviewStatus                  *ApplicationReviewStatus `json:"review_status,omitempty"`
 
 	// SettingsSchema JSON Schema 2020-12 subset — see Domain Model → Settings → settings_schema rules
 	SettingsSchema *map[string]interface{} `json:"settings_schema,omitempty"`
@@ -1918,6 +2332,97 @@ type AuthSession struct {
 
 // AuthSessionTokenType defines model for AuthSession.TokenType.
 type AuthSessionTokenType string
+
+// Device defines model for Device.
+type Device struct {
+	AppVersion    *string            `json:"app_version,omitempty"`
+	ApplicationId string             `json:"application_id"`
+	CreatedAt     *time.Time         `json:"created_at,omitempty"`
+	Environment   *DeviceEnvironment `json:"environment,omitempty"`
+
+	// Id dvc_…
+	Id               string                `json:"id"`
+	InactiveReason   *DeviceInactiveReason `json:"inactive_reason,omitempty"`
+	LastDeliveryAt   *time.Time            `json:"last_delivery_at,omitempty"`
+	LastRegisteredAt *time.Time            `json:"last_registered_at,omitempty"`
+	Name             *string               `json:"name,omitempty"`
+	Provider         PushProvider          `json:"provider"`
+
+	// SessionId The registering session; null when an app key registered it.
+	SessionId *string      `json:"session_id,omitempty"`
+	Status    DeviceStatus `json:"status"`
+	TestMode  *bool        `json:"test_mode,omitempty"`
+
+	// TokenHint The token itself is never returned.
+	TokenHint string     `json:"token_hint"`
+	UpdatedAt *time.Time `json:"updated_at,omitempty"`
+	UserId    string     `json:"user_id"`
+}
+
+// DeviceEnvironment defines model for Device.Environment.
+type DeviceEnvironment string
+
+// DeviceInactiveReason defines model for DeviceInactiveReason.
+type DeviceInactiveReason string
+
+// DevicePage defines model for DevicePage.
+type DevicePage struct {
+	Data []Device `json:"data"`
+	Page PageInfo `json:"page"`
+}
+
+// DeviceRegistration defines model for DeviceRegistration.
+type DeviceRegistration struct {
+	AppVersion    *string `json:"app_version,omitempty"`
+	ApplicationId string  `json:"application_id"`
+
+	// Environment apns only, required for it
+	Environment *DeviceRegistrationEnvironment `json:"environment,omitempty"`
+	Name        *string                        `json:"name,omitempty"`
+	Provider    PushProvider                   `json:"provider"`
+
+	// Subscription The PushSubscription from PushManager.subscribe(), as JSON.
+	Subscription *WebPushSubscription `json:"subscription,omitempty"`
+
+	// Token apns (hex, 64–200 characters) and fcm only
+	Token *string `json:"token,omitempty"`
+}
+
+// DeviceRegistrationEnvironment apns only, required for it
+type DeviceRegistrationEnvironment string
+
+// DeviceStatus defines model for DeviceStatus.
+type DeviceStatus string
+
+// DeviceTestResult defines model for DeviceTestResult.
+type DeviceTestResult struct {
+	DeviceId   string `json:"device_id"`
+	DurationMs *int   `json:"duration_ms,omitempty"`
+
+	// Error The provider's reason code, e.g. BadDeviceToken, UNREGISTERED, InvalidProviderToken, or timeout.
+	Error *string `json:"error,omitempty"`
+
+	// ProviderStatus The provider's HTTP status; null on a timeout or connection error.
+	ProviderStatus *int                   `json:"provider_status,omitempty"`
+	Status         DeviceTestResultStatus `json:"status"`
+}
+
+// DeviceTestResultStatus defines model for DeviceTestResult.Status.
+type DeviceTestResultStatus string
+
+// DeviceUpdate defines model for DeviceUpdate.
+type DeviceUpdate struct {
+	AppVersion  *string                  `json:"app_version,omitempty"`
+	Environment *DeviceUpdateEnvironment `json:"environment,omitempty"`
+	Name        *string                  `json:"name,omitempty"`
+
+	// Subscription The PushSubscription from PushManager.subscribe(), as JSON.
+	Subscription *WebPushSubscription `json:"subscription,omitempty"`
+	Token        *string              `json:"token,omitempty"`
+}
+
+// DeviceUpdateEnvironment defines model for DeviceUpdate.Environment.
+type DeviceUpdateEnvironment string
 
 // EffectivePermissions defines model for EffectivePermissions.
 type EffectivePermissions struct {
@@ -2035,6 +2540,167 @@ type MfaChallengeMethods string
 // MfaChallengeMfaRequired defines model for MfaChallenge.MfaRequired.
 type MfaChallengeMfaRequired bool
 
+// Notification defines model for Notification.
+type Notification struct {
+	ActionUrl *string `json:"action_url,omitempty"`
+
+	// ApplicationId null for a platform alert
+	ApplicationId *string            `json:"application_id,omitempty"`
+	ArchivedAt    *time.Time         `json:"archived_at,omitempty"`
+	Badge         *int               `json:"badge,omitempty"`
+	Body          *string            `json:"body,omitempty"`
+	Category      string             `json:"category"`
+	CollapseKey   *string            `json:"collapse_key,omitempty"`
+	CreatedAt     time.Time          `json:"created_at"`
+	Data          *map[string]string `json:"data,omitempty"`
+
+	// Id ntf_…
+	Id       string               `json:"id"`
+	Priority NotificationPriority `json:"priority"`
+	Push     NotificationPush     `json:"push"`
+	ReadAt   *time.Time           `json:"read_at,omitempty"`
+	Sender   *struct {
+		Id   string                 `json:"id"`
+		Type NotificationSenderType `json:"type"`
+	} `json:"sender,omitempty"`
+	Sound      *string            `json:"sound,omitempty"`
+	Source     NotificationSource `json:"source"`
+	State      NotificationState  `json:"state"`
+	TestMode   *bool              `json:"test_mode,omitempty"`
+	Title      string             `json:"title"`
+	TtlSeconds *int               `json:"ttl_seconds,omitempty"`
+	UpdatedAt  *time.Time         `json:"updated_at,omitempty"`
+	UserId     string             `json:"user_id"`
+}
+
+// NotificationSenderType defines model for Notification.Sender.Type.
+type NotificationSenderType string
+
+// NotificationCreate defines model for NotificationCreate.
+type NotificationCreate struct {
+	ActionUrl *string `json:"action_url,omitempty"`
+
+	// ApplicationId Only for a platform notifications.send caller, and required for one.
+	ApplicationId *string `json:"application_id,omitempty"`
+	Badge         *int    `json:"badge,omitempty"`
+	Body          *string `json:"body,omitempty"`
+
+	// Category Sender-defined. security., account., and billing. are reserved for platform alerts.
+	Category    string  `json:"category"`
+	CollapseKey *string `json:"collapse_key,omitempty"`
+
+	// Data String values only (FCM's data payload carries only strings); 2 KB serialized; the key substratal is reserved.
+	Data     *map[string]string    `json:"data,omitempty"`
+	Priority *NotificationPriority `json:"priority,omitempty"`
+
+	// Push false writes to the inbox without a push.
+	Push *bool `json:"push,omitempty"`
+
+	// Sound Defaults to default for high priority, null (silent) for normal.
+	Sound      *NotificationCreateSound `json:"sound,omitempty"`
+	Title      string                   `json:"title"`
+	TtlSeconds *int                     `json:"ttl_seconds,omitempty"`
+}
+
+// NotificationCreateSound Defaults to default for high priority, null (silent) for normal.
+type NotificationCreateSound string
+
+// NotificationDelivery defines model for NotificationDelivery.
+type NotificationDelivery struct {
+	Attempts *int `json:"attempts,omitempty"`
+
+	// DeviceId null once the Device is deleted
+	DeviceId *string `json:"device_id,omitempty"`
+	Error    *string `json:"error,omitempty"`
+
+	// Id ndl_…
+	Id       *string                     `json:"id,omitempty"`
+	Provider *PushProvider               `json:"provider,omitempty"`
+	SentAt   *time.Time                  `json:"sent_at,omitempty"`
+	Status   *NotificationDeliveryStatus `json:"status,omitempty"`
+}
+
+// NotificationDeliveryStatus defines model for NotificationDelivery.Status.
+type NotificationDeliveryStatus string
+
+// NotificationPage defines model for NotificationPage.
+type NotificationPage struct {
+	Data []Notification `json:"data"`
+	Page PageInfo       `json:"page"`
+}
+
+// NotificationPriority defines model for NotificationPriority.
+type NotificationPriority string
+
+// NotificationPush defines model for NotificationPush.
+type NotificationPush struct {
+	DevicesFailed   *int                    `json:"devices_failed,omitempty"`
+	DevicesSent     *int                    `json:"devices_sent,omitempty"`
+	DevicesTargeted *int                    `json:"devices_targeted,omitempty"`
+	Requested       bool                    `json:"requested"`
+	SkipReason      *NotificationSkipReason `json:"skip_reason,omitempty"`
+	Status          NotificationPushStatus  `json:"status"`
+}
+
+// NotificationPushStatus defines model for NotificationPushStatus.
+type NotificationPushStatus string
+
+// NotificationSkipReason defines model for NotificationSkipReason.
+type NotificationSkipReason string
+
+// NotificationSource defines model for NotificationSource.
+type NotificationSource string
+
+// NotificationState defines model for NotificationState.
+type NotificationState string
+
+// NotificationUnreadCount defines model for NotificationUnreadCount.
+type NotificationUnreadCount struct {
+	Applications []struct {
+		// ApplicationId null for platform alerts
+		ApplicationId *string `json:"application_id"`
+		UnreadCount   int     `json:"unread_count"`
+	} `json:"applications"`
+	UnreadCount int `json:"unread_count"`
+}
+
+// NotificationWithDeliveries defines model for NotificationWithDeliveries.
+type NotificationWithDeliveries struct {
+	ActionUrl *string `json:"action_url,omitempty"`
+
+	// ApplicationId null for a platform alert
+	ApplicationId *string                 `json:"application_id,omitempty"`
+	ArchivedAt    *time.Time              `json:"archived_at,omitempty"`
+	Badge         *int                    `json:"badge,omitempty"`
+	Body          *string                 `json:"body,omitempty"`
+	Category      string                  `json:"category"`
+	CollapseKey   *string                 `json:"collapse_key,omitempty"`
+	CreatedAt     time.Time               `json:"created_at"`
+	Data          *map[string]string      `json:"data,omitempty"`
+	Deliveries    *[]NotificationDelivery `json:"deliveries,omitempty"`
+
+	// Id ntf_…
+	Id       string               `json:"id"`
+	Priority NotificationPriority `json:"priority"`
+	Push     NotificationPush     `json:"push"`
+	ReadAt   *time.Time           `json:"read_at,omitempty"`
+	Sender   *struct {
+		Id   string                               `json:"id"`
+		Type NotificationWithDeliveriesSenderType `json:"type"`
+	} `json:"sender,omitempty"`
+	Sound      *string            `json:"sound,omitempty"`
+	Source     NotificationSource `json:"source"`
+	State      NotificationState  `json:"state"`
+	TestMode   *bool              `json:"test_mode,omitempty"`
+	Title      string             `json:"title"`
+	TtlSeconds *int               `json:"ttl_seconds,omitempty"`
+	UpdatedAt  *time.Time         `json:"updated_at,omitempty"`
+	UserId     string             `json:"user_id"`
+}
+
+// NotificationWithDeliveriesSenderType defines model for NotificationWithDeliveries.Sender.Type.
+type NotificationWithDeliveriesSenderType string
+
 // OAuthError defines model for OAuthError.
 type OAuthError struct {
 	Error            OAuthErrorError `json:"error"`
@@ -2151,6 +2817,91 @@ type ProfileWrite struct {
 	ContactPhone *string              `json:"contact_phone,omitempty"`
 	DisplayName  *string              `json:"display_name,omitempty"`
 }
+
+// PushCredential defines model for PushCredential.
+type PushCredential struct {
+	ApplicationId string `json:"application_id"`
+
+	// ClientEmail fcm
+	ClientEmail   *string    `json:"client_email,omitempty"`
+	CreatedAt     *time.Time `json:"created_at,omitempty"`
+	FailedAt      *time.Time `json:"failed_at,omitempty"`
+	FailureReason *string    `json:"failure_reason,omitempty"`
+
+	// Id pcr_…
+	Id string `json:"id"`
+
+	// KeyId apns
+	KeyId      *string    `json:"key_id,omitempty"`
+	LastUsedAt *time.Time `json:"last_used_at,omitempty"`
+
+	// ProjectId fcm
+	ProjectId *string              `json:"project_id,omitempty"`
+	Provider  PushProvider         `json:"provider"`
+	Status    PushCredentialStatus `json:"status"`
+
+	// Subject web_push
+	Subject *string `json:"subject,omitempty"`
+
+	// TeamId apns
+	TeamId *string `json:"team_id,omitempty"`
+
+	// Topic apns
+	Topic     *string    `json:"topic,omitempty"`
+	UpdatedAt *time.Time `json:"updated_at,omitempty"`
+
+	// VapidPublicKey web_push: base64url uncompressed P-256 point, for PushManager.subscribe({applicationServerKey})
+	VapidPublicKey *string `json:"vapid_public_key,omitempty"`
+}
+
+// PushCredentialStatus defines model for PushCredential.Status.
+type PushCredentialStatus string
+
+// PushCredentialCreate Fields depend on provider. apns: team_id, key_id, topic, private_key. fcm: service_account. web_push: subject (the VAPID key pair is generated).
+type PushCredentialCreate struct {
+	// KeyId apns
+	KeyId *string `json:"key_id,omitempty"`
+
+	// PrivateKey apns: the .p8 file's contents (PEM PKCS#8, P-256). Write-only.
+	PrivateKey *string      `json:"private_key,omitempty"`
+	Provider   PushProvider `json:"provider"`
+
+	// ServiceAccount fcm: the service-account JSON key (type, project_id, private_key, client_email). Write-only.
+	ServiceAccount *map[string]interface{} `json:"service_account,omitempty"`
+
+	// Subject web_push: a mailto: or https: contact URI (RFC 8292)
+	Subject *string `json:"subject,omitempty"`
+
+	// TeamId apns
+	TeamId *string `json:"team_id,omitempty"`
+
+	// Topic apns: the app's bundle id
+	Topic *string `json:"topic,omitempty"`
+}
+
+// PushCredentialList defines model for PushCredentialList.
+type PushCredentialList struct {
+	Data []PushCredential `json:"data"`
+}
+
+// PushCredentialUpdate defines model for PushCredentialUpdate.
+type PushCredentialUpdate struct {
+	KeyId          *string                 `json:"key_id,omitempty"`
+	PrivateKey     *string                 `json:"private_key,omitempty"`
+	ServiceAccount *map[string]interface{} `json:"service_account,omitempty"`
+
+	// Status Only failed → active.
+	Status  *PushCredentialUpdateStatus `json:"status,omitempty"`
+	Subject *string                     `json:"subject,omitempty"`
+	TeamId  *string                     `json:"team_id,omitempty"`
+	Topic   *string                     `json:"topic,omitempty"`
+}
+
+// PushCredentialUpdateStatus Only failed → active.
+type PushCredentialUpdateStatus string
+
+// PushProvider defines model for PushProvider.
+type PushProvider string
 
 // RedirectSession defines model for RedirectSession.
 type RedirectSession struct {
@@ -2377,7 +3128,10 @@ type UserExport struct {
 
 	// AuditEvents This user's own trail as target_user_id (hot window).
 	AuditEvents *[]AuditEvent `json:"audit_events,omitempty"`
-	ExportedAt  *time.Time    `json:"exported_at,omitempty"`
+
+	// Devices Push devices, active and inactive. Never includes the token.
+	Devices    *[]Device  `json:"devices,omitempty"`
+	ExportedAt *time.Time `json:"exported_at,omitempty"`
 
 	// Identities Never includes password_hash or mfa_secret.
 	Identities *[]struct {
@@ -2385,6 +3139,9 @@ type UserExport struct {
 		Method     *UserExportIdentitiesMethod `json:"method,omitempty"`
 		MfaEnabled *bool                       `json:"mfa_enabled,omitempty"`
 	} `json:"identities,omitempty"`
+
+	// Notifications Every notification still retained (90 days), without deliveries.
+	Notifications *[]Notification `json:"notifications,omitempty"`
 	Organizations *[]struct {
 		JoinedAt       *time.Time              `json:"joined_at,omitempty"`
 		OrganizationId *string                 `json:"organization_id,omitempty"`
@@ -2424,6 +3181,15 @@ type UserRoleAssignmentPage struct {
 
 // UserStatus defines model for UserStatus.
 type UserStatus string
+
+// WebPushSubscription The PushSubscription from PushManager.subscribe(), as JSON.
+type WebPushSubscription struct {
+	Endpoint string `json:"endpoint"`
+	Keys     struct {
+		Auth   string `json:"auth"`
+		P256dh string `json:"p256dh"`
+	} `json:"keys"`
+}
 
 // Webhook defines model for Webhook.
 type Webhook struct {
@@ -2604,9 +3370,12 @@ type ApplicationsCreateJSONBody struct {
 	OwnerOrganizationId *string                  `json:"owner_organization_id,omitempty"`
 	OwnerUserId         *string                  `json:"owner_user_id,omitempty"`
 	Permissions         *[]ApplicationPermission `json:"permissions,omitempty"`
-	RedirectUris        *[]string                `json:"redirect_uris,omitempty"`
-	ReviewNotes         *string                  `json:"review_notes,omitempty"`
-	ReviewStatus        *ApplicationReviewStatus `json:"review_status,omitempty"`
+
+	// ReceivesPlatformNotifications When true, this Application's devices also receive pushes for platform alerts (security and account notices). A configuration field the owner may set.
+	ReceivesPlatformNotifications *bool                    `json:"receives_platform_notifications,omitempty"`
+	RedirectUris                  *[]string                `json:"redirect_uris,omitempty"`
+	ReviewNotes                   *string                  `json:"review_notes,omitempty"`
+	ReviewStatus                  *ApplicationReviewStatus `json:"review_status,omitempty"`
 
 	// SettingsSchema JSON Schema 2020-12 subset — see Domain Model → Settings → settings_schema rules
 	SettingsSchema *map[string]interface{} `json:"settings_schema,omitempty"`
@@ -2624,6 +3393,17 @@ type ApplicationsCreateParams struct {
 
 // ApplicationsUpdateParams defines parameters for ApplicationsUpdate.
 type ApplicationsUpdateParams struct {
+	// IfMatch The ETag from a prior read. A mismatch returns 409 version_conflict.
+	IfMatch *IfMatch `json:"If-Match,omitempty"`
+}
+
+// PushCredentialsCreateParams defines parameters for PushCredentialsCreate.
+type PushCredentialsCreateParams struct {
+	IdempotencyKey *IdempotencyKeyOptional `json:"Idempotency-Key,omitempty"`
+}
+
+// PushCredentialsUpdateParams defines parameters for PushCredentialsUpdate.
+type PushCredentialsUpdateParams struct {
 	// IfMatch The ETag from a prior read. A mismatch returns 409 version_conflict.
 	IfMatch *IfMatch `json:"If-Match,omitempty"`
 }
@@ -3045,6 +3825,28 @@ type AppSettingsUpdateParams struct {
 	IfMatch *IfMatch `json:"If-Match,omitempty"`
 }
 
+// DevicesListParams defines parameters for DevicesList.
+type DevicesListParams struct {
+	Limit           *Limit        `form:"limit,omitempty" json:"limit,omitempty"`
+	Cursor          *Cursor       `form:"cursor,omitempty" json:"cursor,omitempty"`
+	ApplicationId   *string       `form:"application_id,omitempty" json:"application_id,omitempty"`
+	Provider        *PushProvider `form:"provider,omitempty" json:"provider,omitempty"`
+	Status          *DeviceStatus `form:"status,omitempty" json:"status,omitempty"`
+	IncludeInactive *bool         `form:"include_inactive,omitempty" json:"include_inactive,omitempty"`
+}
+
+// DevicesUpdateParams defines parameters for DevicesUpdate.
+type DevicesUpdateParams struct {
+	// IfMatch The ETag from a prior read. A mismatch returns 409 version_conflict.
+	IfMatch *IfMatch `json:"If-Match,omitempty"`
+}
+
+// DevicesSendTestJSONBody defines parameters for DevicesSendTest.
+type DevicesSendTestJSONBody struct {
+	Body  *string `json:"body,omitempty"`
+	Title *string `json:"title,omitempty"`
+}
+
 // EntitlementsListForUserParams defines parameters for EntitlementsListForUser.
 type EntitlementsListForUserParams struct {
 	Limit           *Limit             `form:"limit,omitempty" json:"limit,omitempty"`
@@ -3088,6 +3890,50 @@ type AuthDisableMfaTotpJSONBody struct {
 	// Code A current TOTP code
 	Code         *string `json:"code,omitempty"`
 	RecoveryCode *string `json:"recovery_code,omitempty"`
+}
+
+// NotificationsListParams defines parameters for NotificationsList.
+type NotificationsListParams struct {
+	Limit           *Limit                `form:"limit,omitempty" json:"limit,omitempty"`
+	Cursor          *Cursor               `form:"cursor,omitempty" json:"cursor,omitempty"`
+	State           *NotificationState    `form:"state,omitempty" json:"state,omitempty"`
+	ApplicationId   *string               `form:"application_id,omitempty" json:"application_id,omitempty"`
+	Source          *NotificationSource   `form:"source,omitempty" json:"source,omitempty"`
+	Category        *string               `form:"category,omitempty" json:"category,omitempty"`
+	Priority        *NotificationPriority `form:"priority,omitempty" json:"priority,omitempty"`
+	CreatedAfter    *time.Time            `form:"created_after,omitempty" json:"created_after,omitempty"`
+	CreatedBefore   *time.Time            `form:"created_before,omitempty" json:"created_before,omitempty"`
+	IncludeInactive *bool                 `form:"include_inactive,omitempty" json:"include_inactive,omitempty"`
+}
+
+// NotificationsSendParams defines parameters for NotificationsSend.
+type NotificationsSendParams struct {
+	IdempotencyKey *IdempotencyKeyOptional `json:"Idempotency-Key,omitempty"`
+}
+
+// NotificationsMarkReadJSONBody defines parameters for NotificationsMarkRead.
+type NotificationsMarkReadJSONBody struct {
+	ApplicationId *string             `json:"application_id,omitempty"`
+	Before        *time.Time          `json:"before,omitempty"`
+	Category      *string             `json:"category,omitempty"`
+	Source        *NotificationSource `json:"source,omitempty"`
+}
+
+// NotificationsUnreadCountParams defines parameters for NotificationsUnreadCount.
+type NotificationsUnreadCountParams struct {
+	ApplicationId *string             `form:"application_id,omitempty" json:"application_id,omitempty"`
+	Source        *NotificationSource `form:"source,omitempty" json:"source,omitempty"`
+}
+
+// NotificationsUpdateJSONBody defines parameters for NotificationsUpdate.
+type NotificationsUpdateJSONBody struct {
+	State NotificationState `json:"state"`
+}
+
+// NotificationsUpdateParams defines parameters for NotificationsUpdate.
+type NotificationsUpdateParams struct {
+	// IfMatch The ETag from a prior read. A mismatch returns 409 version_conflict.
+	IfMatch *IfMatch `json:"If-Match,omitempty"`
 }
 
 // AuthChangePasswordJSONBody defines parameters for AuthChangePassword.
@@ -3187,6 +4033,12 @@ type ApplicationsCreateJSONRequestBody ApplicationsCreateJSONBody
 // ApplicationsUpdateJSONRequestBody defines body for ApplicationsUpdate for application/json ContentType.
 type ApplicationsUpdateJSONRequestBody = ApplicationWrite
 
+// PushCredentialsCreateJSONRequestBody defines body for PushCredentialsCreate for application/json ContentType.
+type PushCredentialsCreateJSONRequestBody = PushCredentialCreate
+
+// PushCredentialsUpdateJSONRequestBody defines body for PushCredentialsUpdate for application/json ContentType.
+type PushCredentialsUpdateJSONRequestBody = PushCredentialUpdate
+
 // AuthCreateAppTokenJSONRequestBody defines body for AuthCreateAppToken for application/json ContentType.
 type AuthCreateAppTokenJSONRequestBody AuthCreateAppTokenJSONBody
 
@@ -3280,6 +4132,15 @@ type AppProfilesUpdateJSONRequestBody AppProfilesUpdateJSONBody
 // AppSettingsUpdateJSONRequestBody defines body for AppSettingsUpdate for application/json ContentType.
 type AppSettingsUpdateJSONRequestBody AppSettingsUpdateJSONBody
 
+// DevicesRegisterJSONRequestBody defines body for DevicesRegister for application/json ContentType.
+type DevicesRegisterJSONRequestBody = DeviceRegistration
+
+// DevicesUpdateJSONRequestBody defines body for DevicesUpdate for application/json ContentType.
+type DevicesUpdateJSONRequestBody = DeviceUpdate
+
+// DevicesSendTestJSONRequestBody defines body for DevicesSendTest for application/json ContentType.
+type DevicesSendTestJSONRequestBody DevicesSendTestJSONBody
+
 // EntitlementsGrantJSONRequestBody defines body for EntitlementsGrant for application/json ContentType.
 type EntitlementsGrantJSONRequestBody EntitlementsGrantJSONBody
 
@@ -3291,6 +4152,15 @@ type AuthConfirmMfaTotpJSONRequestBody AuthConfirmMfaTotpJSONBody
 
 // AuthDisableMfaTotpJSONRequestBody defines body for AuthDisableMfaTotp for application/json ContentType.
 type AuthDisableMfaTotpJSONRequestBody AuthDisableMfaTotpJSONBody
+
+// NotificationsSendJSONRequestBody defines body for NotificationsSend for application/json ContentType.
+type NotificationsSendJSONRequestBody = NotificationCreate
+
+// NotificationsMarkReadJSONRequestBody defines body for NotificationsMarkRead for application/json ContentType.
+type NotificationsMarkReadJSONRequestBody NotificationsMarkReadJSONBody
+
+// NotificationsUpdateJSONRequestBody defines body for NotificationsUpdate for application/json ContentType.
+type NotificationsUpdateJSONRequestBody NotificationsUpdateJSONBody
 
 // AuthChangePasswordJSONRequestBody defines body for AuthChangePassword for application/json ContentType.
 type AuthChangePasswordJSONRequestBody AuthChangePasswordJSONBody
@@ -3658,6 +4528,21 @@ type ServerInterface interface {
 	// ApplicationsUpdate Update a catalog entry (owner — configuration; applications.manage — anything)
 	// (PATCH /applications/{id})
 	ApplicationsUpdate(w http.ResponseWriter, r *http.Request, id string, params ApplicationsUpdateParams)
+	// PushCredentialsList List the push providers an Application has configured (the owner, the app's own key, or applications.manage)
+	// (GET /applications/{id}/push-credentials)
+	PushCredentialsList(w http.ResponseWriter, r *http.Request, id string)
+	// PushCredentialsCreate Configure one push provider (the owner or applications.manage, User token only)
+	// (POST /applications/{id}/push-credentials)
+	PushCredentialsCreate(w http.ResponseWriter, r *http.Request, id string, params PushCredentialsCreateParams)
+	// PushCredentialsDelete Remove a push provider (User token only)
+	// (DELETE /applications/{id}/push-credentials/{provider})
+	PushCredentialsDelete(w http.ResponseWriter, r *http.Request, id string, provider PushProvider)
+	// PushCredentialsGet Fetch one provider's configuration
+	// (GET /applications/{id}/push-credentials/{provider})
+	PushCredentialsGet(w http.ResponseWriter, r *http.Request, id string, provider PushProvider)
+	// PushCredentialsUpdate Replace key material, change non-secret fields, or re-enable a failed credential (User token only)
+	// (PATCH /applications/{id}/push-credentials/{provider})
+	PushCredentialsUpdate(w http.ResponseWriter, r *http.Request, id string, provider PushProvider, params PushCredentialsUpdateParams)
 	// AuditList Query the audit log (hot window only)
 	// (GET /audit-events)
 	AuditList(w http.ResponseWriter, r *http.Request, params AuditListParams)
@@ -3832,6 +4717,24 @@ type ServerInterface interface {
 	// AppSettingsUpdate Write per-app overrides (validated against settings_schema; null clears)
 	// (PATCH /users/{id}/apps/{appId}/settings)
 	AppSettingsUpdate(w http.ResponseWriter, r *http.Request, id UserIdOrMe, appId AppId, params AppSettingsUpdateParams)
+	// DevicesList List a User's push devices (self, the app's own key, or users.list)
+	// (GET /users/{id}/devices)
+	DevicesList(w http.ResponseWriter, r *http.Request, id UserIdOrMe, params DevicesListParams)
+	// DevicesRegister Register a push device, or refresh an existing registration (self or the app's own key)
+	// (POST /users/{id}/devices)
+	DevicesRegister(w http.ResponseWriter, r *http.Request, id UserIdOrMe)
+	// DevicesDelete Unregister a device (self, the app's own key, or users.manage)
+	// (DELETE /users/{id}/devices/{deviceId})
+	DevicesDelete(w http.ResponseWriter, r *http.Request, id UserIdOrMe, deviceId string)
+	// DevicesGet Fetch one device
+	// (GET /users/{id}/devices/{deviceId})
+	DevicesGet(w http.ResponseWriter, r *http.Request, id UserIdOrMe, deviceId string)
+	// DevicesUpdate Update a device's name, app version, environment, or rotated token (self or the app's own key)
+	// (PATCH /users/{id}/devices/{deviceId})
+	DevicesUpdate(w http.ResponseWriter, r *http.Request, id UserIdOrMe, deviceId string, params DevicesUpdateParams)
+	// DevicesSendTest Send a test push to one device and wait for the provider's answer (self or the app's own key)
+	// (POST /users/{id}/devices/{deviceId}/test)
+	DevicesSendTest(w http.ResponseWriter, r *http.Request, id UserIdOrMe, deviceId string)
 	// EntitlementsListForUser A user's entitlements, personal and org-sourced
 	// (GET /users/{id}/entitlements)
 	EntitlementsListForUser(w http.ResponseWriter, r *http.Request, id UserIdOrMe, params EntitlementsListForUserParams)
@@ -3862,6 +4765,24 @@ type ServerInterface interface {
 	// AuthDisableMfaTotp Turn TOTP off given a current code or recovery code (self only)
 	// (POST /users/{id}/mfa/totp/disable)
 	AuthDisableMfaTotp(w http.ResponseWriter, r *http.Request, id UserIdOrMe)
+	// NotificationsList List a User's notification inbox (self, the app's own key, or users.list)
+	// (GET /users/{id}/notifications)
+	NotificationsList(w http.ResponseWriter, r *http.Request, id UserIdOrMe, params NotificationsListParams)
+	// NotificationsSend Send one notification to one User (the app's own key with notifications.send, or platform notifications.send)
+	// (POST /users/{id}/notifications)
+	NotificationsSend(w http.ResponseWriter, r *http.Request, id UserIdOrMe, params NotificationsSendParams)
+	// NotificationsMarkRead Mark every unread notification matching the filters as read (self or the app's own key)
+	// (POST /users/{id}/notifications/mark-read)
+	NotificationsMarkRead(w http.ResponseWriter, r *http.Request, id UserIdOrMe)
+	// NotificationsUnreadCount Count unread notifications, in total and per Application (self or the app's own key)
+	// (GET /users/{id}/notifications/unread-count)
+	NotificationsUnreadCount(w http.ResponseWriter, r *http.Request, id UserIdOrMe, params NotificationsUnreadCountParams)
+	// NotificationsGet Fetch one notification, with its per-device deliveries
+	// (GET /users/{id}/notifications/{notificationId})
+	NotificationsGet(w http.ResponseWriter, r *http.Request, id UserIdOrMe, notificationId string)
+	// NotificationsUpdate Mark one notification read, unread, or archived (self or the app's own key)
+	// (PATCH /users/{id}/notifications/{notificationId})
+	NotificationsUpdate(w http.ResponseWriter, r *http.Request, id UserIdOrMe, notificationId string, params NotificationsUpdateParams)
 	// AuthChangePassword Change password given the current one (self only)
 	// (POST /users/{id}/password)
 	AuthChangePassword(w http.ResponseWriter, r *http.Request, id UserIdOrMe)
@@ -4381,6 +5302,211 @@ func (siw *ServerInterfaceWrapper) ApplicationsUpdate(w http.ResponseWriter, r *
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ApplicationsUpdate(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PushCredentialsList operation middleware
+func (siw *ServerInterfaceWrapper) PushCredentialsList(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PushCredentialsList(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PushCredentialsCreate operation middleware
+func (siw *ServerInterfaceWrapper) PushCredentialsCreate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PushCredentialsCreateParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKeyOptional
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = &IdempotencyKey
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PushCredentialsCreate(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PushCredentialsDelete operation middleware
+func (siw *ServerInterfaceWrapper) PushCredentialsDelete(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "provider" -------------
+	var provider PushProvider
+
+	err = runtime.BindStyledParameterWithOptions("simple", "provider", r.PathValue("provider"), &provider, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "provider", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PushCredentialsDelete(w, r, id, provider)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PushCredentialsGet operation middleware
+func (siw *ServerInterfaceWrapper) PushCredentialsGet(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "provider" -------------
+	var provider PushProvider
+
+	err = runtime.BindStyledParameterWithOptions("simple", "provider", r.PathValue("provider"), &provider, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "provider", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PushCredentialsGet(w, r, id, provider)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PushCredentialsUpdate operation middleware
+func (siw *ServerInterfaceWrapper) PushCredentialsUpdate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "provider" -------------
+	var provider PushProvider
+
+	err = runtime.BindStyledParameterWithOptions("simple", "provider", r.PathValue("provider"), &provider, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "provider", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PushCredentialsUpdateParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = &IfMatch
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PushCredentialsUpdate(w, r, id, provider, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -6852,6 +7978,303 @@ func (siw *ServerInterfaceWrapper) AppSettingsUpdate(w http.ResponseWriter, r *h
 	handler.ServeHTTP(w, r)
 }
 
+// DevicesList operation middleware
+func (siw *ServerInterfaceWrapper) DevicesList(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id UserIdOrMe
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DevicesListParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "application_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "application_id", r.URL.Query(), &params.ApplicationId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "application_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "application_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "provider" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "provider", r.URL.Query(), &params.Provider, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "provider"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "provider", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "include_inactive" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "include_inactive", r.URL.Query(), &params.IncludeInactive, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "include_inactive"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "include_inactive", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DevicesList(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DevicesRegister operation middleware
+func (siw *ServerInterfaceWrapper) DevicesRegister(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id UserIdOrMe
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DevicesRegister(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DevicesDelete operation middleware
+func (siw *ServerInterfaceWrapper) DevicesDelete(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id UserIdOrMe
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "deviceId" -------------
+	var deviceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "deviceId", r.PathValue("deviceId"), &deviceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "deviceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DevicesDelete(w, r, id, deviceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DevicesGet operation middleware
+func (siw *ServerInterfaceWrapper) DevicesGet(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id UserIdOrMe
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "deviceId" -------------
+	var deviceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "deviceId", r.PathValue("deviceId"), &deviceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "deviceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DevicesGet(w, r, id, deviceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DevicesUpdate operation middleware
+func (siw *ServerInterfaceWrapper) DevicesUpdate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id UserIdOrMe
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "deviceId" -------------
+	var deviceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "deviceId", r.PathValue("deviceId"), &deviceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "deviceId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DevicesUpdateParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = &IfMatch
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DevicesUpdate(w, r, id, deviceId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DevicesSendTest operation middleware
+func (siw *ServerInterfaceWrapper) DevicesSendTest(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id UserIdOrMe
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "deviceId" -------------
+	var deviceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "deviceId", r.PathValue("deviceId"), &deviceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "deviceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DevicesSendTest(w, r, id, deviceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // EntitlementsListForUser operation middleware
 func (siw *ServerInterfaceWrapper) EntitlementsListForUser(w http.ResponseWriter, r *http.Request) {
 
@@ -7212,6 +8635,390 @@ func (siw *ServerInterfaceWrapper) AuthDisableMfaTotp(w http.ResponseWriter, r *
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.AuthDisableMfaTotp(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// NotificationsList operation middleware
+func (siw *ServerInterfaceWrapper) NotificationsList(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id UserIdOrMe
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params NotificationsListParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "state" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "state", r.URL.Query(), &params.State, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "state"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "state", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "application_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "application_id", r.URL.Query(), &params.ApplicationId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "application_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "application_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "source" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "source", r.URL.Query(), &params.Source, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "source"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "source", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "category" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "category", r.URL.Query(), &params.Category, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "category"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "category", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "priority" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "priority", r.URL.Query(), &params.Priority, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "priority"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "priority", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "created_after" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "created_after", r.URL.Query(), &params.CreatedAfter, runtime.BindQueryParameterOptions{Type: "string", Format: "date-time"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "created_after"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "created_after", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "created_before" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "created_before", r.URL.Query(), &params.CreatedBefore, runtime.BindQueryParameterOptions{Type: "string", Format: "date-time"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "created_before"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "created_before", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "include_inactive" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "include_inactive", r.URL.Query(), &params.IncludeInactive, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "include_inactive"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "include_inactive", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.NotificationsList(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// NotificationsSend operation middleware
+func (siw *ServerInterfaceWrapper) NotificationsSend(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id UserIdOrMe
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params NotificationsSendParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKeyOptional
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = &IdempotencyKey
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.NotificationsSend(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// NotificationsMarkRead operation middleware
+func (siw *ServerInterfaceWrapper) NotificationsMarkRead(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id UserIdOrMe
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.NotificationsMarkRead(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// NotificationsUnreadCount operation middleware
+func (siw *ServerInterfaceWrapper) NotificationsUnreadCount(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id UserIdOrMe
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params NotificationsUnreadCountParams
+
+	// ------------- Optional query parameter "application_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "application_id", r.URL.Query(), &params.ApplicationId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "application_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "application_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "source" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "source", r.URL.Query(), &params.Source, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "source"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "source", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.NotificationsUnreadCount(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// NotificationsGet operation middleware
+func (siw *ServerInterfaceWrapper) NotificationsGet(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id UserIdOrMe
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "notificationId" -------------
+	var notificationId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "notificationId", r.PathValue("notificationId"), &notificationId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "notificationId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.NotificationsGet(w, r, id, notificationId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// NotificationsUpdate operation middleware
+func (siw *ServerInterfaceWrapper) NotificationsUpdate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id UserIdOrMe
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "notificationId" -------------
+	var notificationId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "notificationId", r.PathValue("notificationId"), &notificationId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "notificationId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params NotificationsUpdateParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = &IfMatch
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.NotificationsUpdate(w, r, id, notificationId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -8197,6 +10004,23 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/webhooks/{id}/test", wrapper.WebhooksSendTest)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/webhooks/{id}/deliveries", wrapper.WebhooksListDeliveries)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/webhooks/{id}/deliveries/{deliveryId}/redeliver", wrapper.WebhooksRedeliver)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/applications/{id}/push-credentials", wrapper.PushCredentialsList)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/applications/{id}/push-credentials", wrapper.PushCredentialsCreate)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/applications/{id}/push-credentials/{provider}", wrapper.PushCredentialsDelete)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/applications/{id}/push-credentials/{provider}", wrapper.PushCredentialsGet)
+	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/applications/{id}/push-credentials/{provider}", wrapper.PushCredentialsUpdate)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/users/{id}/devices", wrapper.DevicesList)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/users/{id}/devices", wrapper.DevicesRegister)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/users/{id}/devices/{deviceId}", wrapper.DevicesDelete)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/users/{id}/devices/{deviceId}", wrapper.DevicesGet)
+	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/users/{id}/devices/{deviceId}", wrapper.DevicesUpdate)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/users/{id}/devices/{deviceId}/test", wrapper.DevicesSendTest)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/users/{id}/notifications", wrapper.NotificationsList)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/users/{id}/notifications", wrapper.NotificationsSend)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/users/{id}/notifications/unread-count", wrapper.NotificationsUnreadCount)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/users/{id}/notifications/mark-read", wrapper.NotificationsMarkRead)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/users/{id}/notifications/{notificationId}", wrapper.NotificationsGet)
+	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/users/{id}/notifications/{notificationId}", wrapper.NotificationsUpdate)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api-keys", wrapper.ApiKeysList)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api-keys", wrapper.ApiKeysCreate)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api-keys/{id}", wrapper.ApiKeysDelete)

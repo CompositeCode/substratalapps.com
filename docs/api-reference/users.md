@@ -31,7 +31,7 @@ See [Domain Model → Users & Organizations](../../domain-model/users-and-organi
 | `POST` | `/v1/users/{id}/erasure-requests` | self or `users.manage` (including for an already soft-deleted User) | Request right-to-erasure: soft-delete now, hard-delete cascade after 7 days. |
 | `DELETE` | `/v1/users/{id}/erasure-requests/current` | `users.manage` | Cancel a scheduled erasure inside its 7-day window. |
 
-Password, MFA, and session endpoints under `/v1/users/{id}/…` are specified on [Auth](../auth/).
+Password, MFA, and session endpoints under `/v1/users/{id}/…` are specified on [Auth](../auth/). Device and notification endpoints (`/v1/users/{id}/devices`, `/v1/users/{id}/notifications`) are on [Push Notifications](../notifications/).
 
 ## The User object
 
@@ -152,7 +152,7 @@ Rejected transitions return `409 invalid_status_transition`. A self-service call
 // Response — 204
 ```
 
-Soft-delete: sets `status: deleted` and `deleted_at`, revokes every session, fires `access.revoked` (reason `user_deleted`) for every Application the user had active access to, and from then on `GET /v1/users/{id}` 404s for everyone but `users.manage`, who can still fetch, restore, or request erasure for the account. Self, or `users.manage`. Entitlements, Roles, Profile, and Settings are retained, not removed — hard deletion is the separate erasure process below. The email address becomes reusable by a new signup immediately. Writes `user.deleted`.
+Soft-delete: sets `status: deleted` and `deleted_at`, revokes every session, deactivates every push [device](../notifications/#sessions-and-device-lifecycle), fires `access.revoked` (reason `user_deleted`) for every Application the user had active access to, and from then on `GET /v1/users/{id}` 404s for everyone but `users.manage`, who can still fetch, restore, or request erasure for the account. Self, or `users.manage`. Entitlements, Roles, Profile, and Settings are retained, not removed — hard deletion is the separate erasure process below. The email address becomes reusable by a new signup immediately. Writes `user.deleted`.
 
 ## `POST /v1/users/{id}/suspend`
 
@@ -177,7 +177,7 @@ Soft-delete: sets `status: deleted` and `deleted_at`, revokes every session, fir
 }
 ```
 
-Requires `users.manage`. Suspending an already-suspended User returns `200` with no change and no new events. `reason` is optional but recorded on the Audit Event (`user.suspended`). Revokes every session and fires `access.revoked` (reason `user_suspended`) for every Application the user had active access to — the user's Entitlements themselves are **not** changed, so reactivation restores exactly what was there. To cut off one specific app instead of the whole account, use [Entitlements](../entitlements/). Destructive — see [MCP Server → Tool annotations](../../mcp-server/#tool-annotations--safety).
+Requires `users.manage`. Suspending an already-suspended User returns `200` with no change and no new events. `reason` is optional but recorded on the Audit Event (`user.suspended`). Revokes every session, deactivates every push [device](../notifications/#sessions-and-device-lifecycle), and fires `access.revoked` (reason `user_suspended`) for every Application the user had active access to — the user's Entitlements themselves are **not** changed, so reactivation restores exactly what was there. To cut off one specific app instead of the whole account, use [Entitlements](../entitlements/). Destructive — see [MCP Server → Tool annotations](../../mcp-server/#tool-annotations--safety).
 
 ## `POST /v1/users/{id}/invitation`
 
@@ -220,11 +220,17 @@ Self, or `users.manage`. Limited to 5 calls per user per day.
   ],
   "audit_events": [
     { "action": "entitlement.granted", "application_id": "app_timetrack", "timestamp": "2026-01-14T18:05:00Z" }
+  ],
+  "devices": [
+    { "id": "dvc_01JAH2B3C4D5E6F7G8H9J0K1M2", "application_id": "app_timetrack", "provider": "apns", "token_hint": "…9f3a", "name": "Jordan's iPhone", "status": "active", "created_at": "2026-10-17T15:05:00Z" }
+  ],
+  "notifications": [
+    { "id": "ntf_01JAH3C4D5E6F7G8H9J0K1M2N3", "application_id": "app_timetrack", "category": "timesheet.reminder", "title": "Timesheet due tomorrow", "state": "read", "created_at": "2026-10-17T15:10:00Z" }
   ]
 }
 ```
 
-Every section reads from a table the [hard-delete cascade](../../non-functional-requirements/#hard-delete-cascade) clears, with one deliberate exception: `settings`. Global Settings is exported because it's keyed to the User, but erasure leaves it in place because it identifies no one once the rest is gone (see the cascade's closing note). `identities` never includes `password_hash` or `mfa_secret`; `audit_events` is this User's own trail as `target_user_id` (hot storage only — events already archived per [Audit log lifecycle](../../non-functional-requirements/#audit-log-lifecycle) are available on request through support). The response is always complete and synchronous; there is no pagination. If a real account ever makes this too large to return in one response (practically, over 10 MB), the endpoint gains an asynchronous `202` + download-link mode as an additive change.
+Every section reads from a table the [hard-delete cascade](../../non-functional-requirements/#hard-delete-cascade) clears, with one deliberate exception: `settings`. Global Settings is exported because it's keyed to the User, but erasure leaves it in place because it identifies no one once the rest is gone (see the cascade's closing note). `identities` never includes `password_hash` or `mfa_secret`, and `devices` never includes a push token; `audit_events` is this User's own trail as `target_user_id` (hot storage only — events already archived per [Audit log lifecycle](../../non-functional-requirements/#audit-log-lifecycle) are available on request through support). The response is always complete and synchronous; there is no pagination. If a real account ever makes this too large to return in one response (practically, over 10 MB), the endpoint gains an asynchronous `202` + download-link mode as an additive change.
 
 ## `POST /v1/users/{id}/erasure-requests`
 
