@@ -1,0 +1,1547 @@
+
+
+<!DOCTYPE html>
+
+<html lang="en-US">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+
+  <link rel="stylesheet" href="/substratalapps.com/versions/1.4.0/assets/css/just-the-docs-default.css">
+
+  <link rel="stylesheet" href="/substratalapps.com/versions/1.4.0/assets/css/just-the-docs-head-nav.css" id="jtd-head-nav-stylesheet">
+
+  <style id="jtd-nav-activation">
+  
+
+    .site-nav > ul.nav-list:first-child > li > a,
+    
+    .site-nav > ul.nav-list:first-child > li > ul > li:not(:nth-child(14)) > a,
+    .site-nav > ul.nav-list:first-child > li > ul > li > ul > li a {
+      background-image: none;
+    }
+
+    .site-nav > ul.nav-list:not(:first-child) a,
+    .site-nav li.external a {
+      background-image: none;
+    }
+
+    .site-nav > ul.nav-list:first-child > li:nth-child(6) > ul > li:nth-child(14) > a {
+      font-weight: 600;
+      text-decoration: none;
+    }.site-nav > ul.nav-list:first-child > li:nth-child(6) > button svg,
+    .site-nav > ul.nav-list:first-child > li:nth-child(6) > ul > li:nth-child(14) > button svg {
+      transform: rotate(-90deg);
+    }.site-nav > ul.nav-list:first-child > li.nav-list-item:nth-child(6) > ul.nav-list,
+    .site-nav > ul.nav-list:first-child > li.nav-list-item:nth-child(6) > ul.nav-list > li.nav-list-item:nth-child(14) > ul.nav-list {
+      display: block;
+    }
+  </style>
+
+  
+
+  
+    <script src="/substratalapps.com/versions/1.4.0/assets/js/vendor/lunr.min.js"></script>
+  
+
+  <script src="/substratalapps.com/versions/1.4.0/assets/js/just-the-docs.js"></script>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+
+
+
+  <!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Push Notifications | Substratal Apps — Platform API</title>
+<meta name="generator" content="Jekyll v3.10.0" />
+<meta property="og:title" content="Push Notifications" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="The system of record for how Substratal manages users, roles, per-app access, profiles, and settings across every product in the Substratal Apps catalog. API-first specification and documentation." />
+<meta property="og:description" content="The system of record for how Substratal manages users, roles, per-app access, profiles, and settings across every product in the Substratal Apps catalog. API-first specification and documentation." />
+<link rel="canonical" href="https://compositecode.github.io/substratalapps.com/versions/1.4.0/api-reference/notifications/" />
+<meta property="og:url" content="https://compositecode.github.io/substratalapps.com/versions/1.4.0/api-reference/notifications/" />
+<meta property="og:site_name" content="Substratal Apps — Platform API" />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Push Notifications" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebPage","description":"The system of record for how Substratal manages users, roles, per-app access, profiles, and settings across every product in the Substratal Apps catalog. API-first specification and documentation.","headline":"Push Notifications","url":"https://compositecode.github.io/substratalapps.com/versions/1.4.0/api-reference/notifications/"}</script>
+<!-- End Jekyll SEO tag -->
+
+
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll("code.language-mermaid").forEach(function (codeEl) {
+      var pre = codeEl.closest("pre") || codeEl.parentElement;
+      var div = document.createElement("div");
+      div.className = "mermaid";
+      div.textContent = codeEl.textContent;
+      pre.replaceWith(div);
+    });
+    if (window.mermaid) {
+      mermaid.initialize({ startOnLoad: true, theme: "neutral" });
+      mermaid.run();
+    }
+  });
+</script>
+
+
+</head>
+
+<body>
+  <a class="skip-to-main" href="#main-content">Skip to main content</a>
+  <svg xmlns="http://www.w3.org/2000/svg" class="d-none">
+  <symbol id="svg-link" viewBox="0 0 24 24">
+  <title>Link</title>
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-link">
+    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+  </svg>
+</symbol>
+
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+  <title>Menu</title>
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-menu">
+    <line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line>
+  </svg>
+</symbol>
+
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+  <title>Expand</title>
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-right">
+    <polyline points="9 18 15 12 9 6"></polyline>
+  </svg>
+</symbol>
+
+  <!-- Feather. MIT License: https://github.com/feathericons/feather/blob/master/LICENSE -->
+<symbol id="svg-external-link" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-external-link">
+  <title id="svg-external-link-title">(external link)</title>
+  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line>
+</symbol>
+
+  
+    <symbol id="svg-doc" viewBox="0 0 24 24">
+  <title>Document</title>
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file">
+    <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline>
+  </svg>
+</symbol>
+
+    <symbol id="svg-search" viewBox="0 0 24 24">
+  <title>Search</title>
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search">
+    <circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+  </svg>
+</symbol>
+
+  
+  
+    <!-- Bootstrap Icons. MIT License: https://github.com/twbs/icons/blob/main/LICENSE.md -->
+<symbol id="svg-copy" viewBox="0 0 16 16">
+  <title>Copy</title>
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-clipboard" viewBox="0 0 16 16">
+    <path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"/>
+    <path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"/>
+  </svg>
+</symbol>
+<symbol id="svg-copied" viewBox="0 0 16 16">
+  <title>Copied</title>
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-clipboard-check-fill" viewBox="0 0 16 16">
+    <path d="M6.5 0A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3Zm3 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3Z"/>
+    <path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1A2.5 2.5 0 0 1 9.5 5h-3A2.5 2.5 0 0 1 4 2.5v-1Zm6.854 7.354-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 0 1 .708-.708L7.5 10.793l2.646-2.647a.5.5 0 0 1 .708.708Z"/>
+  </svg>
+</symbol>
+
+  
+</svg>
+
+  
+    <header class="side-bar">
+  <div class="site-header">
+    <a href="/substratalapps.com/versions/1.4.0/" class="site-title lh-tight">
+  Substratal Apps — Platform API
+
+</a>
+    <button id="menu-button" class="site-button btn-reset" aria-label="Menu" aria-expanded="false">
+      <svg viewBox="0 0 24 24" class="icon" aria-hidden="true"><use xlink:href="#svg-menu"></use></svg>
+    </button>
+  </div>
+
+  <nav aria-label="Main" id="site-nav" class="site-nav">
+  
+  
+    <ul class="nav-list"><li class="nav-list-item"><a href="/substratalapps.com/versions/1.4.0/" class="nav-list-link">Home</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.4.0/getting-started/" class="nav-list-link">Getting Started</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.4.0/quickstart/" class="nav-list-link">Quickstart</a></li><li class="nav-list-item"><button class="nav-list-expander btn-reset" aria-label="Domain Model submenu" aria-expanded="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><use xlink:href="#svg-arrow-right"></use></svg>
+      </button><a href="/substratalapps.com/versions/1.4.0/domain-model/" class="nav-list-link">Domain Model</a><ul class="nav-list"><li class="nav-list-item"><a href="/substratalapps.com/versions/1.4.0/domain-model/users-and-organizations/" class="nav-list-link">Users & Organizations</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.4.0/domain-model/applications/" class="nav-list-link">Applications</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.4.0/domain-model/roles-and-permissions/" class="nav-list-link">Roles & Permissions</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.4.0/domain-model/entitlements/" class="nav-list-link">Entitlements</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.4.0/domain-model/profiles/" class="nav-list-link">Profiles</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.4.0/domain-model/settings/" class="nav-list-link">Settings</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.4.0/domain-model/orders-and-audit/" class="nav-list-link">Orders & Audit</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.4.0/domain-model/notifications/" class="nav-list-link">Notifications</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.4.0/domain-model/database-schema/" class="nav-list-link">Database Schema</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.4.0/domain-model/tenancy/" class="nav-list-link">Tenancy</a></li></ul></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.4.0/access-control/" class="nav-list-link">Access Control</a></li><li class="nav-list-item"><button class="nav-list-expander btn-reset" aria-label="API Reference submenu" aria-expanded="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><use xlink:href="#svg-arrow-right"></use></svg>
+      </button><a href="/substratalapps.com/versions/1.4.0/api-reference/" class="nav-list-link">API Reference</a><ul class="nav-list"><li class="nav-list-item"><a href="/substratalapps.com/versions/1.4.0/api-reference/conventions/" class="nav-list-link">Conventions</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.4.0/api-reference/auth/" class="nav-list-link">Auth</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.4.0/api-reference/users/" class="nav-list-link">Users</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.4.0/api-reference/profiles/" class="nav-list-link">Profiles</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.4.0/api-reference/settings/" class="nav-list-link">Settings</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.4.0/api-reference/applications/" class="nav-list-link">Applications</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.4.0/api-reference/entitlements/" class="nav-list-link">Entitlements</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.4.0/api-reference/roles-and-permissions/" class="nav-list-link">Roles & Permissions</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.4.0/api-reference/organizations/" class="nav-list-link">Organizations</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.4.0/api-reference/tenancy/" class="nav-list-link">Tenancy</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.4.0/api-reference/billing/" class="nav-list-link">Billing</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.4.0/api-reference/audit/" class="nav-list-link">Audit</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.4.0/api-reference/webhooks/" class="nav-list-link">Webhooks</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.4.0/api-reference/notifications/" class="nav-list-link">Push Notifications</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.4.0/api-reference/api-keys/" class="nav-list-link">API Keys</a></li></ul></li><li class="nav-list-item"><button class="nav-list-expander btn-reset" aria-label="OpenAPI Specification submenu" aria-expanded="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><use xlink:href="#svg-arrow-right"></use></svg>
+      </button><a href="/substratalapps.com/versions/1.4.0/openapi/" class="nav-list-link">OpenAPI Specification</a><ul class="nav-list"><li class="nav-list-item"><a href="/substratalapps.com/versions/1.4.0/openapi/reference/" class="nav-list-link">Interactive Reference</a></li></ul></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.4.0/workflows/" class="nav-list-link">Workflows</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.4.0/trust-model/" class="nav-list-link">Trust Model</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.4.0/mcp-server/" class="nav-list-link">MCP Server</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.4.0/non-functional-requirements/" class="nav-list-link">Non-Functional Requirements</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.4.0/compliance/" class="nav-list-link">Compliance & Data Protection</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.4.0/roadmap/" class="nav-list-link">Roadmap</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.4.0/pricing/" class="nav-list-link">Pricing</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.4.0/changelog/" class="nav-list-link">Changelog</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.4.0/glossary/" class="nav-list-link">Glossary</a></li></ul>
+  
+</nav>
+
+
+<div class="d-md-block d-none site-footer">
+  
+  
+    This site uses <a href="https://github.com/just-the-docs/just-the-docs">Just the Docs</a>, a documentation theme for Jekyll.
+  
+  </div>
+</header>
+
+  
+  <div class="main" id="top">
+    <div id="main-header" class="main-header">
+  
+    
+
+<div class="search" role="search">
+  <div class="search-input-wrap">
+    <input type="text" id="search-input" class="search-input" tabindex="0" placeholder="Search Substratal Apps — Platform API" autocomplete="off">
+    <label for="search-input" class="search-label">
+      <span class="sr-only">Search Substratal Apps — Platform API</span>
+      <svg viewBox="0 0 24 24" class="search-icon" aria-hidden="true"><use xlink:href="#svg-search"></use></svg>
+    </label>
+  </div>
+  <div id="search-results" class="search-results"></div>
+</div>
+
+  
+  <div class="docs-version docs-version--archived">
+    <span class="docs-version__badge" title="Archived snapshot, released 2026-10-18">v1.4.0 · archived</span>
+    <a class="docs-version__link" href="/substratalapps.com/">View latest →</a>
+    <a class="docs-version__link" href="/substratalapps.com/versions/">All versions</a>
+  </div>
+  
+</div>
+
+    <div class="main-content-wrap">
+      <nav aria-label="Breadcrumb" class="breadcrumb-nav">
+  <ol class="breadcrumb-nav-list">
+    <li class="breadcrumb-nav-list-item"><a href="/substratalapps.com/versions/1.4.0/api-reference/">API Reference</a></li>
+    <li class="breadcrumb-nav-list-item"><span>Push Notifications</span></li>
+  </ol>
+</nav>
+
+
+      <div id="main-content" class="main-content">
+        <main>
+          
+            <h1 class="no_toc" id="push-notifications">
+  
+  
+    <a href="#push-notifications" class="anchor-heading" aria-labelledby="push-notifications"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> Push Notifications
+  
+  
+</h1>
+    
+
+<p class="fs-6 fw-300">How alerts and other updates reach a User: on their devices through Apple Push Notification service (APNs), Firebase Cloud Messaging (FCM), and Web Push, and in an inbox their client reads through this API. See <a href="../../domain-model/notifications/">Domain Model → Notifications</a> for the entities, and <a href="../webhooks/">Webhooks</a> for the separate, server-to-server channel that tells an <em>Application</em> about changes.</p>
+
+<ol id="markdown-toc">
+  <li><a href="#how-it-fits-together" id="markdown-toc-how-it-fits-together">How it fits together</a></li>
+  <li><a href="#endpoints" id="markdown-toc-endpoints">Endpoints</a></li>
+  <li><a href="#push-credentials" id="markdown-toc-push-credentials">Push credentials</a>    <ol>
+      <li><a href="#post-v1applicationsidpush-credentials" id="markdown-toc-post-v1applicationsidpush-credentials"><code class="language-plaintext highlighter-rouge">POST /v1/applications/{id}/push-credentials</code></a></li>
+      <li><a href="#get-v1applicationsidpush-credentials-get-provider" id="markdown-toc-get-v1applicationsidpush-credentials-get-provider"><code class="language-plaintext highlighter-rouge">GET /v1/applications/{id}/push-credentials</code>, <code class="language-plaintext highlighter-rouge">GET …/{provider}</code></a></li>
+      <li><a href="#patch-v1applicationsidpush-credentialsprovider" id="markdown-toc-patch-v1applicationsidpush-credentialsprovider"><code class="language-plaintext highlighter-rouge">PATCH /v1/applications/{id}/push-credentials/{provider}</code></a></li>
+      <li><a href="#delete-v1applicationsidpush-credentialsprovider" id="markdown-toc-delete-v1applicationsidpush-credentialsprovider"><code class="language-plaintext highlighter-rouge">DELETE /v1/applications/{id}/push-credentials/{provider}</code></a></li>
+    </ol>
+  </li>
+  <li><a href="#devices" id="markdown-toc-devices">Devices</a>    <ol>
+      <li><a href="#post-v1usersiddevices" id="markdown-toc-post-v1usersiddevices"><code class="language-plaintext highlighter-rouge">POST /v1/users/{id}/devices</code></a></li>
+      <li><a href="#get-v1usersiddevices" id="markdown-toc-get-v1usersiddevices"><code class="language-plaintext highlighter-rouge">GET /v1/users/{id}/devices</code></a></li>
+      <li><a href="#patch-v1usersiddevicesdeviceid" id="markdown-toc-patch-v1usersiddevicesdeviceid"><code class="language-plaintext highlighter-rouge">PATCH /v1/users/{id}/devices/{deviceId}</code></a></li>
+      <li><a href="#delete-v1usersiddevicesdeviceid" id="markdown-toc-delete-v1usersiddevicesdeviceid"><code class="language-plaintext highlighter-rouge">DELETE /v1/users/{id}/devices/{deviceId}</code></a></li>
+      <li><a href="#post-v1usersiddevicesdeviceidtest" id="markdown-toc-post-v1usersiddevicesdeviceidtest"><code class="language-plaintext highlighter-rouge">POST /v1/users/{id}/devices/{deviceId}/test</code></a></li>
+    </ol>
+  </li>
+  <li><a href="#sending-a-notification" id="markdown-toc-sending-a-notification">Sending a notification</a>    <ol>
+      <li><a href="#post-v1usersidnotifications" id="markdown-toc-post-v1usersidnotifications"><code class="language-plaintext highlighter-rouge">POST /v1/users/{id}/notifications</code></a></li>
+      <li><a href="#preferences" id="markdown-toc-preferences">Preferences</a></li>
+      <li><a href="#rate-limits" id="markdown-toc-rate-limits">Rate limits</a></li>
+    </ol>
+  </li>
+  <li><a href="#the-inbox" id="markdown-toc-the-inbox">The inbox</a>    <ol>
+      <li><a href="#get-v1usersidnotifications" id="markdown-toc-get-v1usersidnotifications"><code class="language-plaintext highlighter-rouge">GET /v1/users/{id}/notifications</code></a></li>
+      <li><a href="#get-v1usersidnotificationsnotificationid" id="markdown-toc-get-v1usersidnotificationsnotificationid"><code class="language-plaintext highlighter-rouge">GET /v1/users/{id}/notifications/{notificationId}</code></a></li>
+      <li><a href="#patch-v1usersidnotificationsnotificationid" id="markdown-toc-patch-v1usersidnotificationsnotificationid"><code class="language-plaintext highlighter-rouge">PATCH /v1/users/{id}/notifications/{notificationId}</code></a></li>
+      <li><a href="#post-v1usersidnotificationsmark-read" id="markdown-toc-post-v1usersidnotificationsmark-read"><code class="language-plaintext highlighter-rouge">POST /v1/users/{id}/notifications/mark-read</code></a></li>
+      <li><a href="#get-v1usersidnotificationsunread-count" id="markdown-toc-get-v1usersidnotificationsunread-count"><code class="language-plaintext highlighter-rouge">GET /v1/users/{id}/notifications/unread-count</code></a></li>
+    </ol>
+  </li>
+  <li><a href="#platform-alerts" id="markdown-toc-platform-alerts">Platform alerts</a></li>
+  <li><a href="#what-a-device-receives" id="markdown-toc-what-a-device-receives">What a device receives</a></li>
+  <li><a href="#delivery" id="markdown-toc-delivery">Delivery</a></li>
+  <li><a href="#sessions-and-device-lifecycle" id="markdown-toc-sessions-and-device-lifecycle">Sessions and device lifecycle</a></li>
+  <li><a href="#test-mode" id="markdown-toc-test-mode">Test mode</a></li>
+  <li><a href="#webhook-events" id="markdown-toc-webhook-events">Webhook events</a></li>
+  <li><a href="#errors-specific-to-this-resource" id="markdown-toc-errors-specific-to-this-resource">Errors specific to this resource</a></li>
+</ol><hr />
+
+<p class="note"><strong>Implementation status.</strong> Specified 2026-10-17 (<a href="../../changelog/">Changelog</a>). Until the reference implementation builds it, every operation on this page returns <code class="language-plaintext highlighter-rouge">501 not_implemented</code>. Its defaults are settled: platform alerts push only through Applications that opt in, sending is one User per call (no broadcast yet), each recipient gets at most 60 notifications per Application per hour, the inbox keeps 90 days, the <code class="language-plaintext highlighter-rouge">notifications.push</code> channel is the only preference, and the push providers are sub-processors.</p>
+<h2 id="how-it-fits-together">
+  
+  
+    <a href="#how-it-fits-together" class="anchor-heading" aria-labelledby="how-it-fits-together"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> How it fits together
+  
+  
+</h2>
+    
+
+<p>Four pieces, each owned by a different party:</p>
+
+<div class="table-wrapper"><table>
+  <thead>
+    <tr>
+      <th>Piece</th>
+      <th>What it is</th>
+      <th>Who writes it</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><a href="#push-credentials">Push credential</a></td>
+      <td>An Application’s own APNs key, FCM service account, or Web Push (VAPID) key pair. Push providers deliver only for the app that holds these, so every Application brings its own.</td>
+      <td>The Application’s owner</td>
+    </tr>
+    <tr>
+      <td><a href="#devices">Device</a></td>
+      <td>One install of an Application on one device, signed in as one User, plus the provider token that reaches it.</td>
+      <td>The User’s client, or the Application’s backend</td>
+    </tr>
+    <tr>
+      <td><a href="#sending-a-notification">Notification</a></td>
+      <td>One message to one User: a title, a body, optional data, and how urgent it is.</td>
+      <td>The Application’s backend (app-scoped key), or the platform itself for <a href="#platform-alerts">platform alerts</a></td>
+    </tr>
+    <tr>
+      <td><a href="#the-inbox">Inbox</a></td>
+      <td>Every notification a User has received, with read and archived state, readable through the API whether or not the push itself arrived.</td>
+      <td>The User’s client marks items read or archived</td>
+    </tr>
+  </tbody>
+</table></div>
+
+<p>A send writes the Notification and one delivery per eligible device in a single transaction, the same outbox pattern <a href="../webhooks/#retries-ordering-and-idempotency">webhooks</a> use. A worker then hands each delivery to the provider. A device a provider reports as gone is deactivated automatically, so a send never keeps targeting a dead token.</p>
+
+<p>Push is a notification channel, not an access-control mechanism. It never grants or revokes anything, and an Application still meets the <a href="../../trust-model/#how-fast-does-revocation-need-to-land">immediate-revocation requirement</a> through <code class="language-plaintext highlighter-rouge">access.revoked</code> webhooks, not pushes.</p>
+<h2 id="endpoints">
+  
+  
+    <a href="#endpoints" class="anchor-heading" aria-labelledby="endpoints"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> Endpoints
+  
+  
+</h2>
+    
+
+<div class="table-wrapper"><table>
+  <thead>
+    <tr>
+      <th>Method</th>
+      <th>Path</th>
+      <th>Requires</th>
+      <th>Purpose</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">GET</code></td>
+      <td><code class="language-plaintext highlighter-rouge">/v1/applications/{id}/push-credentials</code></td>
+      <td>the owner, the app’s own key, or <code class="language-plaintext highlighter-rouge">applications.manage</code></td>
+      <td>List the providers this Application has configured. Secrets are never returned.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">POST</code></td>
+      <td><code class="language-plaintext highlighter-rouge">/v1/applications/{id}/push-credentials</code></td>
+      <td>the owner or <code class="language-plaintext highlighter-rouge">applications.manage</code>, with a User token</td>
+      <td>Configure one provider.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">GET</code></td>
+      <td><code class="language-plaintext highlighter-rouge">/v1/applications/{id}/push-credentials/{provider}</code></td>
+      <td>as for the list</td>
+      <td>Fetch one provider’s configuration.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">PATCH</code></td>
+      <td><code class="language-plaintext highlighter-rouge">/v1/applications/{id}/push-credentials/{provider}</code></td>
+      <td>the owner or <code class="language-plaintext highlighter-rouge">applications.manage</code>, with a User token</td>
+      <td>Replace key material, change non-secret fields, or re-enable a <code class="language-plaintext highlighter-rouge">failed</code> credential.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">DELETE</code></td>
+      <td><code class="language-plaintext highlighter-rouge">/v1/applications/{id}/push-credentials/{provider}</code></td>
+      <td>the owner or <code class="language-plaintext highlighter-rouge">applications.manage</code>, with a User token</td>
+      <td>Remove a provider.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">GET</code></td>
+      <td><code class="language-plaintext highlighter-rouge">/v1/users/{id}/devices</code></td>
+      <td>self, the app’s own key, or <code class="language-plaintext highlighter-rouge">users.list</code></td>
+      <td>List a User’s devices.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">POST</code></td>
+      <td><code class="language-plaintext highlighter-rouge">/v1/users/{id}/devices</code></td>
+      <td>self or the app’s own key</td>
+      <td>Register a device, or refresh an existing registration.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">GET</code></td>
+      <td><code class="language-plaintext highlighter-rouge">/v1/users/{id}/devices/{deviceId}</code></td>
+      <td>self, the app’s own key, or <code class="language-plaintext highlighter-rouge">users.list</code></td>
+      <td>Fetch one device.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">PATCH</code></td>
+      <td><code class="language-plaintext highlighter-rouge">/v1/users/{id}/devices/{deviceId}</code></td>
+      <td>self or the app’s own key</td>
+      <td>Update a device’s name, app version, or rotated token.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">DELETE</code></td>
+      <td><code class="language-plaintext highlighter-rouge">/v1/users/{id}/devices/{deviceId}</code></td>
+      <td>self, the app’s own key, or <code class="language-plaintext highlighter-rouge">users.manage</code></td>
+      <td>Unregister a device.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">POST</code></td>
+      <td><code class="language-plaintext highlighter-rouge">/v1/users/{id}/devices/{deviceId}/test</code></td>
+      <td>self or the app’s own key</td>
+      <td>Send a test push to one device and wait for the provider’s answer.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">POST</code></td>
+      <td><code class="language-plaintext highlighter-rouge">/v1/users/{id}/notifications</code></td>
+      <td>the app’s own key with <code class="language-plaintext highlighter-rouge">notifications.send</code>, or platform <code class="language-plaintext highlighter-rouge">notifications.send</code></td>
+      <td>Send one notification to one User.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">GET</code></td>
+      <td><code class="language-plaintext highlighter-rouge">/v1/users/{id}/notifications</code></td>
+      <td>self, the app’s own key, or <code class="language-plaintext highlighter-rouge">users.list</code></td>
+      <td>List the User’s inbox.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">GET</code></td>
+      <td><code class="language-plaintext highlighter-rouge">/v1/users/{id}/notifications/unread-count</code></td>
+      <td>self or the app’s own key</td>
+      <td>Count unread notifications.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">POST</code></td>
+      <td><code class="language-plaintext highlighter-rouge">/v1/users/{id}/notifications/mark-read</code></td>
+      <td>self or the app’s own key</td>
+      <td>Mark many notifications read at once.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">GET</code></td>
+      <td><code class="language-plaintext highlighter-rouge">/v1/users/{id}/notifications/{notificationId}</code></td>
+      <td>self, the app’s own key, or <code class="language-plaintext highlighter-rouge">users.list</code></td>
+      <td>Fetch one notification, with its per-device delivery results.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">PATCH</code></td>
+      <td><code class="language-plaintext highlighter-rouge">/v1/users/{id}/notifications/{notificationId}</code></td>
+      <td>self or the app’s own key</td>
+      <td>Mark one notification read, unread, or archived.</td>
+    </tr>
+  </tbody>
+</table></div>
+
+<p>“The app’s own key” means any app-scoped <a href="../api-keys/">API Key</a> scoped to that Application, as on <a href="../settings/">Settings</a>. An app key only ever sees its own Application’s push credentials, devices, and notifications. Anything else returns <code class="language-plaintext highlighter-rouge">404</code>, as though it didn’t exist. It never sees <a href="#platform-alerts">platform alerts</a>, which belong to the User. <code class="language-plaintext highlighter-rouge">{id}</code> may be <code class="language-plaintext highlighter-rouge">me</code> for a User token (see <a href="../conventions/#addressing-yourself-me">Conventions → <code class="language-plaintext highlighter-rouge">me</code></a>).</p>
+
+<p><strong>Two ways a client reaches these endpoints.</strong> An Application using <a href="../auth/#getting-an-app-token">embedded login</a> holds a platform access token and calls the <code class="language-plaintext highlighter-rouge">/v1/users/me/…</code> endpoints directly. An Application using the hosted flow holds only app tokens, which this API doesn’t accept as a Bearer credential, so its client hands the provider token to its own backend, which registers the device with its app key. Both paths produce the same Device. The only difference is that a device registered by an app key isn’t tied to a <a href="#sessions-and-device-lifecycle">session</a>.</p>
+<h2 id="push-credentials">
+  
+  
+    <a href="#push-credentials" class="anchor-heading" aria-labelledby="push-credentials"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> Push credentials
+  
+  
+</h2>
+    
+
+<p>APNs, FCM, and browser push services deliver a push only when the sender proves it’s the app the token was issued to. So each Application configures its own credentials, and the platform signs every request to the provider with them. There’s at most one credential per provider per Application.</p>
+
+<p>Push credentials are Application configuration, shared by test and live mode the same way the <a href="../applications/">Application</a> row itself is. Test-mode notifications reach only test-mode devices, but they use the same credentials. APNs development builds are handled per device, by <code class="language-plaintext highlighter-rouge">environment: sandbox</code>, not by a separate credential.</p>
+<h3 id="post-v1applicationsidpush-credentials">
+  
+  
+    <a href="#post-v1applicationsidpush-credentials" class="anchor-heading" aria-labelledby="post-v1applicationsidpush-credentials"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> <code class="language-plaintext highlighter-rouge">POST /v1/applications/{id}/push-credentials</code>
+  
+  
+</h3>
+    
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="err">//</span><span class="w"> </span><span class="err">Request</span><span class="w"> </span><span class="err">—</span><span class="w"> </span><span class="err">APNs,</span><span class="w"> </span><span class="err">token-based</span><span class="w"> </span><span class="err">authentication</span><span class="w"> </span><span class="err">with</span><span class="w"> </span><span class="err">a</span><span class="w"> </span><span class="err">.p</span><span class="mi">8</span><span class="w"> </span><span class="err">key</span><span class="w">
+</span><span class="p">{</span><span class="w">
+  </span><span class="nl">"provider"</span><span class="p">:</span><span class="w"> </span><span class="s2">"apns"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"team_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ABCDE12345"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"key_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"XYZ987WVU6"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"topic"</span><span class="p">:</span><span class="w"> </span><span class="s2">"com.substratal.timetrack"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"private_key"</span><span class="p">:</span><span class="w"> </span><span class="s2">"-----BEGIN PRIVATE KEY-----</span><span class="se">\n</span><span class="s2">MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQg...</span><span class="se">\n</span><span class="s2">-----END PRIVATE KEY-----</span><span class="se">\n</span><span class="s2">"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="err">//</span><span class="w"> </span><span class="err">Request</span><span class="w"> </span><span class="err">—</span><span class="w"> </span><span class="err">FCM,</span><span class="w"> </span><span class="err">HTTP</span><span class="w"> </span><span class="err">v</span><span class="mi">1</span><span class="w"> </span><span class="err">API</span><span class="w"> </span><span class="err">with</span><span class="w"> </span><span class="err">a</span><span class="w"> </span><span class="err">service</span><span class="w"> </span><span class="err">account</span><span class="w">
+</span><span class="p">{</span><span class="w">
+  </span><span class="nl">"provider"</span><span class="p">:</span><span class="w"> </span><span class="s2">"fcm"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"service_account"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"service_account"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"project_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"timetrack-prod"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"private_key_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"3f1c..."</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"private_key"</span><span class="p">:</span><span class="w"> </span><span class="s2">"-----BEGIN PRIVATE KEY-----</span><span class="se">\n</span><span class="s2">...</span><span class="se">\n</span><span class="s2">-----END PRIVATE KEY-----</span><span class="se">\n</span><span class="s2">"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"client_email"</span><span class="p">:</span><span class="w"> </span><span class="s2">"push-sender@timetrack-prod.iam.gserviceaccount.com"</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="err">//</span><span class="w"> </span><span class="err">Request</span><span class="w"> </span><span class="err">—</span><span class="w"> </span><span class="err">Web</span><span class="w"> </span><span class="err">Push.</span><span class="w"> </span><span class="err">The</span><span class="w"> </span><span class="err">platform</span><span class="w"> </span><span class="err">generates</span><span class="w"> </span><span class="err">the</span><span class="w"> </span><span class="err">VAPID</span><span class="w"> </span><span class="err">key</span><span class="w"> </span><span class="err">pair.</span><span class="w">
+</span><span class="p">{</span><span class="w"> </span><span class="nl">"provider"</span><span class="p">:</span><span class="w"> </span><span class="s2">"web_push"</span><span class="p">,</span><span class="w"> </span><span class="nl">"subject"</span><span class="p">:</span><span class="w"> </span><span class="s2">"mailto:push@timetrack.substratalapps.com"</span><span class="w"> </span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="err">//</span><span class="w"> </span><span class="err">Response</span><span class="w"> </span><span class="err">—</span><span class="w"> </span><span class="mi">201</span><span class="w"> </span><span class="err">(APNs)</span><span class="w">
+</span><span class="p">{</span><span class="w">
+  </span><span class="nl">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"pcr_01JAH1A2B3C4D5E6F7G8H9J0K1"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"application_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"app_timetrack"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"provider"</span><span class="p">:</span><span class="w"> </span><span class="s2">"apns"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"status"</span><span class="p">:</span><span class="w"> </span><span class="s2">"active"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"team_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ABCDE12345"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"key_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"XYZ987WVU6"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"topic"</span><span class="p">:</span><span class="w"> </span><span class="s2">"com.substratal.timetrack"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"failure_reason"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"failed_at"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"last_used_at"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"created_at"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2026-10-17T15:00:00Z"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"updated_at"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2026-10-17T15:00:00Z"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<div class="table-wrapper"><table>
+  <thead>
+    <tr>
+      <th>Provider</th>
+      <th>Required</th>
+      <th>Returned (never the secret)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">apns</code></td>
+      <td><code class="language-plaintext highlighter-rouge">team_id</code> (10 characters), <code class="language-plaintext highlighter-rouge">key_id</code> (10 characters), <code class="language-plaintext highlighter-rouge">topic</code> (the app’s bundle id), <code class="language-plaintext highlighter-rouge">private_key</code> (the <code class="language-plaintext highlighter-rouge">.p8</code> file’s contents: a PEM PKCS#8 P-256 key)</td>
+      <td><code class="language-plaintext highlighter-rouge">team_id</code>, <code class="language-plaintext highlighter-rouge">key_id</code>, <code class="language-plaintext highlighter-rouge">topic</code></td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">fcm</code></td>
+      <td><code class="language-plaintext highlighter-rouge">service_account</code> (the downloaded JSON key, with <code class="language-plaintext highlighter-rouge">type: service_account</code>, <code class="language-plaintext highlighter-rouge">project_id</code>, <code class="language-plaintext highlighter-rouge">private_key</code>, and <code class="language-plaintext highlighter-rouge">client_email</code>)</td>
+      <td><code class="language-plaintext highlighter-rouge">project_id</code>, <code class="language-plaintext highlighter-rouge">client_email</code></td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">web_push</code></td>
+      <td><code class="language-plaintext highlighter-rouge">subject</code> (a <code class="language-plaintext highlighter-rouge">mailto:</code> or <code class="language-plaintext highlighter-rouge">https:</code> contact URI, sent to browser push services per RFC 8292)</td>
+      <td><code class="language-plaintext highlighter-rouge">subject</code>, <code class="language-plaintext highlighter-rouge">vapid_public_key</code> (base64url, uncompressed P-256 point)</td>
+    </tr>
+  </tbody>
+</table></div>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">private_key</code>, <code class="language-plaintext highlighter-rouge">service_account</code>, and the generated VAPID private key are <strong>write-only</strong>. They’re stored KMS-encrypted, never returned by any endpoint, and never written to an Audit Event, the same treatment as a <a href="../conventions/#ids">webhook signing secret</a>.</li>
+  <li>The material is checked for shape on write (the key parses, the JSON has the required fields), and a failure is <code class="language-plaintext highlighter-rouge">422 invalid_push_credential</code>. It isn’t checked against the provider, because that would make the request depend on Apple’s or Google’s availability. Use <a href="#post-v1usersiddevicesdeviceidtest"><code class="language-plaintext highlighter-rouge">POST …/devices/{deviceId}/test</code></a> to prove it end to end.</li>
+  <li><code class="language-plaintext highlighter-rouge">vapid_public_key</code> is what a web client passes as <code class="language-plaintext highlighter-rouge">applicationServerKey</code> to <code class="language-plaintext highlighter-rouge">PushManager.subscribe()</code>. The app’s own key can read it, so a web client can fetch it from its backend.</li>
+  <li>A second credential for the same provider is <code class="language-plaintext highlighter-rouge">409 push_credential_exists</code>. Use <code class="language-plaintext highlighter-rouge">PATCH</code> to replace it.</li>
+  <li>Writes <code class="language-plaintext highlighter-rouge">push_credential.created</code>.</li>
+</ul>
+
+<p>Credential management is always done by a person, the same rule as <a href="../api-keys/#endpoints">API Keys</a>. An API Key, including the Application’s own, can read credentials but never create, change, or remove them (<code class="language-plaintext highlighter-rouge">400 user_token_required</code>).</p>
+<h3 id="get-v1applicationsidpush-credentials-get-provider">
+  
+  
+    <a href="#get-v1applicationsidpush-credentials-get-provider" class="anchor-heading" aria-labelledby="get-v1applicationsidpush-credentials-get-provider"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> <code class="language-plaintext highlighter-rouge">GET /v1/applications/{id}/push-credentials</code>, <code class="language-plaintext highlighter-rouge">GET …/{provider}</code>
+  
+  
+</h3>
+    
+
+<p>The list returns every configured provider as <code class="language-plaintext highlighter-rouge">{ "data": [ … ] }</code> with no pagination, since there are at most three. <code class="language-plaintext highlighter-rouge">{provider}</code> is <code class="language-plaintext highlighter-rouge">apns</code>, <code class="language-plaintext highlighter-rouge">fcm</code>, or <code class="language-plaintext highlighter-rouge">web_push</code>. <code class="language-plaintext highlighter-rouge">status</code> is one of:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">active</code>.</li>
+  <li><code class="language-plaintext highlighter-rouge">failed</code>, after the provider rejected the credential itself (APNs <code class="language-plaintext highlighter-rouge">403 InvalidProviderToken</code>, FCM <code class="language-plaintext highlighter-rouge">401</code>/<code class="language-plaintext highlighter-rouge">403</code>). <code class="language-plaintext highlighter-rouge">failure_reason</code> holds the provider’s reason code and <code class="language-plaintext highlighter-rouge">failed_at</code> when it happened. Sends to that provider’s devices are skipped with <code class="language-plaintext highlighter-rouge">skip_reason: credential_failed</code> until the credential is fixed, the owner is emailed, and a <a href="#webhook-events"><code class="language-plaintext highlighter-rouge">push_credential.failed</code></a> webhook fires.</li>
+</ul>
+<h3 id="patch-v1applicationsidpush-credentialsprovider">
+  
+  
+    <a href="#patch-v1applicationsidpush-credentialsprovider" class="anchor-heading" aria-labelledby="patch-v1applicationsidpush-credentialsprovider"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> <code class="language-plaintext highlighter-rouge">PATCH /v1/applications/{id}/push-credentials/{provider}</code>
+  
+  
+</h3>
+    
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="err">//</span><span class="w"> </span><span class="err">Request</span><span class="w"> </span><span class="err">—</span><span class="w"> </span><span class="err">rotate</span><span class="w"> </span><span class="err">the</span><span class="w"> </span><span class="err">APNs</span><span class="w"> </span><span class="err">key</span><span class="w">
+</span><span class="p">{</span><span class="w"> </span><span class="nl">"key_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"NEWKEY1234"</span><span class="p">,</span><span class="w"> </span><span class="nl">"private_key"</span><span class="p">:</span><span class="w"> </span><span class="s2">"-----BEGIN PRIVATE KEY-----</span><span class="se">\n</span><span class="s2">...</span><span class="se">\n</span><span class="s2">-----END PRIVATE KEY-----</span><span class="se">\n</span><span class="s2">"</span><span class="w"> </span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Writable: the same fields as on <code class="language-plaintext highlighter-rouge">POST</code> for that provider, plus <code class="language-plaintext highlighter-rouge">status</code> (only <code class="language-plaintext highlighter-rouge">failed → active</code>). Any change to key material also returns a <code class="language-plaintext highlighter-rouge">failed</code> credential to <code class="language-plaintext highlighter-rouge">active</code>. <code class="language-plaintext highlighter-rouge">provider</code> and <code class="language-plaintext highlighter-rouge">application_id</code> are fixed (<code class="language-plaintext highlighter-rouge">422 read_only_field</code>). The VAPID key pair can’t be rotated in place, because every existing browser subscription is bound to it. Delete and recreate the credential instead. Writes <code class="language-plaintext highlighter-rouge">push_credential.updated</code>. Returns <code class="language-plaintext highlighter-rouge">200</code> with the credential.</p>
+<h3 id="delete-v1applicationsidpush-credentialsprovider">
+  
+  
+    <a href="#delete-v1applicationsidpush-credentialsprovider" class="anchor-heading" aria-labelledby="delete-v1applicationsidpush-credentialsprovider"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> <code class="language-plaintext highlighter-rouge">DELETE /v1/applications/{id}/push-credentials/{provider}</code>
+  
+  
+</h3>
+    
+
+<p><code class="language-plaintext highlighter-rouge">204</code>. Pending deliveries to that provider are skipped (each delivery’s <code class="language-plaintext highlighter-rouge">error</code> is <code class="language-plaintext highlighter-rouge">credential_removed</code>), and new sends skip the provider (<code class="language-plaintext highlighter-rouge">skip_reason: no_credentials</code> when no other provider can reach the User). Devices are kept, because an APNs or FCM token stays valid and works again once a credential is configured. The exception is <code class="language-plaintext highlighter-rouge">web_push</code>: browser subscriptions are bound to the deleted VAPID key, so every <code class="language-plaintext highlighter-rouge">web_push</code> device of the Application becomes <code class="language-plaintext highlighter-rouge">inactive</code> with <code class="language-plaintext highlighter-rouge">inactive_reason: credential_removed</code>. Writes <code class="language-plaintext highlighter-rouge">push_credential.deleted</code>. Destructive. See <a href="../../mcp-server/#tool-annotations--safety">MCP Server → Tool annotations</a>.</p>
+<h2 id="devices">
+  
+  
+    <a href="#devices" class="anchor-heading" aria-labelledby="devices"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> Devices
+  
+  
+</h2>
+    
+
+<p>A Device is one install of one Application, signed in as one User, with the provider token that reaches it. The same phone running two Applications is two Devices, because each app gets its own token from the OS.</p>
+<h3 id="post-v1usersiddevices">
+  
+  
+    <a href="#post-v1usersiddevices" class="anchor-heading" aria-labelledby="post-v1usersiddevices"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> <code class="language-plaintext highlighter-rouge">POST /v1/users/{id}/devices</code>
+  
+  
+</h3>
+    
+
+<p>Called on every app launch and whenever the OS issues a new token, so registration is an idempotent upsert, not a one-time create.</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="err">//</span><span class="w"> </span><span class="err">Request</span><span class="w"> </span><span class="err">—</span><span class="w"> </span><span class="err">iOS</span><span class="w">
+</span><span class="p">{</span><span class="w">
+  </span><span class="nl">"application_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"app_timetrack"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"provider"</span><span class="p">:</span><span class="w"> </span><span class="s2">"apns"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"token"</span><span class="p">:</span><span class="w"> </span><span class="s2">"7f3c9a1e2b4d6f8a0c2e4b6d8f0a2c4e6b8d0f2a4c6e8b0d2f4a6c8e0b2d9f3a"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"environment"</span><span class="p">:</span><span class="w"> </span><span class="s2">"production"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Jordan's iPhone"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"app_version"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2.4.0"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="err">//</span><span class="w"> </span><span class="err">Request</span><span class="w"> </span><span class="err">—</span><span class="w"> </span><span class="err">a</span><span class="w"> </span><span class="err">browser,</span><span class="w"> </span><span class="err">with</span><span class="w"> </span><span class="err">the</span><span class="w"> </span><span class="err">PushSubscription</span><span class="w"> </span><span class="err">from</span><span class="w"> </span><span class="err">PushManager.subscribe()</span><span class="w">
+</span><span class="p">{</span><span class="w">
+  </span><span class="nl">"application_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"app_timetrack"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"provider"</span><span class="p">:</span><span class="w"> </span><span class="s2">"web_push"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"subscription"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"endpoint"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://fcm.googleapis.com/fcm/send/eHk3...:APA91b..."</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"keys"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">"p256dh"</span><span class="p">:</span><span class="w"> </span><span class="s2">"BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA_0QTpQtUbVlUls0VJXg7A8u-Ts1XbjhazAkj7I99e8QcYP7DkM"</span><span class="p">,</span><span class="w"> </span><span class="nl">"auth"</span><span class="p">:</span><span class="w"> </span><span class="s2">"tBHItJI5svbpez7KI4CCXg"</span><span class="w"> </span><span class="p">}</span><span class="w">
+  </span><span class="p">},</span><span class="w">
+  </span><span class="nl">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Chrome on macOS"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="err">//</span><span class="w"> </span><span class="err">Response</span><span class="w"> </span><span class="err">—</span><span class="w"> </span><span class="mi">201</span><span class="w"> </span><span class="err">for</span><span class="w"> </span><span class="err">a</span><span class="w"> </span><span class="err">new</span><span class="w"> </span><span class="err">registration,</span><span class="w"> </span><span class="mi">200</span><span class="w"> </span><span class="err">for</span><span class="w"> </span><span class="err">a</span><span class="w"> </span><span class="err">refresh</span><span class="w"> </span><span class="err">of</span><span class="w"> </span><span class="err">an</span><span class="w"> </span><span class="err">existing</span><span class="w"> </span><span class="err">one</span><span class="w">
+</span><span class="p">{</span><span class="w">
+  </span><span class="nl">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"dvc_01JAH2B3C4D5E6F7G8H9J0K1M2"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"user_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"usr_01JAG3Z9X8QS3F6K2M4N5P6R7S"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"application_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"app_timetrack"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"provider"</span><span class="p">:</span><span class="w"> </span><span class="s2">"apns"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"environment"</span><span class="p">:</span><span class="w"> </span><span class="s2">"production"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"token_hint"</span><span class="p">:</span><span class="w"> </span><span class="s2">"…9f3a"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Jordan's iPhone"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"app_version"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2.4.0"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"session_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ses_01JAG8K4Q9R0S1T2V3V4W5X6Y8"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"status"</span><span class="p">:</span><span class="w"> </span><span class="s2">"active"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"inactive_reason"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"last_registered_at"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2026-10-17T15:05:00Z"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"last_delivery_at"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"test_mode"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"created_at"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2026-10-17T15:05:00Z"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"updated_at"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2026-10-17T15:05:00Z"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<div class="table-wrapper"><table>
+  <thead>
+    <tr>
+      <th>Field</th>
+      <th>Rules</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">application_id</code></td>
+      <td>Required. The User must have active access to it right now (<a href="../../access-control/#the-algorithm"><code class="language-plaintext highlighter-rouge">allow()</code></a>), otherwise <code class="language-plaintext highlighter-rouge">403 entitlement_required</code>. An app key may only pass its own Application.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">provider</code></td>
+      <td>Required. <code class="language-plaintext highlighter-rouge">apns</code>, <code class="language-plaintext highlighter-rouge">fcm</code>, or <code class="language-plaintext highlighter-rouge">web_push</code>. No credential needs to exist yet. A device registered before its credential is configured simply isn’t reachable until it is.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">token</code></td>
+      <td>Required for <code class="language-plaintext highlighter-rouge">apns</code> (the device token as hex, 64–200 characters) and <code class="language-plaintext highlighter-rouge">fcm</code> (the registration token, 1–4,096 characters). Not allowed for <code class="language-plaintext highlighter-rouge">web_push</code>.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">subscription</code></td>
+      <td>Required for <code class="language-plaintext highlighter-rouge">web_push</code>, and only for it: <code class="language-plaintext highlighter-rouge">endpoint</code> (an <code class="language-plaintext highlighter-rouge">https</code> URL on a public host, the same SSRF rules as a <a href="../webhooks/#post-v1webhooks">webhook URL</a>) and <code class="language-plaintext highlighter-rouge">keys.p256dh</code> and <code class="language-plaintext highlighter-rouge">keys.auth</code> (base64url).</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">environment</code></td>
+      <td><code class="language-plaintext highlighter-rouge">apns</code> only, required: <code class="language-plaintext highlighter-rouge">production</code> or <code class="language-plaintext highlighter-rouge">sandbox</code> (a development build, delivered through <code class="language-plaintext highlighter-rouge">api.sandbox.push.apple.com</code>).</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">name</code>, <code class="language-plaintext highlighter-rouge">app_version</code></td>
+      <td>Optional labels, up to 100 and 50 characters, for the User’s own device list and for support.</td>
+    </tr>
+  </tbody>
+</table></div>
+
+<p>A malformed <code class="language-plaintext highlighter-rouge">token</code> or <code class="language-plaintext highlighter-rouge">subscription</code> is <code class="language-plaintext highlighter-rouge">422 invalid_device_token</code>.</p>
+
+<p><strong>What makes a registration “the same” device</strong> is the token: one Device per (<code class="language-plaintext highlighter-rouge">application_id</code>, <code class="language-plaintext highlighter-rouge">provider</code>, token) and mode, where a <code class="language-plaintext highlighter-rouge">web_push</code> device’s token is its <code class="language-plaintext highlighter-rouge">endpoint</code>. Registering an existing token:</p>
+
+<ul>
+  <li><strong>for the same User</strong> refreshes it and returns <code class="language-plaintext highlighter-rouge">200</code>. <code class="language-plaintext highlighter-rouge">last_registered_at</code> moves forward, <code class="language-plaintext highlighter-rouge">name</code>, <code class="language-plaintext highlighter-rouge">app_version</code>, and <code class="language-plaintext highlighter-rouge">environment</code> take the new values, and <code class="language-plaintext highlighter-rouge">session_id</code> becomes the caller’s current session. An <code class="language-plaintext highlighter-rouge">inactive</code> device becomes <code class="language-plaintext highlighter-rouge">active</code> again and fires <code class="language-plaintext highlighter-rouge">device.registered</code>.</li>
+  <li><strong>for a different User</strong> (someone else signed in on that install) deletes the previous registration and creates a new Device for the caller (<code class="language-plaintext highlighter-rouge">201</code>). A device never carries one User’s history over to another. The previous owner’s Device is gone, and <code class="language-plaintext highlighter-rouge">device.deleted</code> fires for it.</li>
+</ul>
+
+<p><strong>The token itself is never returned.</strong> It’s stored KMS-encrypted, and responses carry only <code class="language-plaintext highlighter-rouge">token_hint</code>, its last four characters. Device tokens aren’t bearer credentials, but they are personal data, and a client never needs to read one back.</p>
+
+<p><strong>At most 20 active devices per User per Application.</strong> Registering a 21st deactivates the one registered longest ago (<code class="language-plaintext highlighter-rouge">inactive_reason: limit</code>).</p>
+
+<p>Self-service and app-key registrations write no Audit Event. They’re ordinary account activity, the same as a login.</p>
+<h3 id="get-v1usersiddevices">
+  
+  
+    <a href="#get-v1usersiddevices" class="anchor-heading" aria-labelledby="get-v1usersiddevices"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> <code class="language-plaintext highlighter-rouge">GET /v1/users/{id}/devices</code>
+  
+  
+</h3>
+    
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="err">//</span><span class="w"> </span><span class="err">Response</span><span class="w"> </span><span class="err">—</span><span class="w"> </span><span class="mi">200</span><span class="w">
+</span><span class="p">{</span><span class="w">
+  </span><span class="nl">"data"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"dvc_01JAH2B3C4D5E6F7G8H9J0K1M2"</span><span class="p">,</span><span class="w"> </span><span class="nl">"application_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"app_timetrack"</span><span class="p">,</span><span class="w"> </span><span class="nl">"provider"</span><span class="p">:</span><span class="w"> </span><span class="s2">"apns"</span><span class="p">,</span><span class="w"> </span><span class="nl">"status"</span><span class="p">:</span><span class="w"> </span><span class="s2">"active"</span><span class="p">,</span><span class="w"> </span><span class="nl">"..."</span><span class="p">:</span><span class="w"> </span><span class="s2">"..."</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">],</span><span class="w">
+  </span><span class="nl">"page"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">"next_cursor"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w"> </span><span class="nl">"has_more"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w"> </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Filters: <code class="language-plaintext highlighter-rouge">application_id</code>, <code class="language-plaintext highlighter-rouge">provider</code>, <code class="language-plaintext highlighter-rouge">status</code>, and <code class="language-plaintext highlighter-rouge">include_inactive=true</code>. Without an explicit <code class="language-plaintext highlighter-rouge">status</code> or <code class="language-plaintext highlighter-rouge">include_inactive</code>, only <code class="language-plaintext highlighter-rouge">active</code> devices are listed, per <a href="../conventions/#filtering">Conventions → Filtering</a>. An app key gets only its own Application’s devices, whatever it passes.</p>
+<h3 id="patch-v1usersiddevicesdeviceid">
+  
+  
+    <a href="#patch-v1usersiddevicesdeviceid" class="anchor-heading" aria-labelledby="patch-v1usersiddevicesdeviceid"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> <code class="language-plaintext highlighter-rouge">PATCH /v1/users/{id}/devices/{deviceId}</code>
+  
+  
+</h3>
+    
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="err">//</span><span class="w"> </span><span class="err">Request</span><span class="w"> </span><span class="err">—</span><span class="w"> </span><span class="err">the</span><span class="w"> </span><span class="err">OS</span><span class="w"> </span><span class="err">rotated</span><span class="w"> </span><span class="err">the</span><span class="w"> </span><span class="err">token</span><span class="w">
+</span><span class="p">{</span><span class="w"> </span><span class="nl">"token"</span><span class="p">:</span><span class="w"> </span><span class="s2">"9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b"</span><span class="p">,</span><span class="w"> </span><span class="nl">"app_version"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2.5.0"</span><span class="w"> </span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Writable: <code class="language-plaintext highlighter-rouge">name</code>, <code class="language-plaintext highlighter-rouge">app_version</code>, <code class="language-plaintext highlighter-rouge">environment</code> (<code class="language-plaintext highlighter-rouge">apns</code>), and the token (<code class="language-plaintext highlighter-rouge">token</code>, or <code class="language-plaintext highlighter-rouge">subscription</code> for <code class="language-plaintext highlighter-rouge">web_push</code>). If the new token is already registered as another Device of the same User and Application, that other registration is deleted, so one token never maps to two Devices. Writing a token reactivates an <code class="language-plaintext highlighter-rouge">inactive</code> device. <code class="language-plaintext highlighter-rouge">application_id</code>, <code class="language-plaintext highlighter-rouge">provider</code>, <code class="language-plaintext highlighter-rouge">user_id</code>, <code class="language-plaintext highlighter-rouge">session_id</code>, and <code class="language-plaintext highlighter-rouge">status</code> are read-only (<code class="language-plaintext highlighter-rouge">422 read_only_field</code>). Returns <code class="language-plaintext highlighter-rouge">200</code> with the Device.</p>
+<h3 id="delete-v1usersiddevicesdeviceid">
+  
+  
+    <a href="#delete-v1usersiddevicesdeviceid" class="anchor-heading" aria-labelledby="delete-v1usersiddevicesdeviceid"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> <code class="language-plaintext highlighter-rouge">DELETE /v1/users/{id}/devices/{deviceId}</code>
+  
+  
+</h3>
+    
+
+<p><code class="language-plaintext highlighter-rouge">204</code>. Hard delete: the Device is removed, its pending deliveries are dropped, and <code class="language-plaintext highlighter-rouge">device.deleted</code> fires. Call this when the User turns notifications off in the app, or from the app’s own sign-out if it registered the device with its app key. <code class="language-plaintext highlighter-rouge">users.manage</code> can delete anyone’s device, which writes <code class="language-plaintext highlighter-rouge">device.deleted</code> to the audit log. Self-service and app-key deletes aren’t audited. Destructive.</p>
+<h3 id="post-v1usersiddevicesdeviceidtest">
+  
+  
+    <a href="#post-v1usersiddevicesdeviceidtest" class="anchor-heading" aria-labelledby="post-v1usersiddevicesdeviceidtest"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> <code class="language-plaintext highlighter-rouge">POST /v1/users/{id}/devices/{deviceId}/test</code>
+  
+  
+</h3>
+    
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="err">//</span><span class="w"> </span><span class="err">Request</span><span class="w"> </span><span class="err">—</span><span class="w"> </span><span class="err">optional</span><span class="w"> </span><span class="err">overrides</span><span class="w">
+</span><span class="p">{</span><span class="w"> </span><span class="nl">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Test notification"</span><span class="p">,</span><span class="w"> </span><span class="nl">"body"</span><span class="p">:</span><span class="w"> </span><span class="s2">"If you can see this, push works."</span><span class="w"> </span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="err">//</span><span class="w"> </span><span class="err">Response</span><span class="w"> </span><span class="err">—</span><span class="w"> </span><span class="mi">200</span><span class="w">
+</span><span class="p">{</span><span class="w">
+  </span><span class="nl">"device_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"dvc_01JAH2B3C4D5E6F7G8H9J0K1M2"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"status"</span><span class="p">:</span><span class="w"> </span><span class="s2">"sent"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"provider_status"</span><span class="p">:</span><span class="w"> </span><span class="mi">200</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"error"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"duration_ms"</span><span class="p">:</span><span class="w"> </span><span class="mi">184</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Sends one push to one device through the real signing and delivery path, waits up to 10 seconds for the provider’s answer, and returns it. <code class="language-plaintext highlighter-rouge">status</code> is <code class="language-plaintext highlighter-rouge">sent</code> or <code class="language-plaintext highlighter-rouge">failed</code>, and <code class="language-plaintext highlighter-rouge">error</code> carries the provider’s reason code (for example <code class="language-plaintext highlighter-rouge">BadDeviceToken</code>, <code class="language-plaintext highlighter-rouge">UNREGISTERED</code>, or <code class="language-plaintext highlighter-rouge">InvalidProviderToken</code>) when there is one. It’s for proving a credential and a device work together while integrating.</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">title</code> defaults to <code class="language-plaintext highlighter-rouge">Test notification from Substratal</code> and <code class="language-plaintext highlighter-rouge">body</code> to <code class="language-plaintext highlighter-rouge">null</code>.</li>
+  <li>It’s sent whatever the User’s push preference says (you asked for it), and to an <code class="language-plaintext highlighter-rouge">inactive</code> device too, so you can check a device the platform deactivated.</li>
+  <li>It isn’t stored in the inbox and doesn’t count toward the per-recipient limit. It has its own limit of 10 per device per hour, on top of the default per-key bucket. Its result updates the device and credential the same way a real delivery would: an invalid token deactivates the device, and a rejected credential marks it <code class="language-plaintext highlighter-rouge">failed</code>.</li>
+  <li><code class="language-plaintext highlighter-rouge">409 push_not_configured</code> if the Application has no credential for the device’s provider.</li>
+</ul>
+<h2 id="sending-a-notification">
+  
+  
+    <a href="#sending-a-notification" class="anchor-heading" aria-labelledby="sending-a-notification"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> Sending a notification
+  
+  
+</h2>
+    
+<h3 id="post-v1usersidnotifications">
+  
+  
+    <a href="#post-v1usersidnotifications" class="anchor-heading" aria-labelledby="post-v1usersidnotifications"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> <code class="language-plaintext highlighter-rouge">POST /v1/users/{id}/notifications</code>
+  
+  
+</h3>
+    
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="err">//</span><span class="w"> </span><span class="err">Request</span><span class="w">
+</span><span class="p">{</span><span class="w">
+  </span><span class="nl">"category"</span><span class="p">:</span><span class="w"> </span><span class="s2">"timesheet.reminder"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"priority"</span><span class="p">:</span><span class="w"> </span><span class="s2">"normal"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Timesheet due tomorrow"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"body"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Your timesheet for the week of Oct 12 is due Friday at 5 pm."</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"data"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">"timesheet_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ts_8841"</span><span class="w"> </span><span class="p">},</span><span class="w">
+  </span><span class="nl">"action_url"</span><span class="p">:</span><span class="w"> </span><span class="s2">"com.substratal.timetrack:/timesheets/ts_8841"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"badge"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"sound"</span><span class="p">:</span><span class="w"> </span><span class="s2">"default"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"collapse_key"</span><span class="p">:</span><span class="w"> </span><span class="s2">"timesheet-due-2026-10-12"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"ttl_seconds"</span><span class="p">:</span><span class="w"> </span><span class="mi">86400</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="err">//</span><span class="w"> </span><span class="err">Response</span><span class="w"> </span><span class="err">—</span><span class="w"> </span><span class="mi">201</span><span class="w">
+</span><span class="p">{</span><span class="w">
+  </span><span class="nl">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ntf_01JAH3C4D5E6F7G8H9J0K1M2N3"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"user_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"usr_01JAG3Z9X8QS3F6K2M4N5P6R7S"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"application_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"app_timetrack"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"source"</span><span class="p">:</span><span class="w"> </span><span class="s2">"application"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"category"</span><span class="p">:</span><span class="w"> </span><span class="s2">"timesheet.reminder"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"priority"</span><span class="p">:</span><span class="w"> </span><span class="s2">"normal"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Timesheet due tomorrow"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"body"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Your timesheet for the week of Oct 12 is due Friday at 5 pm."</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"data"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">"timesheet_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ts_8841"</span><span class="w"> </span><span class="p">},</span><span class="w">
+  </span><span class="nl">"action_url"</span><span class="p">:</span><span class="w"> </span><span class="s2">"com.substratal.timetrack:/timesheets/ts_8841"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"badge"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"sound"</span><span class="p">:</span><span class="w"> </span><span class="s2">"default"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"collapse_key"</span><span class="p">:</span><span class="w"> </span><span class="s2">"timesheet-due-2026-10-12"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"ttl_seconds"</span><span class="p">:</span><span class="w"> </span><span class="mi">86400</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"push"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">"requested"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w"> </span><span class="nl">"status"</span><span class="p">:</span><span class="w"> </span><span class="s2">"queued"</span><span class="p">,</span><span class="w"> </span><span class="nl">"devices_targeted"</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="nl">"devices_sent"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="nl">"devices_failed"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="nl">"skip_reason"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="w"> </span><span class="p">},</span><span class="w">
+  </span><span class="nl">"state"</span><span class="p">:</span><span class="w"> </span><span class="s2">"unread"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"read_at"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"archived_at"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"sender"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"api_key"</span><span class="p">,</span><span class="w"> </span><span class="nl">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"key_01JAGE5F6G7H8J9K011M2N304P"</span><span class="w"> </span><span class="p">},</span><span class="w">
+  </span><span class="nl">"test_mode"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"created_at"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2026-10-17T15:10:00Z"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"updated_at"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2026-10-17T15:10:00Z"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>The caller is the Application’s own key with <code class="language-plaintext highlighter-rouge">notifications.send</code> (an <a href="../api-keys/#app-confined-permissions">app-confined permission</a>), and the notification is from that Application. A platform key or User holding platform <code class="language-plaintext highlighter-rouge">notifications.send</code> may send on behalf of any Application by passing <code class="language-plaintext highlighter-rouge">application_id</code>. Platform alerts aren’t sent through this endpoint. The platform raises them itself (see <a href="#platform-alerts">Platform alerts</a>).</p>
+
+<div class="table-wrapper"><table>
+  <thead>
+    <tr>
+      <th>Field</th>
+      <th>Rules</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">title</code></td>
+      <td>Required. 1–120 characters.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">body</code></td>
+      <td>Optional. Up to 1,000 characters.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">category</code></td>
+      <td>Required. What kind of notification this is, for the client’s grouping, actions, and filters: 1–64 characters matching <code class="language-plaintext highlighter-rouge">^[a-z][a-z0-9_]*(\.[a-z0-9_]+)*$</code>. The Application chooses its own vocabulary. The prefixes <code class="language-plaintext highlighter-rouge">security.</code>, <code class="language-plaintext highlighter-rouge">account.</code>, and <code class="language-plaintext highlighter-rouge">billing.</code> are reserved for <a href="#platform-alerts">platform alerts</a> (<code class="language-plaintext highlighter-rouge">422 reserved_category</code>).</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">priority</code></td>
+      <td><code class="language-plaintext highlighter-rouge">normal</code> (default) or <code class="language-plaintext highlighter-rouge">high</code>. <code class="language-plaintext highlighter-rouge">high</code> is for time-sensitive alerts the User needs now. It maps to each provider’s urgent delivery class, and providers throttle apps that overuse it. <code class="language-plaintext highlighter-rouge">normal</code> is for other updates.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">push</code></td>
+      <td>Boolean, default <code class="language-plaintext highlighter-rouge">true</code>. <code class="language-plaintext highlighter-rouge">false</code> writes the notification to the inbox without a push: an update the User should see next time they look, not one that should buzz their phone.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">data</code></td>
+      <td>Optional. Up to 20 keys, each string → string, 2 KB serialized. Delivered to the app with the push and stored with the inbox item. String values only, because FCM’s data payload only carries strings. The key <code class="language-plaintext highlighter-rouge">substratal</code> is reserved.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">action_url</code></td>
+      <td>Optional. Where the client should take the User when they open it: an <code class="language-plaintext highlighter-rouge">https</code> URL or a private-use URI scheme, the same formats as <a href="../applications/#the-application-object"><code class="language-plaintext highlighter-rouge">redirect_uris</code></a>. Up to 2,048 characters.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">badge</code></td>
+      <td>Optional integer, 0–99,999, for the app icon badge (APNs) or notification count (FCM). <code class="language-plaintext highlighter-rouge">null</code> leaves the badge alone.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">sound</code></td>
+      <td><code class="language-plaintext highlighter-rouge">default</code> or <code class="language-plaintext highlighter-rouge">null</code> (silent). Defaults to <code class="language-plaintext highlighter-rouge">default</code> for <code class="language-plaintext highlighter-rouge">high</code> priority and <code class="language-plaintext highlighter-rouge">null</code> for <code class="language-plaintext highlighter-rouge">normal</code>.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">collapse_key</code></td>
+      <td>Optional. Up to 64 characters of <code class="language-plaintext highlighter-rouge">[A-Za-z0-9._-]</code>. A newer notification with the same key replaces an older one still waiting on the device or provider, so the User sees one current status instead of a stack. It doesn’t change the inbox, where both stay.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">ttl_seconds</code></td>
+      <td>How long the provider should keep trying to reach an offline device: 0–2,419,200 (28 days), default 86,400. <code class="language-plaintext highlighter-rouge">0</code> means deliver now or not at all. It doesn’t affect how long the notification stays in the inbox.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">application_id</code></td>
+      <td>Only for a platform <code class="language-plaintext highlighter-rouge">notifications.send</code> caller, and required for one. An app key’s sends are always from its own Application.</td>
+    </tr>
+  </tbody>
+</table></div>
+
+<p><strong>The whole push payload must fit in 4 KB</strong>, the limit all three providers share, after the platform adds its own <code class="language-plaintext highlighter-rouge">substratal</code> block (see <a href="#what-a-device-receives">What a device receives</a>). A request that doesn’t fit is <code class="language-plaintext highlighter-rouge">422 notification_too_large</code>, with <code class="language-plaintext highlighter-rouge">details.bytes</code> and <code class="language-plaintext highlighter-rouge">details.max</code>.</p>
+
+<p><strong>The recipient must have active access to the Application right now</strong> (<code class="language-plaintext highlighter-rouge">allow()</code> passes, which also requires the User to be <code class="language-plaintext highlighter-rouge">active</code>), otherwise <code class="language-plaintext highlighter-rouge">403 entitlement_required</code>. A User who has lost access to an app stops hearing from it at the same moment, whatever the sender believes.</p>
+
+<p><strong>Accepts an optional <code class="language-plaintext highlighter-rouge">Idempotency-Key</code></strong>, honored as in <a href="../conventions/#idempotency">Conventions → Idempotency</a>. Send one whenever the send is triggered by an event your backend might process twice, such as a queue message, so a retry doesn’t buzz the User’s phone twice.</p>
+
+<p><strong>A send always creates the notification, even when no push goes out.</strong> The response is <code class="language-plaintext highlighter-rouge">201</code> either way, and <code class="language-plaintext highlighter-rouge">push.status</code> says what happened to the push:</p>
+
+<div class="table-wrapper"><table>
+  <thead>
+    <tr>
+      <th><code class="language-plaintext highlighter-rouge">push.status</code></th>
+      <th>Meaning</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">queued</code></td>
+      <td>Deliveries are on their way to <code class="language-plaintext highlighter-rouge">devices_targeted</code> devices.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">sent</code></td>
+      <td>At least one provider accepted it. <code class="language-plaintext highlighter-rouge">devices_sent</code> and <code class="language-plaintext highlighter-rouge">devices_failed</code> count the outcome per device. “Accepted” means the provider took it, not that the User saw it: neither APNs nor FCM reports display.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">failed</code></td>
+      <td>Every targeted device failed.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">skipped</code></td>
+      <td>No push was attempted. <code class="language-plaintext highlighter-rouge">skip_reason</code> says why.</td>
+    </tr>
+  </tbody>
+</table></div>
+
+<p><code class="language-plaintext highlighter-rouge">skip_reason</code> is one of:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">push_not_requested</code>: the request set <code class="language-plaintext highlighter-rouge">push: false</code>.</li>
+  <li><code class="language-plaintext highlighter-rouge">push_disabled</code>: the User turned push off, globally or for this Application (see <a href="#preferences">Preferences</a>).</li>
+  <li><code class="language-plaintext highlighter-rouge">no_devices</code>: the User has no active device for this Application.</li>
+  <li><code class="language-plaintext highlighter-rouge">no_credentials</code>: the Application has no credential for any provider the User’s devices use.</li>
+  <li><code class="language-plaintext highlighter-rouge">credential_failed</code>: the matching credentials are all <code class="language-plaintext highlighter-rouge">failed</code>.</li>
+  <li><code class="language-plaintext highlighter-rouge">expired</code>: <code class="language-plaintext highlighter-rouge">ttl_seconds</code> ran out before any attempt could be made.</li>
+</ul>
+
+<p>The notification is in the User’s inbox in every case. That’s what makes the inbox a reliable place to check, and what lets an Application fall back to another channel when a push can’t go out (see <a href="#webhook-events"><code class="language-plaintext highlighter-rouge">notification.push_failed</code></a>).</p>
+<h3 id="preferences">
+  
+  
+    <a href="#preferences" class="anchor-heading" aria-labelledby="preferences"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> Preferences
+  
+  
+</h3>
+    
+
+<p>There’s no separate preferences resource. Push follows the <code class="language-plaintext highlighter-rouge">push</code> channel in the User’s existing <a href="../settings/">Settings</a> <code class="language-plaintext highlighter-rouge">notifications</code> map, resolved per Application:</p>
+
+<ul>
+  <li>A resolved <code class="language-plaintext highlighter-rouge">notifications.push</code> of <code class="language-plaintext highlighter-rouge">false</code>, from global Settings or from this Application’s <a href="../settings/#patch-v1usersidappsappidsettings">AppSettings override</a>, means no push for this Application. The inbox still gets the notification, with <code class="language-plaintext highlighter-rouge">skip_reason: push_disabled</code>.</li>
+  <li>A missing <code class="language-plaintext highlighter-rouge">push</code> key counts as <strong>on</strong>. Registering a device follows the User granting the OS’s own notification permission, which is the real opt-in.</li>
+</ul>
+
+<p>The OS-level permission stays the User’s final word. If they revoke it on the device, the provider reports the token invalid on the next send, and the platform deactivates the device.</p>
+<h3 id="rate-limits">
+  
+  
+    <a href="#rate-limits" class="anchor-heading" aria-labelledby="rate-limits"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> Rate limits
+  
+  
+</h3>
+    
+
+<p>Two limits, on top of the <a href="../../non-functional-requirements/#rate-limiting">default per-key bucket</a>:</p>
+
+<ul>
+  <li><strong>Per sender:</strong> 600 sends per minute per API Key.</li>
+  <li><strong>Per recipient:</strong> 60 notifications per User per Application per rolling hour. Platform alerts don’t count toward it. A send over the limit is <code class="language-plaintext highlighter-rouge">429 rate_limited</code> with <code class="language-plaintext highlighter-rouge">details.scope: "recipient"</code>, so a bug in one Application’s backend can’t flood one person’s phone.</li>
+</ul>
+<h2 id="the-inbox">
+  
+  
+    <a href="#the-inbox" class="anchor-heading" aria-labelledby="the-inbox"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> The inbox
+  
+  
+</h2>
+    
+
+<p>Every notification a User receives is kept for 90 days, whether or not its push arrived, so a client can always show what the User missed. A client renders it from these endpoints and keeps it in step with what the User does.</p>
+<h3 id="get-v1usersidnotifications">
+  
+  
+    <a href="#get-v1usersidnotifications" class="anchor-heading" aria-labelledby="get-v1usersidnotifications"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> <code class="language-plaintext highlighter-rouge">GET /v1/users/{id}/notifications</code>
+  
+  
+</h3>
+    
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="err">//</span><span class="w"> </span><span class="err">Response</span><span class="w"> </span><span class="err">—</span><span class="w"> </span><span class="mi">200</span><span class="w">
+</span><span class="p">{</span><span class="w">
+  </span><span class="nl">"data"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+    </span><span class="p">{</span><span class="w">
+      </span><span class="nl">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ntf_01JAH3C4D5E6F7G8H9J0K1M2N3"</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"application_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"app_timetrack"</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"source"</span><span class="p">:</span><span class="w"> </span><span class="s2">"application"</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"category"</span><span class="p">:</span><span class="w"> </span><span class="s2">"timesheet.reminder"</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"priority"</span><span class="p">:</span><span class="w"> </span><span class="s2">"normal"</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Timesheet due tomorrow"</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"body"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Your timesheet for the week of Oct 12 is due Friday at 5 pm."</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"action_url"</span><span class="p">:</span><span class="w"> </span><span class="s2">"com.substratal.timetrack:/timesheets/ts_8841"</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"state"</span><span class="p">:</span><span class="w"> </span><span class="s2">"unread"</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"created_at"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2026-10-17T15:10:00Z"</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"..."</span><span class="p">:</span><span class="w"> </span><span class="s2">"..."</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+  </span><span class="p">],</span><span class="w">
+  </span><span class="nl">"page"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">"next_cursor"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w"> </span><span class="nl">"has_more"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w"> </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Newest first. Filters: <code class="language-plaintext highlighter-rouge">state</code> (<code class="language-plaintext highlighter-rouge">unread</code>, <code class="language-plaintext highlighter-rouge">read</code>, <code class="language-plaintext highlighter-rouge">archived</code>), <code class="language-plaintext highlighter-rouge">application_id</code>, <code class="language-plaintext highlighter-rouge">source</code> (<code class="language-plaintext highlighter-rouge">application</code> or <code class="language-plaintext highlighter-rouge">platform</code>), <code class="language-plaintext highlighter-rouge">category</code>, <code class="language-plaintext highlighter-rouge">priority</code>, <code class="language-plaintext highlighter-rouge">created_after</code>, <code class="language-plaintext highlighter-rouge">created_before</code>, and <code class="language-plaintext highlighter-rouge">include_inactive=true</code>. Archived notifications are excluded unless the caller passes <code class="language-plaintext highlighter-rouge">state=archived</code> or <code class="language-plaintext highlighter-rouge">include_inactive=true</code>, the same rule as other terminal states in <a href="../conventions/#filtering">Conventions → Filtering</a>.</p>
+
+<p>Who sees what:</p>
+
+<ul>
+  <li><strong>The User themself</strong> sees everything addressed to them: every Application’s notifications and every platform alert.</li>
+  <li><strong>An app key</strong> sees only its own Application’s notifications. The <code class="language-plaintext highlighter-rouge">application_id</code> filter is forced, and <code class="language-plaintext highlighter-rouge">source=platform</code> returns nothing.</li>
+  <li><strong><code class="language-plaintext highlighter-rouge">users.list</code></strong> (support) can read any User’s inbox, for investigations.</li>
+</ul>
+<h3 id="get-v1usersidnotificationsnotificationid">
+  
+  
+    <a href="#get-v1usersidnotificationsnotificationid" class="anchor-heading" aria-labelledby="get-v1usersidnotificationsnotificationid"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> <code class="language-plaintext highlighter-rouge">GET /v1/users/{id}/notifications/{notificationId}</code>
+  
+  
+</h3>
+    
+
+<p>The full Notification, as in the send response, plus <code class="language-plaintext highlighter-rouge">deliveries</code>, one entry per targeted device:</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ntf_01JAH3C4D5E6F7G8H9J0K1M2N3"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"push"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">"requested"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w"> </span><span class="nl">"status"</span><span class="p">:</span><span class="w"> </span><span class="s2">"sent"</span><span class="p">,</span><span class="w"> </span><span class="nl">"devices_targeted"</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="nl">"devices_sent"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="nl">"devices_failed"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="nl">"skip_reason"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="w"> </span><span class="p">},</span><span class="w">
+  </span><span class="nl">"deliveries"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+    </span><span class="p">{</span><span class="w"> </span><span class="nl">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ndl_01JAH3D4E5F6G7H8J9K0M1N2P3"</span><span class="p">,</span><span class="w"> </span><span class="nl">"device_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"dvc_01JAH2B3C4D5E6F7G8H9J0K1M2"</span><span class="p">,</span><span class="w"> </span><span class="nl">"provider"</span><span class="p">:</span><span class="w"> </span><span class="s2">"apns"</span><span class="p">,</span><span class="w"> </span><span class="nl">"status"</span><span class="p">:</span><span class="w"> </span><span class="s2">"sent"</span><span class="p">,</span><span class="w"> </span><span class="nl">"attempts"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="nl">"error"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w"> </span><span class="nl">"sent_at"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2026-10-17T15:10:02Z"</span><span class="w"> </span><span class="p">},</span><span class="w">
+    </span><span class="p">{</span><span class="w"> </span><span class="nl">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ndl_01JAH3D4E5F6G7H8J9K0M1N2P4"</span><span class="p">,</span><span class="w"> </span><span class="nl">"device_id"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w"> </span><span class="nl">"provider"</span><span class="p">:</span><span class="w"> </span><span class="s2">"fcm"</span><span class="p">,</span><span class="w"> </span><span class="nl">"status"</span><span class="p">:</span><span class="w"> </span><span class="s2">"failed"</span><span class="p">,</span><span class="w"> </span><span class="nl">"attempts"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="nl">"error"</span><span class="p">:</span><span class="w"> </span><span class="s2">"UNREGISTERED"</span><span class="p">,</span><span class="w"> </span><span class="nl">"sent_at"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="w"> </span><span class="p">}</span><span class="w">
+  </span><span class="p">],</span><span class="w">
+  </span><span class="nl">"..."</span><span class="p">:</span><span class="w"> </span><span class="s2">"..."</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">device_id</code> is <code class="language-plaintext highlighter-rouge">null</code> once that Device has been deleted. Delivery details are kept for 30 days, after which <code class="language-plaintext highlighter-rouge">deliveries</code> is <code class="language-plaintext highlighter-rouge">[]</code> and only the <code class="language-plaintext highlighter-rouge">push</code> summary remains.</p>
+<h3 id="patch-v1usersidnotificationsnotificationid">
+  
+  
+    <a href="#patch-v1usersidnotificationsnotificationid" class="anchor-heading" aria-labelledby="patch-v1usersidnotificationsnotificationid"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> <code class="language-plaintext highlighter-rouge">PATCH /v1/users/{id}/notifications/{notificationId}</code>
+  
+  
+</h3>
+    
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="err">//</span><span class="w"> </span><span class="err">Request</span><span class="w">
+</span><span class="p">{</span><span class="w"> </span><span class="nl">"state"</span><span class="p">:</span><span class="w"> </span><span class="s2">"read"</span><span class="w"> </span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">state</code> is the only writable field. Every transition is allowed:</p>
+
+<div class="table-wrapper"><table>
+  <thead>
+    <tr>
+      <th>To</th>
+      <th>Effect</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">read</code></td>
+      <td>Sets <code class="language-plaintext highlighter-rouge">read_at</code> (or keeps it). From <code class="language-plaintext highlighter-rouge">archived</code>, also clears <code class="language-plaintext highlighter-rouge">archived_at</code>.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">unread</code></td>
+      <td>Clears <code class="language-plaintext highlighter-rouge">read_at</code> and <code class="language-plaintext highlighter-rouge">archived_at</code>.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">archived</code></td>
+      <td>Sets <code class="language-plaintext highlighter-rouge">archived_at</code>, and <code class="language-plaintext highlighter-rouge">read_at</code> too if it was unset. The notification leaves the default list.</td>
+    </tr>
+  </tbody>
+</table></div>
+
+<p>Returns <code class="language-plaintext highlighter-rouge">200</code> with the Notification. No Audit Event: this is the User’s own reading state, not an access change.</p>
+<h3 id="post-v1usersidnotificationsmark-read">
+  
+  
+    <a href="#post-v1usersidnotificationsmark-read" class="anchor-heading" aria-labelledby="post-v1usersidnotificationsmark-read"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> <code class="language-plaintext highlighter-rouge">POST /v1/users/{id}/notifications/mark-read</code>
+  
+  
+</h3>
+    
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="err">//</span><span class="w"> </span><span class="err">Request</span><span class="w"> </span><span class="err">—</span><span class="w"> </span><span class="err">everything</span><span class="w"> </span><span class="err">from</span><span class="w"> </span><span class="err">TimeTrack</span><span class="w"> </span><span class="err">up</span><span class="w"> </span><span class="err">to</span><span class="w"> </span><span class="err">a</span><span class="w"> </span><span class="err">point</span><span class="w"> </span><span class="err">in</span><span class="w"> </span><span class="err">time</span><span class="w">
+</span><span class="p">{</span><span class="w"> </span><span class="nl">"application_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"app_timetrack"</span><span class="p">,</span><span class="w"> </span><span class="nl">"before"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2026-10-17T15:10:00Z"</span><span class="w"> </span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="err">//</span><span class="w"> </span><span class="err">Response</span><span class="w"> </span><span class="err">—</span><span class="w"> </span><span class="mi">200</span><span class="w">
+</span><span class="p">{</span><span class="w"> </span><span class="nl">"updated_count"</span><span class="p">:</span><span class="w"> </span><span class="mi">4</span><span class="w"> </span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Marks every <code class="language-plaintext highlighter-rouge">unread</code> notification matching the filters as <code class="language-plaintext highlighter-rouge">read</code>. Each filter is optional: <code class="language-plaintext highlighter-rouge">application_id</code>, <code class="language-plaintext highlighter-rouge">source</code>, <code class="language-plaintext highlighter-rouge">category</code>, and <code class="language-plaintext highlighter-rouge">before</code> (only notifications created at or before this time, so items that arrive while the User is looking aren’t swept up). An empty body marks everything the caller can see. An app key’s <code class="language-plaintext highlighter-rouge">application_id</code> is forced to its own.</p>
+<h3 id="get-v1usersidnotificationsunread-count">
+  
+  
+    <a href="#get-v1usersidnotificationsunread-count" class="anchor-heading" aria-labelledby="get-v1usersidnotificationsunread-count"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> <code class="language-plaintext highlighter-rouge">GET /v1/users/{id}/notifications/unread-count</code>
+  
+  
+</h3>
+    
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="err">//</span><span class="w"> </span><span class="err">Response</span><span class="w"> </span><span class="err">—</span><span class="w"> </span><span class="mi">200</span><span class="w">
+</span><span class="p">{</span><span class="w">
+  </span><span class="nl">"unread_count"</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"applications"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+    </span><span class="p">{</span><span class="w"> </span><span class="nl">"application_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"app_timetrack"</span><span class="p">,</span><span class="w"> </span><span class="nl">"unread_count"</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="p">},</span><span class="w">
+    </span><span class="p">{</span><span class="w"> </span><span class="nl">"application_id"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w"> </span><span class="nl">"unread_count"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="p">}</span><span class="w">
+  </span><span class="p">]</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Unread, unarchived notifications. <code class="language-plaintext highlighter-rouge">application_id: null</code> is the platform alerts. Accepts the <code class="language-plaintext highlighter-rouge">application_id</code> and <code class="language-plaintext highlighter-rouge">source</code> filters. An app key gets only its own Application’s count. A client typically calls it on launch and after handling a push, to set its badge.</p>
+<h2 id="platform-alerts">
+  
+  
+    <a href="#platform-alerts" class="anchor-heading" aria-labelledby="platform-alerts"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> Platform alerts
+  
+  
+</h2>
+    
+
+<p>The platform raises a small, fixed set of notifications itself, about the User’s account rather than any one Application. They use the same Notification object, with <code class="language-plaintext highlighter-rouge">source: platform</code>, <code class="language-plaintext highlighter-rouge">application_id: null</code>, <code class="language-plaintext highlighter-rouge">sender: {"type": "system", "id": "system"}</code>, and a category from this catalog:</p>
+
+<div class="table-wrapper"><table>
+  <thead>
+    <tr>
+      <th><code class="language-plaintext highlighter-rouge">category</code></th>
+      <th><code class="language-plaintext highlighter-rouge">priority</code></th>
+      <th>Raised when</th>
+      <th><code class="language-plaintext highlighter-rouge">data</code></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">security.new_sign_in</code></td>
+      <td><code class="language-plaintext highlighter-rouge">high</code></td>
+      <td>A login creates a session from a user agent not seen in the User’s sessions during the last 90 days.</td>
+      <td><code class="language-plaintext highlighter-rouge">session_id</code>, <code class="language-plaintext highlighter-rouge">user_agent</code>, <code class="language-plaintext highlighter-rouge">ip_address</code></td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">security.password_changed</code></td>
+      <td><code class="language-plaintext highlighter-rouge">high</code></td>
+      <td><code class="language-plaintext highlighter-rouge">POST /v1/users/{id}/password</code>, or a password reset.</td>
+      <td>—</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">security.email_changed</code></td>
+      <td><code class="language-plaintext highlighter-rouge">high</code></td>
+      <td>An email change completes.</td>
+      <td>—</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">security.mfa_disabled</code></td>
+      <td><code class="language-plaintext highlighter-rouge">high</code></td>
+      <td>TOTP is turned off by the User, or reset by support.</td>
+      <td>—</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">security.session_reuse_detected</code></td>
+      <td><code class="language-plaintext highlighter-rouge">high</code></td>
+      <td>A reused refresh token revokes a session (<a href="../auth/#post-v1authtokenrefresh"><code class="language-plaintext highlighter-rouge">refresh_token_reused</code></a>).</td>
+      <td><code class="language-plaintext highlighter-rouge">session_id</code></td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">account.organization_invitation</code></td>
+      <td><code class="language-plaintext highlighter-rouge">normal</code></td>
+      <td>A <code class="language-plaintext highlighter-rouge">pending</code> membership is created for an existing User (<a href="../organizations/#post-v1organizationsidmembers">Organizations → Adding members</a>).</td>
+      <td><code class="language-plaintext highlighter-rouge">organization_id</code>, <code class="language-plaintext highlighter-rouge">invited_by</code></td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">account.access_granted</code></td>
+      <td><code class="language-plaintext highlighter-rouge">normal</code></td>
+      <td>The User gains resolved access to an Application (the same moment <code class="language-plaintext highlighter-rouge">access.granted</code> fires). Not raised for access granted in the transaction that creates the User, or within 60 seconds of signup, so a new account isn’t greeted with one alert per app it starts with.</td>
+      <td><code class="language-plaintext highlighter-rouge">application_id</code></td>
+    </tr>
+  </tbody>
+</table></div>
+
+<p><code class="language-plaintext highlighter-rouge">billing.</code> categories are reserved for <a href="../billing/">subscription</a> alerts, such as a failed payment. None are sent yet; Stripe emails the customer directly.</p>
+
+<p>These run alongside the emails the platform already sends for the same events, and don’t replace them. A User who has never registered a device still gets the email.</p>
+
+<p><strong>Which devices get a platform alert’s push.</strong> A device belongs to an Application, and only an Application’s own credentials can reach it. So a platform alert is pushed only to devices of Applications that have opted in with <a href="../applications/#the-application-object"><code class="language-plaintext highlighter-rouge">receives_platform_notifications: true</code></a>, typically a first-party Substratal app. Without that, a platform alert goes to the inbox (and the email above) but makes no push, and <code class="language-plaintext highlighter-rouge">skip_reason</code> is <code class="language-plaintext highlighter-rouge">no_devices</code>. Opting in is the owner’s choice, because the alert arrives under that app’s name and icon. The <code class="language-plaintext highlighter-rouge">push</code> preference applies per device, resolved for that device’s Application.</p>
+
+<p><strong>Targets are chosen when the alert is raised.</strong> An action that also revokes sessions, such as a password reset or a detected token reuse, raises its alert before the revocation in the same transaction. The User’s devices still get the warning, even though they’re about to be signed out. That exception applies only to <code class="language-plaintext highlighter-rouge">security.*</code> alerts. Any other pending delivery to a device that has since become <code class="language-plaintext highlighter-rouge">inactive</code> is skipped.</p>
+
+<p>Platform alerts never reach an Application through webhooks, and an app key can’t list them. They’re between the platform and the User.</p>
+<h2 id="what-a-device-receives">
+  
+  
+    <a href="#what-a-device-receives" class="anchor-heading" aria-labelledby="what-a-device-receives"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> What a device receives
+  
+  
+</h2>
+    
+
+<p>The platform builds each provider’s payload from the Notification. Every payload carries a <code class="language-plaintext highlighter-rouge">substratal</code> block, so the app can match the push to its inbox item and mark it read:</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"substratal"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"notification_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ntf_01JAH3C4D5E6F7G8H9J0K1M2N3"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"application_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"app_timetrack"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"source"</span><span class="p">:</span><span class="w"> </span><span class="s2">"application"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"category"</span><span class="p">:</span><span class="w"> </span><span class="s2">"timesheet.reminder"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"action_url"</span><span class="p">:</span><span class="w"> </span><span class="s2">"com.substratal.timetrack:/timesheets/ts_8841"</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<div class="table-wrapper"><table>
+  <thead>
+    <tr>
+      <th>Notification field</th>
+      <th>APNs</th>
+      <th>FCM (HTTP v1)</th>
+      <th>Web Push</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">title</code>, <code class="language-plaintext highlighter-rouge">body</code></td>
+      <td><code class="language-plaintext highlighter-rouge">aps.alert.title</code>, <code class="language-plaintext highlighter-rouge">aps.alert.body</code></td>
+      <td><code class="language-plaintext highlighter-rouge">message.notification.title</code>, <code class="language-plaintext highlighter-rouge">.body</code></td>
+      <td>In the encrypted JSON payload</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">priority: high</code> / <code class="language-plaintext highlighter-rouge">normal</code></td>
+      <td><code class="language-plaintext highlighter-rouge">apns-priority: 10</code> with <code class="language-plaintext highlighter-rouge">aps.interruption-level: time-sensitive</code> / <code class="language-plaintext highlighter-rouge">apns-priority: 5</code> with <code class="language-plaintext highlighter-rouge">active</code></td>
+      <td><code class="language-plaintext highlighter-rouge">android.priority: HIGH</code> / <code class="language-plaintext highlighter-rouge">NORMAL</code></td>
+      <td><code class="language-plaintext highlighter-rouge">Urgency: high</code> / <code class="language-plaintext highlighter-rouge">normal</code></td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">ttl_seconds</code></td>
+      <td><code class="language-plaintext highlighter-rouge">apns-expiration</code></td>
+      <td><code class="language-plaintext highlighter-rouge">android.ttl</code></td>
+      <td><code class="language-plaintext highlighter-rouge">TTL</code> header</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">collapse_key</code></td>
+      <td><code class="language-plaintext highlighter-rouge">apns-collapse-id</code></td>
+      <td><code class="language-plaintext highlighter-rouge">android.collapse_key</code></td>
+      <td><code class="language-plaintext highlighter-rouge">Topic</code> header</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">badge</code></td>
+      <td><code class="language-plaintext highlighter-rouge">aps.badge</code></td>
+      <td><code class="language-plaintext highlighter-rouge">android.notification.notification_count</code></td>
+      <td>In the payload</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">sound</code></td>
+      <td><code class="language-plaintext highlighter-rouge">aps.sound</code></td>
+      <td><code class="language-plaintext highlighter-rouge">android.notification.sound</code></td>
+      <td>Not applicable</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">category</code></td>
+      <td><code class="language-plaintext highlighter-rouge">aps.category</code>, so an app can register actionable categories</td>
+      <td>In <code class="language-plaintext highlighter-rouge">message.data</code></td>
+      <td>In the payload</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">data</code> and the <code class="language-plaintext highlighter-rouge">substratal</code> block</td>
+      <td>Top-level keys beside <code class="language-plaintext highlighter-rouge">aps</code></td>
+      <td><code class="language-plaintext highlighter-rouge">message.data</code>, with <code class="language-plaintext highlighter-rouge">substratal</code> as a JSON string</td>
+      <td>In the payload</td>
+    </tr>
+  </tbody>
+</table></div>
+
+<p>Web Push payloads are encrypted for the subscription’s keys (RFC 8291, <code class="language-plaintext highlighter-rouge">aes128gcm</code>), and every request is signed with the Application’s VAPID key (RFC 8292). APNs requests use token-based authentication with the Application’s key, and FCM requests use OAuth 2.0 access tokens minted from its service account. The platform caches and refreshes each of these, so an Application only supplies the long-lived credential.</p>
+
+<p><strong>Keep sensitive content out of <code class="language-plaintext highlighter-rouge">title</code>, <code class="language-plaintext highlighter-rouge">body</code>, and <code class="language-plaintext highlighter-rouge">data</code>.</strong> Apple, Google, and the browser vendors’ push services carry the payload, and a lock screen shows the title and body to anyone holding the phone. For anything private, send a generic title, put an id in <code class="language-plaintext highlighter-rouge">data</code>, and let the app fetch the details once it’s open and authenticated. The payload is also what the <a href="../../compliance/#gdpr-and-ccpa--build-for-it-now">Compliance</a> page counts these providers as sub-processors for.</p>
+<h2 id="delivery">
+  
+  
+    <a href="#delivery" class="anchor-heading" aria-labelledby="delivery"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> Delivery
+  
+  
+</h2>
+    
+
+<ul>
+  <li><strong>Latency target:</strong> p95 under 10 seconds from the committing write to the first provider attempt, the same as webhooks. Deliveries are written in the same transaction as the notification, so a committed send can never lose its push.</li>
+  <li><strong>Retries:</strong> a provider <code class="language-plaintext highlighter-rouge">429</code>, a <code class="language-plaintext highlighter-rouge">5xx</code>, or a timeout (5 seconds) is retried at +30 seconds, +2 minutes, and +10 minutes, for 4 attempts in total, within <code class="language-plaintext highlighter-rouge">ttl_seconds</code>. Then that delivery is <code class="language-plaintext highlighter-rouge">failed</code>. A provider’s <code class="language-plaintext highlighter-rouge">Retry-After</code> is honored when it’s longer.</li>
+  <li><strong>A token the provider reports as gone deactivates the device</strong> (<code class="language-plaintext highlighter-rouge">inactive_reason: unregistered</code>) and fires <code class="language-plaintext highlighter-rouge">device.deactivated</code>. That’s APNs <code class="language-plaintext highlighter-rouge">410 Unregistered</code> or <code class="language-plaintext highlighter-rouge">400 BadDeviceToken</code>/<code class="language-plaintext highlighter-rouge">DeviceTokenNotForTopic</code>, FCM <code class="language-plaintext highlighter-rouge">404 UNREGISTERED</code> or a <code class="language-plaintext highlighter-rouge">400 INVALID_ARGUMENT</code> naming the token, and Web Push <code class="language-plaintext highlighter-rouge">404</code>/<code class="language-plaintext highlighter-rouge">410</code>. Nothing is retried for that device.</li>
+  <li><strong>A credential the provider rejects marks it <code class="language-plaintext highlighter-rouge">failed</code></strong>, as described under <a href="#push-credentials">Push credentials</a>. Every pending delivery that depends on it is skipped.</li>
+  <li><strong>No ordering guarantee,</strong> and a provider may deliver late or not at all. Clients should treat a push as a prompt to refresh from the API, not as the source of truth. <code class="language-plaintext highlighter-rouge">collapse_key</code> is the tool for “show only the latest”.</li>
+  <li><strong>No delivery receipts.</strong> <code class="language-plaintext highlighter-rouge">sent</code> means the provider accepted the push. Whether the User saw it isn’t knowable from the provider, and the inbox’s <code class="language-plaintext highlighter-rouge">read</code> state is the only “seen” signal.</li>
+</ul>
+<h2 id="sessions-and-device-lifecycle">
+  
+  
+    <a href="#sessions-and-device-lifecycle" class="anchor-heading" aria-labelledby="sessions-and-device-lifecycle"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> Sessions and device lifecycle
+  
+  
+</h2>
+    
+
+<p>A device a User registers with their own token is tied to the session that registered it (<code class="language-plaintext highlighter-rouge">session_id</code>), so signing out stops its pushes:</p>
+
+<div class="table-wrapper"><table>
+  <thead>
+    <tr>
+      <th>Event</th>
+      <th>Effect on devices</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Logout, or <a href="../auth/#delete-v1usersidsessionssessionid">revoking that session</a></td>
+      <td>Devices registered under that session become <code class="language-plaintext highlighter-rouge">inactive</code> (<code class="language-plaintext highlighter-rouge">session_revoked</code>). Logout from every session deactivates all of them.</td>
+    </tr>
+    <tr>
+      <td>Password reset, refresh-token reuse, or MFA reset (each revokes sessions)</td>
+      <td>The same, after the <a href="#platform-alerts"><code class="language-plaintext highlighter-rouge">security.*</code> alert</a> is raised.</td>
+    </tr>
+    <tr>
+      <td>The User is suspended or soft-deleted</td>
+      <td>Every device they hold becomes <code class="language-plaintext highlighter-rouge">inactive</code> (<code class="language-plaintext highlighter-rouge">user_suspended</code> or <code class="language-plaintext highlighter-rouge">user_deleted</code>), including devices an app key registered.</td>
+    </tr>
+    <tr>
+      <td>The User signs in again on the same install</td>
+      <td>The client re-registers its token, which reactivates the device under the new session.</td>
+    </tr>
+    <tr>
+      <td>An app-key registration (<code class="language-plaintext highlighter-rouge">session_id: null</code>)</td>
+      <td>Not affected by logout, because the platform can’t see the app’s own sessions. The Application’s backend should <code class="language-plaintext highlighter-rouge">DELETE</code> the device when its user signs out.</td>
+    </tr>
+    <tr>
+      <td>No re-registration for 270 days</td>
+      <td><code class="language-plaintext highlighter-rouge">inactive</code> (<code class="language-plaintext highlighter-rouge">stale</code>). Providers expire tokens from installs that are never opened, so a client should re-register on launch, at most once a day.</td>
+    </tr>
+    <tr>
+      <td>The Application’s <code class="language-plaintext highlighter-rouge">web_push</code> credential is deleted</td>
+      <td>Its <code class="language-plaintext highlighter-rouge">web_push</code> devices become <code class="language-plaintext highlighter-rouge">inactive</code> (<code class="language-plaintext highlighter-rouge">credential_removed</code>).</td>
+    </tr>
+    <tr>
+      <td>The User loses access to the Application</td>
+      <td>Devices stay <code class="language-plaintext highlighter-rouge">active</code>, but sends to the User are rejected (<code class="language-plaintext highlighter-rouge">403 entitlement_required</code>) until access returns.</td>
+    </tr>
+  </tbody>
+</table></div>
+
+<p>An <code class="language-plaintext highlighter-rouge">inactive</code> device is deleted 30 days after it was deactivated, unless it’s re-registered first.</p>
+<h2 id="test-mode">
+  
+  
+    <a href="#test-mode" class="anchor-heading" aria-labelledby="test-mode"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> Test mode
+  
+  
+</h2>
+    
+
+<p>A test-mode key registers test-mode devices and sends test-mode notifications. Test-mode notifications reach only test-mode devices, and live notifications never reach a test-mode device, the same isolation as every other record (see <a href="../api-keys/#test-vs-live">API Keys → Test vs. live</a>). Pushes are real: a test-mode delivery goes through the actual provider, using the Application’s shared credentials. Point test-mode devices at development builds (<code class="language-plaintext highlighter-rouge">environment: sandbox</code> on APNs) so test traffic never reaches a production install.</p>
+<h2 id="webhook-events">
+  
+  
+    <a href="#webhook-events" class="anchor-heading" aria-labelledby="webhook-events"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> Webhook events
+  
+  
+</h2>
+    
+
+<p>Five events tell an Application’s backend about its devices, credentials, and failed pushes. They’re delivered to the Application’s <a href="../webhooks/#event-types">webhook subscriptions</a> like any other event, never include a token or secret, and are scoped to their <code class="language-plaintext highlighter-rouge">application_id</code>:</p>
+
+<div class="table-wrapper"><table>
+  <thead>
+    <tr>
+      <th>Event</th>
+      <th>Fires when</th>
+      <th><code class="language-plaintext highlighter-rouge">data</code></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">device.registered</code></td>
+      <td>A Device is created, or an <code class="language-plaintext highlighter-rouge">inactive</code> one is reactivated.</td>
+      <td><code class="language-plaintext highlighter-rouge">device</code></td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">device.deactivated</code></td>
+      <td>A Device becomes <code class="language-plaintext highlighter-rouge">inactive</code>.</td>
+      <td><code class="language-plaintext highlighter-rouge">device</code> (with <code class="language-plaintext highlighter-rouge">inactive_reason</code>)</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">device.deleted</code></td>
+      <td>A Device is deleted, by <code class="language-plaintext highlighter-rouge">DELETE</code>, by a registration of its token for another User, or 30 days after deactivation.</td>
+      <td><code class="language-plaintext highlighter-rouge">device</code> (last state)</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">notification.push_failed</code></td>
+      <td>One of the Application’s own notifications ends with <code class="language-plaintext highlighter-rouge">push.status</code> <code class="language-plaintext highlighter-rouge">failed</code>, or <code class="language-plaintext highlighter-rouge">skipped</code> for <code class="language-plaintext highlighter-rouge">no_devices</code>, <code class="language-plaintext highlighter-rouge">no_credentials</code>, or <code class="language-plaintext highlighter-rouge">credential_failed</code>. Not for <code class="language-plaintext highlighter-rouge">push_disabled</code> or <code class="language-plaintext highlighter-rouge">push_not_requested</code>, which are choices rather than failures, and never for a platform alert.</td>
+      <td><code class="language-plaintext highlighter-rouge">notification_id</code>, <code class="language-plaintext highlighter-rouge">user_id</code>, <code class="language-plaintext highlighter-rouge">category</code>, <code class="language-plaintext highlighter-rouge">push</code></td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">push_credential.failed</code></td>
+      <td>A credential becomes <code class="language-plaintext highlighter-rouge">failed</code>.</td>
+      <td><code class="language-plaintext highlighter-rouge">provider</code>, <code class="language-plaintext highlighter-rouge">failure_reason</code></td>
+    </tr>
+  </tbody>
+</table></div>
+
+<p><code class="language-plaintext highlighter-rouge">notification.push_failed</code> is the hook for falling back to another channel, such as email from your own backend, when a push can’t go out.</p>
+<h2 id="errors-specific-to-this-resource">
+  
+  
+    <a href="#errors-specific-to-this-resource" class="anchor-heading" aria-labelledby="errors-specific-to-this-resource"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> Errors specific to this resource
+  
+  
+</h2>
+    
+
+<div class="table-wrapper"><table>
+  <thead>
+    <tr>
+      <th>Code</th>
+      <th>Status</th>
+      <th>When</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">push_credential_not_found</code></td>
+      <td>404</td>
+      <td><code class="language-plaintext highlighter-rouge">{provider}</code> isn’t configured for the Application, or isn’t one of <code class="language-plaintext highlighter-rouge">apns</code>, <code class="language-plaintext highlighter-rouge">fcm</code>, <code class="language-plaintext highlighter-rouge">web_push</code>.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">push_credential_exists</code></td>
+      <td>409</td>
+      <td><code class="language-plaintext highlighter-rouge">POST</code> for a provider the Application already has.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">invalid_push_credential</code></td>
+      <td>422</td>
+      <td>Key material that doesn’t parse, or a service account missing a required field.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">push_not_configured</code></td>
+      <td>409</td>
+      <td>A device test for a provider the Application has no credential for.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">device_not_found</code></td>
+      <td>404</td>
+      <td><code class="language-plaintext highlighter-rouge">{deviceId}</code> doesn’t resolve, isn’t the User’s, or (for an app key) belongs to another Application.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">invalid_device_token</code></td>
+      <td>422</td>
+      <td>A <code class="language-plaintext highlighter-rouge">token</code> or <code class="language-plaintext highlighter-rouge">subscription</code> in the wrong format for its provider, or a <code class="language-plaintext highlighter-rouge">web_push</code> endpoint that isn’t a public <code class="language-plaintext highlighter-rouge">https</code> URL.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">notification_not_found</code></td>
+      <td>404</td>
+      <td><code class="language-plaintext highlighter-rouge">{notificationId}</code> doesn’t resolve or isn’t visible to the caller.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">reserved_category</code></td>
+      <td>422</td>
+      <td>An Application’s send uses a <code class="language-plaintext highlighter-rouge">security.</code>, <code class="language-plaintext highlighter-rouge">account.</code>, or <code class="language-plaintext highlighter-rouge">billing.</code> category.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">notification_too_large</code></td>
+      <td>422</td>
+      <td>The push payload would exceed 4 KB. <code class="language-plaintext highlighter-rouge">details.bytes</code> and <code class="language-plaintext highlighter-rouge">details.max</code> say by how much.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">entitlement_required</code></td>
+      <td>403</td>
+      <td>The recipient (or the User registering a device) doesn’t have active access to the Application.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">user_token_required</code></td>
+      <td>400</td>
+      <td>An API Key tried to create, change, or remove a push credential, or used <code class="language-plaintext highlighter-rouge">me</code>.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">read_only_field</code></td>
+      <td>422</td>
+      <td>A <code class="language-plaintext highlighter-rouge">PATCH</code> touched a read-only field, such as a device’s <code class="language-plaintext highlighter-rouge">provider</code> or a credential’s <code class="language-plaintext highlighter-rouge">application_id</code>.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">invalid_status_transition</code></td>
+      <td>409</td>
+      <td>A credential <code class="language-plaintext highlighter-rouge">PATCH status</code> other than <code class="language-plaintext highlighter-rouge">failed → active</code>.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">rate_limited</code></td>
+      <td>429</td>
+      <td>Over the per-sender or per-recipient limit. <code class="language-plaintext highlighter-rouge">details.scope</code> is <code class="language-plaintext highlighter-rouge">sender</code> or <code class="language-plaintext highlighter-rouge">recipient</code>.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">not_implemented</code></td>
+      <td>501</td>
+      <td>Every operation on this page, until it’s built. See the status note at the top.</td>
+    </tr>
+  </tbody>
+</table></div>
+
+          
+
+          
+            
+          
+        </main>
+        
+<hr>
+<footer>
+  
+    <p><a href="#top" id="back-to-top">Back to top</a></p>
+  
+
+  <p class="text-small mb-0">Substratal Apps Platform API — living specification. This site is the system of record; see git history for how it has changed over time.</p>
+
+  <div class="d-md-none mt-4 fs-2">
+    
+    
+      This site uses <a href="https://github.com/just-the-docs/just-the-docs">Just the Docs</a>, a documentation theme for Jekyll.
+    
+  </div>
+</footer>
+
+      </div>
+    </div>
+    
+      
+
+<div class="search-overlay"></div>
+
+    
+  </div>
+
+  
+</body>
+</html>
+
