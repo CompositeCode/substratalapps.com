@@ -53,6 +53,7 @@ Applications that aren't `approved` are visible only to their owner, their own k
   ],
   "support_url": "https://timetrack.substratalapps.com/support",
   "email_from_name": "TimeTrack",
+  "receives_platform_notifications": false,
   "settings_schema": {
     "type": "object",
     "properties": {
@@ -88,6 +89,7 @@ Applications that aren't `approved` are visible only to their owner, their own k
 | `launch_url` | `https` URL. Where the future dashboard sends a user to open the app. |
 | `redirect_uris` | 0–10 entries, each an exact-match string: an `https://` URL, or a private-use URI scheme for native apps (reverse-DNS, `com.example.app:/path`). `http://localhost` and `http://127.0.0.1` with any port are allowed for development only on a `test_mode` Application. Required (non-empty) before the hosted authorization-code flow will issue a code — see [Auth](../auth/#post-v1authoauthauthorization-codes). |
 | `support_url`, `email_from_name` | Optional. Used in transactional emails sent on behalf of this app. `email_from_name` is 1–50 characters; the sending address is always Substratal's own. |
+| `receives_platform_notifications` | Boolean, default `false`, writable by the owner. Whether this app's devices also get pushes for [platform alerts](../notifications/#platform-alerts). The app's push credentials are managed separately, under [`/v1/applications/{id}/push-credentials`](../notifications/#push-credentials). |
 | `settings_schema` | See [Domain Model → Settings → `settings_schema` rules](../../domain-model/settings/#settings_schema-rules). |
 | `settings_schema_stats` | Read-only. `stale_override_counts` is a key → count map of how many users hold overrides that no longer validate. |
 | `permissions` | The Application's own permission catalog, 0–100 entries. Each `key` must start with `app.<slug>.`, then match `[a-z0-9_.]{1,64}`. `description` is up to 255 characters. This is what `GET /v1/permissions` lists, and it's the only set an AppRole may draw from. |

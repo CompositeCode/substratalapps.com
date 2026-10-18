@@ -28,6 +28,7 @@ older single-file draft found elsewhere in the repository's history.
 - [Domain Model]({{ site.url }}{{ site.baseurl }}/domain-model/): the entities — User, Organization, Tenant, Application, Role, Permission, Entitlement, Profile, Setting, Order, Audit Event.
 - [Tenancy]({{ site.url }}{{ site.baseurl }}/domain-model/tenancy/): the infrastructure-placement/data-isolation boundary for an Application owner — shared, isolated, or dedicated-region. Distinct from Organization.
 - [Access Control]({{ site.url }}{{ site.baseurl }}/access-control/): how Entitlement (is the app on?) and Role (what can they do?) combine to decide every request, including Organization-vs-User precedence when an org-wide grant and a User's own standing could otherwise conflict.
+- [Notifications]({{ site.url }}{{ site.baseurl }}/domain-model/notifications/): the Device, PushCredential, Notification, and delivery records behind push notifications and the inbox.
 - [Database Schema]({{ site.url }}{{ site.baseurl }}/domain-model/database-schema/): Postgres types, constraints, and indexes behind every entity — for implementers, not API callers.
 
 ## API reference
@@ -45,6 +46,7 @@ older single-file draft found elsewhere in the repository's history.
 - [Billing]({{ site.url }}{{ site.baseurl }}/api-reference/billing/): the Free/Standard subscription — Stripe Checkout and Customer Portal. Being reworked for subscriber billing (DECISIONS.md #39).
 - [Audit]({{ site.url }}{{ site.baseurl }}/api-reference/audit/)
 - [Webhooks]({{ site.url }}{{ site.baseurl }}/api-reference/webhooks/)
+- [Push Notifications]({{ site.url }}{{ site.baseurl }}/api-reference/notifications/): alerts and updates to a User's devices through APNs, FCM, and Web Push, plus their notification inbox — device registration, an Application's push credentials, sending, and platform alerts.
 - [API Keys]({{ site.url }}{{ site.baseurl }}/api-reference/api-keys/): service-to-service credentials.
 - [openapi.yaml]({{ site.url }}{{ site.baseurl }}/openapi.yaml): the same API surface as a machine-readable OpenAPI 3.1 document.
 - [OpenAPI Specification]({{ site.url }}{{ site.baseurl }}/openapi/): the same document rendered as interactive Swagger UI, with how to use it to build against the API.

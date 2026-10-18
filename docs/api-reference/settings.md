@@ -64,7 +64,7 @@ As on [Profiles](../profiles/), "the app's own key" means any app-scoped [API Ke
 | `locale` | BCP 47 tag the API recognizes. |
 | `timezone` | IANA zone name, for example `America/Denver`. |
 | `theme` | `light`, `dark`, or `system`. |
-| `notifications` | An object of channel name to boolean. Channel names match `^[a-z][a-z0-9_]{0,31}$`, with at most 20 channels. The keys are merged one level deep, and a channel sent as `null` is removed. |
+| `notifications` | An object of channel name to boolean. Channel names match `^[a-z][a-z0-9_]{0,31}$`, with at most 20 channels. The keys are merged one level deep, and a channel sent as `null` is removed. `push` is the one channel the platform acts on itself: `false` stops [push notifications](../notifications/#preferences), and a missing `push` key counts as on. Other channels are for Applications to read. |
 
 Defaults on user creation: `locale: "en-US"`, `timezone: "UTC"`, `theme: "system"`, `notifications: {"email": true}`. This is the only place `locale` is written; the Profile's `locale` mirrors it.
 
@@ -120,7 +120,7 @@ Returns the resolved object, the override layer that produced it, and the source
 
 The exact rules are in [Domain Model → Settings → Resolution rules](../../domain-model/settings/#resolution-rules). In short:
 
-- The **reserved global keys** (`locale`, `timezone`, `theme`, `notifications`) always appear. Each comes from the per-app override if one is set, and from global Settings otherwise. For `notifications`, an override merges over the global object one channel at a time.
+- The **reserved global keys** (`locale`, `timezone`, `theme`, `notifications`) always appear. Each comes from the per-app override if one is set, and from global Settings otherwise. For `notifications`, an override merges over the global object one channel at a time. In the example above, `notifications.push` resolves to `false` for TimeTrack only, so TimeTrack's [push notifications](../notifications/#preferences) go to the User's inbox without a push, while every other Application still pushes.
 - **Keys the Application declares** in its `settings_schema` come from the override if one is set, and otherwise from the schema property's `default`. A declared key with neither is **omitted** from `resolved` rather than returned as `null`.
 - **`stale_overrides`** lists override keys that no longer validate against the Application's *current* schema. This happens when the schema changed after the value was written: the property was removed, or its type changed. Stale values are skipped during resolution, so the default applies instead, and they stay in `overrides` until the next write to that key replaces or clears them.
 - If the user has no per-app record yet, `overrides` is `{}` and `updated_at` is `null`. Nothing is written on a read.

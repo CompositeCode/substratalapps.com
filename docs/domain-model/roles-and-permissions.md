@@ -39,6 +39,7 @@ The full set of platform-scoped permission keys. App-scoped keys (`app.<slug>.*`
 | `audit.view` | Query the Audit log for any user. On an app-scoped key, confined to that Application's events. |
 | `webhooks.manage` | Manage *any* webhook subscription, and create `platform`-scoped ones. An Application's own keys and owner manage that app's subscriptions without it. |
 | `api_keys.manage` | Create, rotate, and revoke *any* API Key — see [API Keys](../../api-reference/api-keys/). An Application's owner manages that app's keys without it. |
+| `notifications.send` | Send [notifications](../../api-reference/notifications/#sending-a-notification) to any User on behalf of any Application. On an app-scoped key, confined to that Application's own users with active access. Reading a User's inbox and registering devices need no permission: they're self-service, or done by the app's own key. |
 | `tenants.manage` | View any Tenant and request a tier change on a customer's behalf — see [Tenancy](../tenancy/). Deliberately held by `support`: tier changes are gatekept by support today, not a self-service customer action, so this is the one permission a Tenant's own owner never holds, even for their own Tenant. |
 
 ### Platform role grants

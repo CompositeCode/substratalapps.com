@@ -36,6 +36,9 @@ Per-app configuration for one user, layered over that user's global [Settings](#
 #### Audit Event
 An immutable record of who changed what access, when. See [Domain Model → Orders & Audit](../domain-model/orders-and-audit/).
 
+#### Device
+One install of an [Application](#application) on one device, signed in as one [User](#user), with the APNs, FCM, or Web Push token that reaches it (`dvc_…`). Tied to the [Session](#session) that registered it, so signing out stops its pushes. See [Push Notifications → Devices](../api-reference/notifications/#devices).
+
 #### Effective permissions
 The resolved set of [Permissions](#permission) a user holds for a given Application — the union of the permissions on their app-scoped Roles for that app (explicit assignments plus the app's `default_app_role`), and empty unless the User and their Entitlement are both active. Only that app's own `app.<slug>.*` keys ever appear; platform Roles govern the hub, not apps. See [Access Control](../access-control/#step-2-effective-permissions).
 
@@ -47,6 +50,9 @@ Shorthand used throughout this site for Substratal Apps itself — the platform 
 
 #### MCP
 Model Context Protocol — the standard this site's AI-agent-facing tool-call interface implements. See [MCP Server](../mcp-server/). Introduces no new authorization model of its own; see [Authentication — no new model](../mcp-server/#authentication--no-new-model).
+
+#### Notification
+One alert or update to one User (`ntf_…`), from an Application or from the platform. Pushed to the User's [Devices](#device) when it can be, and always kept in their inbox for 90 days. See [Push Notifications](../api-reference/notifications/).
 
 #### Order
 Not an entity of this API. It's the developer's own commerce record, in their own billing system. An [Entitlement](#entitlement) carries only an opaque `order_id` reference to it. See [Domain Model → Orders & Audit](../domain-model/orders-and-audit/#order).
@@ -63,11 +69,17 @@ An atomic, checkable capability, written as a dotted key (`billing.manage`, `app
 #### Plan
 The subscription tier covering a User: `free` or `standard`. A User is on Standard through their own subscription or an Organization's. Business and Enterprise plans come later. Independent of [Tier](#tier). See [Pricing](../pricing/).
 
+#### Platform alert
+A [Notification](#notification) the platform raises itself about the User's account, such as a new sign-in or a changed password. Its category is from a fixed catalog under `security.` and `account.`. See [Push Notifications → Platform alerts](../api-reference/notifications/#platform-alerts).
+
 #### PlatformRole
 A [Role](#role) that applies across the whole hub rather than one Application — `superadmin`, `support`, `billing_admin`, `member`.
 
 #### Profile
 Global, cross-app identity and contact data for a User — name, avatar, email, locale. Distinct from [AppProfile](#appprofile).
+
+#### Push credential
+An Application's own key for one push provider: an APNs `.p8` key, an FCM service account, or a Web Push (VAPID) key pair (`pcr_…`). Write-only and KMS-encrypted. Providers deliver only for the app a token was issued to, so every Application brings its own. See [Push Notifications → Push credentials](../api-reference/notifications/#push-credentials).
 
 #### Role
 A named bundle of [Permissions](#permission). Either a [PlatformRole](#platformrole) or an [AppRole](#approle).

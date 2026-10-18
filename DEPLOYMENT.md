@@ -14,10 +14,11 @@ Chosen and configured around one constraint above all others: **predictable, cap
 8. [Stripe Billing](#stripe-billing)
 9. [Transactional email](#transactional-email)
 10. [Webhook dispatch](#webhook-dispatch)
-11. [Audit log archival](#audit-log-archival)
-12. [Scale-out](#scale-out)
-13. [Build checklist](#build-checklist)
-14. [Local development](#local-development)
+11. [Push delivery](#push-delivery)
+12. [Audit log archival](#audit-log-archival)
+13. [Scale-out](#scale-out)
+14. [Build checklist](#build-checklist)
+15. [Local development](#local-development)
 
 ---
 
@@ -46,6 +47,7 @@ flowchart LR
     Lambda -->|enqueue| SQS[[SQS<br/>webhook delivery queue]]
     SQS --> Worker[Lambda<br/>webhook worker]
     Worker -->|HTTPS, outbound| Downstream[Downstream app<br/>webhook endpoints]
+    Worker -->|HTTPS, outbound| PushProviders[APNs / FCM /<br/>Web Push services]
     EventBridge[EventBridge Scheduler] -->|invoke| Jobs[Lambda<br/>scheduled jobs:<br/>trial expiry, cleanup]
     Jobs --> Aurora
     Secrets[(Secrets Manager<br/>DB credential + Stripe keys)] -.-> Lambda
@@ -60,6 +62,7 @@ flowchart LR
 | Stripe webhook compute | A **third, dedicated Lambda**, at `/internal/stripe/webhook` | Isolated from the API handlers' Lambda for the same reason the MCP Lambda is — plus a real security reason: it's the one route whose caller isn't an API-key/Bearer-token holder at all, verified instead by Stripe's own signature scheme (see [Stripe Billing](#stripe-billing)), so keeping it a separate function keeps that distinct trust boundary legible in the IAM/routing layer, not just in code. |
 | Database | **Aurora Serverless v2 (PostgreSQL)**, accessed via the **RDS Data API** | The domain model is relational (joins, foreign keys, the Audit log) — Postgres fits it directly. Data API means Lambda calls the database over signed HTTPS with **no VPC attachment** — which is what avoids a NAT Gateway entirely (see below), not a minor detail. |
 | Webhook delivery | **SQS** queue + a dedicated worker **Lambda** | Matches the retry/backoff schedule in the [Webhooks](https://compositecode.github.io/substratalapps.com/api-reference/webhooks/) spec — SQS visibility timeouts drive the delay between attempts for free, no extra scheduler needed for that part. |
+| Push delivery | A second **SQS** queue on the **same worker Lambda** | [Push notifications](https://compositecode.github.io/substratalapps.com/api-reference/notifications/) to APNs, FCM, and Web Push. The same outbox-and-queue shape as webhooks, so no new function. See [Push delivery](#push-delivery). |
 | Scheduled jobs | **EventBridge Scheduler** → **Lambda** | Trial-expiry checks, idempotency-key cleanup — pay-per-invocation, no cron server to run. |
 | Secrets | **Secrets Manager** — the Aurora master credential and the Stripe secret/webhook-signing keys | Everything else non-secret goes in Lambda environment variables rather than paying per-secret for config that isn't sensitive. |
 | DNS / TLS | **Route 53** + **ACM** (free) + API Gateway custom domain | Backs the `api.substratalapps.com` base URL from the [API spec's Conventions](https://compositecode.github.io/substratalapps.com/api-reference/conventions/#base-url). |
@@ -251,6 +254,19 @@ Native auth sends email: verification, password reset, invitations, MFA and pass
 
 Outbound webhooks use a **transactional outbox**. Every state-changing transaction inserts its `webhook_events` rows in the same commit (see [Database Schema](https://compositecode.github.io/substratalapps.com/domain-model/database-schema/#webhook_subscriptions-webhook_events-webhook_deliveries)). A dispatcher Lambda, triggered every few seconds by an EventBridge Scheduler rule and also invoked directly after commit as a fast path, fans each event out to matching subscriptions as SQS messages. Delivery workers POST with a 5-second timeout, and failed attempts are re-enqueued with SQS delay (up to 15 minutes) or EventBridge Scheduler one-shot schedules for the 2-hour and 12-hour retries. No always-on component, consistent with the [cost principles](#cost-principles).
 
+## Push delivery
+
+[Push Notifications](https://compositecode.github.io/substratalapps.com/api-reference/notifications/) specifies the behavior. This is how it runs, on top of the webhook machinery above, with no new always-on component.
+
+- **Outbox.** A send inserts the `notifications` row and one `notification_deliveries` row per eligible device in the same transaction ([Database Schema](https://compositecode.github.io/substratalapps.com/domain-model/database-schema/#push_credentials-devices-notifications-notification_deliveries)). After commit, the API nudges a `push` SQS queue. The dispatcher's existing sweep also picks up any `pending` delivery older than a few seconds, so a lost nudge only delays a push.
+- **Worker.** The existing webhook worker Lambda takes the `push` queue as a second event source. It decrypts the Application's credential with the same symmetric KMS key used for webhook and TOTP secrets, and keeps a per-credential cache of provider auth across warm invocations: the APNs provider JWT (ES256, refreshed every 50 minutes, inside Apple's 20–60 minute window), the FCM OAuth 2.0 access token (refreshed before its one-hour expiry), and the VAPID JWT (ES256, at most 12 hours). APNs needs HTTP/2, which Go's standard client supports, and one connection per gateway (production, sandbox) is reused across deliveries in an invocation.
+- **No VPC, no NAT.** The worker already runs outside a VPC for outbound webhooks, so it reaches `api.push.apple.com`, `fcm.googleapis.com`, and browser push endpoints at no extra cost.
+- **Retries** use SQS delays (+30 seconds, +2 minutes, +10 minutes) within the notification's `ttl_seconds`. Provider responses that mean the token is gone deactivate the device, and ones that mean the credential is bad mark the credential `failed` and email the Application's owner, both in the worker's own transaction.
+- **Secrets.** Push credentials are per Application and live KMS-encrypted in Aurora, not in Secrets Manager, which would cost $0.40 a month per Application for no added safety. Device tokens are encrypted the same way.
+- **Scheduled jobs** (the existing jobs Lambda): the stale-device sweep (daily), deleting inactive devices 30 days after deactivation (daily), and purging notifications after 90 days and deliveries after 30 (nightly).
+- **Cost.** APNs, FCM, and Web Push charge nothing to send. At Tier 0 volume the queue, worker time, and KMS decrypts are a rounding error, and the decrypted-credential cache keeps KMS calls to one per credential per warm worker.
+- **Locally**, the devserver delivers in-process, the same as webhooks. A local provider backend that records pushes instead of sending them lets tests and the Quickstart run without real Apple or Google credentials.
+
 ## Audit log archival
 
 [Non-Functional Requirements → Audit log lifecycle](https://compositecode.github.io/substratalapps.com/non-functional-requirements/#audit-log-lifecycle) specifies the hot/cold split that keeps "retained indefinitely" true without every [Pricing](https://compositecode.github.io/substratalapps.com/pricing/) tier paying for the same amount of fast storage. The mechanical side of that, on top of the [Tier 0](#first-deployment-tier-0) stack above:
@@ -277,6 +293,7 @@ Nothing below is pre-built into Tier 0 — each is a deliberate upgrade, trigger
 | Geographically distributed callers, latency-sensitive | CloudFront in front of API Gateway. |
 | Hub availability becomes a real incident risk for every downstream app, not a theoretical one | Multi-region active-passive — deliberately not a Tier 0/1 concern; premature multi-region is itself a cost and complexity risk. |
 | Webhook delivery volume grows enough to need isolation from the main API's blast radius | Split the worker Lambda's concurrency/alerting from the API handlers' (it already runs as a separate function). |
+| Push volume grows enough that APNs connection reuse, or isolation from webhook delivery, matters | Give push delivery its own worker function with reserved concurrency, so long-lived HTTP/2 connections to APNs survive between batches and a burst of pushes can't delay webhooks. |
 | More than one engineer shipping concurrently | A second AWS account (via AWS Organizations) for staging, separate from production — Tier 0 runs on a single account with a `dev`/`prod` naming convention, which is enough until this trigger. |
 | A specific customer requires dedicated or regional infrastructure | Run the [Tenancy tiers](#tenancy-tiers--where-they-run) migration for that one customer's Tenant — the one scale-out trigger in this table that's customer-specific rather than aggregate-volume-driven. |
 | Agent/MCP tool-call traffic needs server-push, resumable streams, or dedicated concurrency | See [MCP server → Scaling the MCP server](#scaling-the-mcp-server) — its own trigger table. |
@@ -291,7 +308,7 @@ The order this gets stood up in, once API implementation begins:
 3. KMS keys: one asymmetric RSA-2048 signing key for JWTs (JWKS is published from its public half), and one symmetric key for encrypting TOTP and webhook secrets. Secrets Manager secrets: the Aurora master credential, and Stripe's secret key + webhook-signing secret (test-mode keys first — see [Stripe Billing](#stripe-billing)). Aurora Serverless v2 cluster with Data API enabled, minimum 0.5 / maximum capacity set deliberately.
 4. IAM: one execution role per Lambda function (API handlers, MCP server, Stripe webhook handler, webhook worker, scheduled-jobs), each scoped to only the resources it actually needs — no shared mega-role.
 5. API Gateway HTTP API + custom domain mapping; Lambda handlers deployed behind it, implementing the [API Reference](https://compositecode.github.io/substratalapps.com/api-reference/) / [openapi.yaml](https://compositecode.github.io/substratalapps.com/openapi.yaml) contract.
-6. SQS queues (webhook fan-out/delivery, email, Stripe events) and their worker Lambdas; EventBridge Scheduler rules for the entitlement-expiry sweep (every 5 minutes), the webhook outbox dispatcher, the erasure cascade (hourly), the seat sync (daily 00:15 UTC), test-mode purge, expired-token and idempotency-key cleanup (nightly), and [audit log archival](#audit-log-archival). CloudFront in front of `/.well-known/jwks.json` (1-hour cache; deferred, see [DECISIONS.md #34](DECISIONS.md#34-jwks-without-cloudfront-at-tier-0)).
+6. SQS queues (webhook fan-out/delivery, push delivery, email, Stripe events) and their worker Lambdas; EventBridge Scheduler rules for the entitlement-expiry sweep (every 5 minutes), the webhook outbox dispatcher, the erasure cascade (hourly), the seat sync (daily 00:15 UTC), test-mode purge, expired-token and idempotency-key cleanup (nightly), the push stale-device sweep (daily) and notification retention purge (nightly), and [audit log archival](#audit-log-archival). CloudFront in front of `/.well-known/jwks.json` (1-hour cache; deferred, see [DECISIONS.md #34](DECISIONS.md#34-jwks-without-cloudfront-at-tier-0)).
 7. Stripe account: run the catalog sync script (test mode first), configure the Customer Portal (no plan switching), enable Stripe Tax, register the `/internal/stripe/webhook` endpoint for the events in [Webhook handling](#webhook-handling).
 8. CloudWatch Logs with explicit retention on every log group; a small set of alarms (error rate, Lambda throttling, Aurora ACU near max) in addition to the billing guardrails from step 1.
 9. CI/CD via OIDC federation (GitHub Actions → an AWS deploy role) — no long-lived IAM user access keys committed anywhere.

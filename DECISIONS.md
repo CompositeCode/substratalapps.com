@@ -31,6 +31,7 @@ Status meanings:
 | 34 | [JWKS without CloudFront at Tier 0](#34-jwks-without-cloudfront-at-tier-0) | 🟡 Proposed — confirm | [DEPLOYMENT.md → Build checklist](DEPLOYMENT.md#build-checklist), [NFR → SLOs](https://compositecode.github.io/substratalapps.com/non-functional-requirements/#service-level-objectives) |
 | 36 | [Test mode and seats](#36-test-mode-and-seats) | 🟡 Proposed — confirm | [Pricing → What a "user" means for an Organization](https://compositecode.github.io/substratalapps.com/pricing/#what-a-user-means-for-an-organization) |
 | 37 | [Audit immutability without a second database role](#37-audit-immutability-without-a-second-database-role) | 🟡 Proposed — confirm | [NFR → Audit](https://compositecode.github.io/substratalapps.com/non-functional-requirements/#audit), [Database Schema → audit_events](https://compositecode.github.io/substratalapps.com/domain-model/database-schema/#audit_events) |
+| 40 | [Push notification defaults](#40-push-notification-defaults) | 🟡 Proposed — confirm | [API Reference → Push Notifications](https://compositecode.github.io/substratalapps.com/api-reference/notifications/), [Domain Model → Notifications](https://compositecode.github.io/substratalapps.com/domain-model/notifications/) |
 | 39 | [Subscriber billing API](#39-subscriber-billing-api) | 🟡 Open — not applied | [API Reference → Billing](https://compositecode.github.io/substratalapps.com/api-reference/billing/), [Tenancy](https://compositecode.github.io/substratalapps.com/domain-model/tenancy/), [Entitlements](https://compositecode.github.io/substratalapps.com/domain-model/entitlements/), [DEPLOYMENT.md → Stripe Billing](DEPLOYMENT.md#stripe-billing) |
 
 ### 31. Published prices and billing options
@@ -143,6 +144,21 @@ Surfaced by the pricing change (2026-10-17, [#38](#resolved)).
 - **Default tier for existing Applications.** The proposal is `standard`.
 
 **Alternative:** keep Tenant billing and model Free and Standard as Tenant plans. That doesn't fit, because the subscriber is no longer the Application owner.
+
+### 40. Push notification defaults
+
+Surfaced by adding push notifications to the spec (2026-10-17).
+
+**Question:** [Push Notifications](https://compositecode.github.io/substratalapps.com/api-reference/notifications/) is fully specified, but six choices in it are defaults that could reasonably go the other way. Confirm each. None of them blocks building, and every alternative is additive.
+
+1. **Platform alerts push only through Applications that opt in.** A device belongs to one Application and can only be reached with that app's credentials, so a platform alert (new sign-in, password changed, …) is pushed only to devices of Applications with `receives_platform_notifications: true`. Otherwise it goes to the inbox and the existing email. **Alternative:** push it to every active device, which would buzz a User once per installed app for the same alert.
+2. **No broadcast or batch send yet.** Sending is one User per call (`POST /v1/users/{id}/notifications`), within the 600-per-minute sender limit. **Alternative:** add `POST /v1/notifications` with up to 500 `user_ids`, or an Organization fan-out, when an Application needs announcements.
+3. **A per-recipient limit of 60 notifications per User per Application per hour** (`429 rate_limited`, `details.scope: recipient`). **Alternative:** a different number, or none.
+4. **The inbox keeps 90 days**, and delivery results 30. **Alternative:** a longer window, which only changes the purge job.
+5. **Preferences are the existing `notifications.push` channel only**, globally or per Application. There are no quiet hours and no per-category mutes. **Alternative:** add `notifications.quiet_hours` and per-category switches to Settings later. Platform `security.*` alerts would then need a rule about whether quiet hours can delay them.
+6. **Apple, Google, and the browser vendors' push services are sub-processors**, receiving only push payloads. That's listed on [Compliance](https://compositecode.github.io/substratalapps.com/compliance/), with guidance to keep sensitive content out of payloads. **Alternative:** none, since push can't work without them. Confirm it's acceptable for the DPA list.
+
+**Proposal:** confirm all six as specified.
 
 ---
 

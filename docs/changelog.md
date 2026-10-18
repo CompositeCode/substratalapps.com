@@ -12,6 +12,19 @@ What's changed in this specification over time. Questions still awaiting a decis
 
 ---
 
+## 2026-10-17 — Push notifications and the notification inbox
+
+New: [Push Notifications](../api-reference/notifications/), so an Application can send a User alerts and other updates without building its own push stack, and the platform can tell a User about their account.
+
+- **Devices.** A client registers its APNs, FCM, or Web Push token per Application (`POST /v1/users/{id}/devices`), with its user token or through its backend's app key. A Device is tied to the session that registered it, so signing out stops its pushes. A token a provider reports as gone deactivates the device automatically.
+- **Push credentials.** Each Application's owner configures its own APNs key, FCM service account, or Web Push (VAPID) key pair under `/v1/applications/{id}/push-credentials`. Key material is write-only and KMS-encrypted, and only a person can manage it, the same rule as API Keys.
+- **Sending.** `POST /v1/users/{id}/notifications`, with a new app-confined permission, `notifications.send`. Every send lands in the User's inbox, whether or not a push goes out, and `push.status` says what happened. The recipient must have active access to the Application, and a User who sets `notifications.push: false` in [Settings](../api-reference/settings/) (globally, or for one app) gets the inbox item without the push.
+- **The inbox.** List, count unread, mark read, unread, or archived, and mark many read at once. Kept 90 days.
+- **Platform alerts.** A fixed catalog of `security.*` and `account.*` notifications (new sign-in, password or email changed, MFA disabled, token reuse, organization invitation, access granted), pushed to the devices of Applications that opt in with the new `receives_platform_notifications` field.
+- **Everywhere else it touches:** 17 operations under a new Notifications tag in `openapi.yaml` (`info.version` `1.0.0-draft.3`), new id prefixes (`dvc_`, `pcr_`, `ntf_`, `ndl_`), webhook events (`device.registered`, `device.deactivated`, `device.deleted`, `notification.push_failed`, `push_credential.failed`), audit actions (`push_credential.created`/`updated`/`deleted`, `device.deleted`), [Database Schema](../domain-model/database-schema/#push_credentials-devices-notifications-notification_deliveries), a new [Domain Model → Notifications](../domain-model/notifications/) page, rate limits and an SLO in [Non-Functional Requirements](../non-functional-requirements/), the export and erasure cascade, Apple, Google, and browser push services as [sub-processors](../compliance/), two new [Workflows](../workflows/#an-application-sends-a-push-alert), and the [Roadmap](../roadmap/#phase-2).
+
+The defaults this rests on (opt-in platform pushes, no broadcast endpoint yet, the per-recipient limit, 90-day retention, no quiet hours yet) are listed for confirmation in [DECISIONS.md #40](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#40-push-notification-defaults). None blocks building. Until the reference implementation builds the feature, every Notifications operation returns `501 not_implemented`.
+
 ## 2026-10-17 — Free and Standard pricing; OpenAPI Specification section
 
 **Pricing** ([DECISIONS.md #38](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#resolved)). Pricing now has two tiers, paid by the people who use Substratal's apps rather than by the Application owner:

@@ -26,6 +26,7 @@ Resource-oriented REST, JSON, versioned at `/v1`. Read [Conventions](conventions
 | [Billing](billing/) | The Free/Standard subscription: Stripe Checkout and Portal. Being reworked for subscriber billing ([DECISIONS.md #39](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#39-subscriber-billing-api)). |
 | [Audit](audit/) | Query the audit log. |
 | [Webhooks](webhooks/) | Subscribe to access-change events, including the required `access.revoked`. |
+| [Push Notifications](notifications/) | Alerts and updates to a User's devices (APNs, FCM, Web Push) and their notification inbox: device registration, an Application's push credentials, sending, and platform alerts. |
 | [API Keys](api-keys/) | Service-to-service credentials — how billing or an app's own backend authenticates. |
 
 {: .note }

@@ -27,8 +27,8 @@ The complete Platform API contract as an [OpenAPI 3.1](https://spec.openapis.org
 | Base URL | `https://api.substratalapps.com/v1` |
 | Authentication | `Authorization: Bearer <token>`: a user access token or an API Key (`bearerAuth`) |
 | Content type | `application/json; charset=utf-8` |
-| Operations | 98, every one with a stable `operationId` |
-| Schemas | 79 reusable components under `components.schemas` |
+| Operations | 115, every one with a stable `operationId` |
+| Schemas | 104 reusable components under `components.schemas` |
 
 The prose pages under [API Reference](../api-reference/) are authoritative. `openapi.yaml` is kept in sync with them by hand, and the implementation's contract tests validate every response against it, so a drift between the two fails CI rather than reaching a client. See [Conventions → Machine-readable](../api-reference/conventions/#machine-readable).
 
@@ -59,10 +59,14 @@ Operations are grouped by tag, and each tag matches an API Reference page that e
 | Billing | 4 | [Billing](../api-reference/billing/) |
 | Audit | 2 | [Audit](../api-reference/audit/) |
 | Webhooks | 9 | [Webhooks](../api-reference/webhooks/) |
+| Notifications | 17 | [Push Notifications](../api-reference/notifications/) |
 | API Keys | 6 | [API Keys](../api-reference/api-keys/) |
 
 {: .decision }
 **Billing is being reworked** ([DECISIONS.md #39](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#39-subscriber-billing-api)). The four Billing operations still describe the previous Tenant-billed plans. [Pricing](../pricing/) now has two tiers, Free and Standard. Avoid building against the Billing tag until #39 is applied.
+
+{: .note }
+**Notifications are specified, not built yet.** The 17 operations under the Notifications tag are the target contract for [Push Notifications](../api-reference/notifications/). Until the reference implementation builds them, each one returns `501 not_implemented`, so build clients against the shapes, not against a live server.
 
 Some endpoints live outside `/v1` and aren't in the document's `paths`, because they follow external standards instead:
 

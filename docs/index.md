@@ -37,7 +37,7 @@ It's written to be read by people building the API **and** by AI coding tools as
 | [Quickstart](quickstart/) | A runnable curl walkthrough — create a user, grant an app, check access, turn it off. |
 | [Domain Model](domain-model/) | What are the core entities, and how do they relate? |
 | [Access Control](access-control/) | Given a user and an app, what decides if a request is allowed? |
-| [API Reference](api-reference/) | What are the actual resources, endpoints, and payloads? Includes [Auth](api-reference/auth/) (signup, login, app tokens) and [Billing](api-reference/billing/) (the Free/Standard subscription). The [OpenAPI Specification](openapi/) section renders the whole contract as interactive Swagger UI. |
+| [API Reference](api-reference/) | What are the actual resources, endpoints, and payloads? Includes [Auth](api-reference/auth/) (signup, login, app tokens), [Push Notifications](api-reference/notifications/) (alerts and updates to a User's devices, and their inbox), and [Billing](api-reference/billing/) (the Free/Standard subscription). The [OpenAPI Specification](openapi/) section renders the whole contract as interactive Swagger UI. |
 | [OpenAPI Specification](openapi/) | The full contract as OpenAPI 3.1: interactive Swagger UI, download, client generation, and how to read it. |
 | [Workflows](workflows/) | How do the pieces move together for real scenarios — a purchase, an admin revoking access, a role change? |
 | [Trust Model](trust-model/) | How does a separately-hosted app verify a user's access without maintaining its own user table? |

@@ -61,6 +61,10 @@ Every resource ID is prefixed by type. Most are the prefix plus a ULID (26 Crock
 | `ses_` | Session — see [Auth → Sessions](../auth/#sessions) |
 | `wev_` | Webhook event (one delivered event payload) — see [Webhooks](../webhooks/#delivery). Distinct from `evt_`, an Audit Event. |
 | `dlv_` | Webhook delivery attempt — see [Webhooks](../webhooks/#delivery-log) |
+| `dvc_` | Device (a push-notification endpoint) — see [Push Notifications](../notifications/#devices) |
+| `pcr_` | Push credential — see [Push Notifications](../notifications/#push-credentials) |
+| `ntf_` | Notification — see [Push Notifications](../notifications/#sending-a-notification) |
+| `ndl_` | Notification delivery (one push to one device) — see [Push Notifications](../notifications/#get-v1usersidnotificationsnotificationid) |
 
 An [Erasure request](../users/#post-v1usersiderasure-requests) has no id of its own: there's at most one per User, so it's addressed by the User's id (`/v1/users/{id}/erasure-requests/current`).
 
@@ -134,6 +138,9 @@ List endpoints that support filtering take plain query parameters named after th
 | Organization member | **Hard.** The [OrganizationMembership](../../domain-model/users-and-organizations/#organizationmembership) join row is removed outright, whether it was `pending` or `active`. Membership has no "soft-removed" state of its own. |
 | Role assignment | **Hard.** The [UserRoleAssignment](../../domain-model/roles-and-permissions/#userroleassignment) join row is removed outright; idempotent (removing an already-gone assignment still returns `204`). |
 | [Webhook](../webhooks/) subscription | **Hard.** Unsubscribing removes the subscription and its delivery log. Deliveries already in the retry queue are dropped, and nothing new is enqueued. |
+| [Device](../notifications/#devices) | **Hard.** Unregistering removes the Device and drops its pending deliveries. Past deliveries keep their record with `device_id: null`. |
+| [Push credential](../notifications/#push-credentials) | **Hard.** The encrypted key material is deleted. Devices are kept, except `web_push` devices, which become `inactive` because their subscriptions are bound to the deleted key. |
+| [Notification](../notifications/#the-inbox) | No `DELETE` endpoint. A User archives one with `PATCH state: archived`, and every notification is deleted 90 days after it was sent. |
 | [Application](../applications/), [Organization](../organizations/), [Role](../roles-and-permissions/) (the definition), [Tenant](../tenancy/) | **No `DELETE` endpoint at all.** Each has its own terminal-but-not-deleted state instead — `review_status: suspended`/`rejected` for an Application, `status: suspended` for an Organization (via `PATCH`) — because removing the catalog/definition entry itself would orphan everything that still references it (Entitlements, Role assignments, Roles scoped to it). |
 | [Profile](../../domain-model/profiles/) | No `DELETE` endpoint. Deleted outright, but only as step 2 of the [hard-delete cascade](../../non-functional-requirements/#hard-delete-cascade) above — never independently. |
 | [AppProfile](../../domain-model/profiles/#appprofile) / [AppSettings](../../domain-model/settings/#appsettings) | No `DELETE` endpoint. The hard-delete cascade's step 3 clears personal data in place: all of an AppProfile (`display_handle` set to `null`, `custom` to `{}`), and only the `x-pii`-marked keys of AppSettings `overrides`. The rows themselves are retained even then. |
@@ -167,6 +174,7 @@ Every single-resource `GET` and every successful write returns an `ETag` header,
 | `AppProfile.custom`, `AppSettings.overrides` | 16 KB serialized each | same |
 | `member_overrides` | 1,000 user ids | same |
 | `redirect_uris` | 10 entries | same |
+| A notification's `title` / `body` / `data` | 120 characters / 1,000 characters / 20 string values in 2 KB, and the whole push payload in 4 KB | `422 validation_failed`, or `422 notification_too_large` for the payload |
 | Webhook subscriptions' `events` | every event type, no duplicates | same |
 | List `limit` | 1–100 (default 25) | values above 100 are clamped to 100, not rejected |
 

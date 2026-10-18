@@ -8,7 +8,7 @@ has_children: true
 # Domain Model
 {: .no_toc }
 
-Ten core nouns, each small on purpose — the complexity in this system is in how they relate, not in any single one's field list — plus nine supporting join, credential, and request records that make the many-to-many relationships, multi-method auth, and support workflows actually work without a bigger table.
+Ten core nouns, each small on purpose — the complexity in this system is in how they relate, not in any single one's field list — plus twelve supporting join, credential, and request records that make the many-to-many relationships, multi-method auth, and support workflows actually work without a bigger table.
 {: .fs-6 .fw-300 }
 
 ## Overview
@@ -41,6 +41,9 @@ Each of these is a join or credential record behind one of the relationships abo
 | [ErasureRequest](../api-reference/users/#post-v1usersiderasure-requests) | User ↔ erasure | A scheduled right-to-erasure request: at most one per User, run 7 days after it's made. |
 | [Webhook subscription](../api-reference/webhooks/) | Application (or the platform) ↔ endpoint | Where an Application's events (or, for a `platform` subscription, every event) are delivered, plus the delivery log. |
 | [API Key](../api-reference/api-keys/) | Application (or the platform) ↔ service | A long-lived credential for a backend or agent, scoped to one Application or to the platform, with no User behind it. |
+| [Device](notifications/#device) | User ↔ Application install | One install of an Application, signed in as one User, with the APNs, FCM, or Web Push token that reaches it. See [Notifications](notifications/). |
+| [PushCredential](notifications/#pushcredential) | Application ↔ push provider | An Application's own APNs key, FCM service account, or Web Push key pair, which the platform signs its pushes with. |
+| [Notification](notifications/#notification) | User ↔ message | One alert or update to one User, from an Application or the platform: the unit of sending, and the User's inbox item. Its per-device [deliveries](notifications/#notificationdelivery) are the push outbox. |
 
 ## How they relate
 
@@ -71,12 +74,16 @@ erDiagram
     USER ||--o{ AUDIT_EVENT : "is target of"
     APPLICATION ||--o{ API_KEY : "scopes (app keys)"
     APPLICATION ||--o{ WEBHOOK_SUBSCRIPTION : "scopes (app subscriptions)"
+    USER ||--o{ DEVICE : "signs in on"
+    APPLICATION ||--o{ DEVICE : "installed as"
+    APPLICATION ||--o{ PUSH_CREDENTIAL : configures
+    USER ||--o{ NOTIFICATION : receives
 ```
 
 The relationship worth internalizing before reading further: **Entitlement and Role are independent axes.** Entitlement answers "can this user reach this app at all, right now." Role answers "once inside, what can they do." See [Access Control](../access-control/) for how the two combine on every request.
 
 ## ID format
 
-Every entity has an opaque, stable `id`, prefixed by type for readability (a Stripe-style convention): `usr_`, `uid_`, `ssc_`, `ses_`, `org_`, `tnt_`, `tcr_`, `app_`, `role_`, `ent_`, `evt_`, `whk_`, `wev_`, `dlv_`, `key_`. Most are the prefix plus a ULID. IDs are never reused and never encode meaning beyond the type prefix, with two deliberate exceptions: an Application's id is `app_<slug>` and a Role's is derived from its scope and name. See [Conventions → IDs](../api-reference/conventions/#ids).
+Every entity has an opaque, stable `id`, prefixed by type for readability (a Stripe-style convention): `usr_`, `uid_`, `ssc_`, `ses_`, `org_`, `tnt_`, `tcr_`, `app_`, `role_`, `ent_`, `evt_`, `whk_`, `wev_`, `dlv_`, `key_`, `dvc_`, `pcr_`, `ntf_`, `ndl_`. Most are the prefix plus a ULID. IDs are never reused and never encode meaning beyond the type prefix, with two deliberate exceptions: an Application's id is `app_<slug>` and a Role's is derived from its scope and name. See [Conventions → IDs](../api-reference/conventions/#ids).
 
 Building the actual database, not just calling the API? [Database Schema](database-schema/) has the Postgres-level types, constraints, and indexes behind every entity above.
