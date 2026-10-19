@@ -222,8 +222,8 @@ func TestFCM(t *testing.T) {
 	tokenCalls := 0
 	var msg map[string]any
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch {
-		case r.URL.Path == "/token":
+		switch r.URL.Path {
+		case "/token":
 			tokenCalls++
 			_ = r.ParseForm()
 			if r.Form.Get("grant_type") != "urn:ietf:params:oauth:grant-type:jwt-bearer" || strings.Count(r.Form.Get("assertion"), ".") != 2 {
@@ -232,7 +232,7 @@ func TestFCM(t *testing.T) {
 				return
 			}
 			_, _ = w.Write([]byte(`{"access_token":"ya29.test","expires_in":3600}`))
-		case r.URL.Path == "/v1/projects/proj-1/messages:send":
+		case "/v1/projects/proj-1/messages:send":
 			if r.Header.Get("Authorization") != "Bearer ya29.test" {
 				w.WriteHeader(401)
 				return
