@@ -1,0 +1,70 @@
+{
+  "mark": {
+    "light": {
+      "A": "#E0457B",
+      "B": "#3D3BB8",
+      "C": "#8DBF2E",
+      "G": "#1A1838"
+    },
+    "on-dark": {
+      "A": "#FF86AE",
+      "B": "#8E8CFF",
+      "C": "#C4EE6C",
+      "G": "#FFFFFF"
+    },
+    "_roles": {
+      "A": "cap + runner + runner nodes (pink)",
+      "B": "root strand 1 (indigo)",
+      "C": "root strand 2 (lime)",
+      "G": "ground line (ink / white on dark)"
+    }
+  },
+  "wordmark": {
+    "light": {
+      "br": "#E2674A",
+      "sub": "#10272A",
+      "st": "#137C7A",
+      "dia": "#C9A26A",
+      "apps": "#10272A"
+    },
+    "on-dark": {
+      "br": "#FF9A80",
+      "sub": "#FFFFFF",
+      "st": "#55CFC9",
+      "dia": "#EBCB95",
+      "apps": "#FFFFFF"
+    },
+    "_roles": {
+      "br": "[ ] brackets (coral)",
+      "sub": "'sub' (ink)",
+      "st": "'stratal' (teal)",
+      "dia": "\u25c6 (sand)",
+      "apps": "'apps' at 85 % opacity"
+    }
+  },
+  "surfaces": {
+    "icon-tint": "#E8E8F7",
+    "paper": "#F3F3FA",
+    "night": "#15132E",
+    "ink": "#1A1838"
+  },
+  "type": {
+    "family": "JetBrains Mono",
+    "wordmark-weight": 700,
+    "descriptor-weight": 500,
+    "tracking-em": -0.03,
+    "note": "Wordmark ships as outlined paths \u2014 never re-set it in live text."
+  },
+  "geometry": {
+    "grid": "64\u00d764",
+    "stroke": 3,
+    "crossing-gap": 2.2,
+    "small-mark-at-or-below-px": 24,
+    "clear-space": "\u00bc of mark height on every side",
+    "min-size": {
+      "mark-px": 16,
+      "lockup-horizontal-width-px": 120,
+      "lockup-inline-height-px": 20
+    }
+  }
+}

@@ -1,0 +1,6 @@
+<!-- inside <component> in com.substratalapps.Hub.metainfo.xml -->
+<icon type="stock">com.substratalapps.Hub</icon>
+<branding>
+  <color type="primary" scheme_preference="light">#E8E8F7</color>
+  <color type="primary" scheme_preference="dark">#15132E</color>
+</branding>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <color name="brand_pink">#E0457B</color>
+  <color name="brand_indigo">#3D3BB8</color>
+  <color name="brand_lime">#8DBF2E</color>
+  <color name="brand_ink">#1A1838</color>
+  <color name="wordmark_coral">#E2674A</color>
+  <color name="wordmark_teal">#137C7A</color>
+  <color name="wordmark_sand">#C9A26A</color>
+  <color name="icon_tint">#E8E8F7</color>
+  <color name="icon_night">#15132E</color>
+</resources>

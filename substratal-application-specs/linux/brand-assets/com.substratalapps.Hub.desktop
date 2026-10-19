@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Substratal
+Comment=Your Substratal apps, organizations and access
+Exec=substratal-hub %U
+Icon=com.substratalapps.Hub
+Terminal=false
+Type=Application
+Categories=Office;Network;
+MimeType=x-scheme-handler/substratal;
+StartupNotify=true

@@ -1,0 +1,62 @@
+<!-- Indigo Root (light) — generated from shared/themes/themes.json -->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Color x:Key="SystemAccentColor">#3D3BB8</Color>
+    <Color x:Key="SystemAccentColorLight1">#6E6CCA</Color>
+    <Color x:Key="SystemAccentColorLight2">#9E9DDC</Color>
+    <Color x:Key="SystemAccentColorLight3">#C5C4EA</Color>
+    <Color x:Key="SystemAccentColorDark1">#3D3BB8</Color>
+    <Color x:Key="SystemAccentColorDark2">#2C2A8F</Color>
+    <Color x:Key="SystemAccentColorDark3">#222065</Color>
+    <Color x:Key="TextOnAccentFillColorPrimary">#FFFFFF</Color>
+    <Color x:Key="TextFillColorPrimary">#1A1838</Color>
+    <Color x:Key="TextFillColorSecondary">#5D5B78</Color>
+    <Color x:Key="TextFillColorTertiary">#9F9EAB</Color>
+    <Color x:Key="SolidBackgroundFillColorBase">#F4F4FA</Color>
+    <Color x:Key="LayerFillColorDefault">#FFFFFF</Color>
+    <Color x:Key="CardBackgroundFillColorDefault">#FFFFFF</Color>
+    <Color x:Key="DividerStrokeColorDefault">#DEDEEB</Color>
+    <Color x:Key="ControlFillColorDefault">#EFEFF1</Color>
+    <Color x:Key="SubstratalBackground">#F4F4FA</Color>
+    <Color x:Key="SubstratalSidebar">#EBEBF5</Color>
+    <Color x:Key="SubstratalSurface">#F7F7FC</Color>
+    <Color x:Key="SubstratalRaised">#FFFFFF</Color>
+    <Color x:Key="SubstratalText">#1A1838</Color>
+    <Color x:Key="SubstratalTextSecondary">#5D5B78</Color>
+    <Color x:Key="SubstratalTextTertiary">#9F9EAB</Color>
+    <Color x:Key="SubstratalSeparator">#DEDEEB</Color>
+    <Color x:Key="SubstratalAccent">#3D3BB8</Color>
+    <Color x:Key="SubstratalAccentStrong">#2C2A8F</Color>
+    <Color x:Key="SubstratalOnAccent">#FFFFFF</Color>
+    <Color x:Key="SubstratalAccentSubtle">#E6E6FA</Color>
+    <Color x:Key="SubstratalLink">#3D3BB8</Color>
+    <Color x:Key="SubstratalSelection">#E6E6FA</Color>
+    <Color x:Key="SubstratalControlFill">#EFEFF1</Color>
+    <Color x:Key="SubstratalControlFillStrong">#E4E3E7</Color>
+    <Color x:Key="SubstratalFocusRing">#3D3BB8</Color>
+    <SolidColorBrush x:Key="SubstratalBackgroundBrush" Color="{StaticResource SubstratalBackground}"/>
+    <SolidColorBrush x:Key="SubstratalSidebarBrush" Color="{StaticResource SubstratalSidebar}"/>
+    <SolidColorBrush x:Key="SubstratalSurfaceBrush" Color="{StaticResource SubstratalSurface}"/>
+    <SolidColorBrush x:Key="SubstratalRaisedBrush" Color="{StaticResource SubstratalRaised}"/>
+    <SolidColorBrush x:Key="SubstratalTextBrush" Color="{StaticResource SubstratalText}"/>
+    <SolidColorBrush x:Key="SubstratalTextSecondaryBrush" Color="{StaticResource SubstratalTextSecondary}"/>
+    <SolidColorBrush x:Key="SubstratalTextTertiaryBrush" Color="{StaticResource SubstratalTextTertiary}"/>
+    <SolidColorBrush x:Key="SubstratalSeparatorBrush" Color="{StaticResource SubstratalSeparator}"/>
+    <SolidColorBrush x:Key="SubstratalAccentBrush" Color="{StaticResource SubstratalAccent}"/>
+    <SolidColorBrush x:Key="SubstratalAccentStrongBrush" Color="{StaticResource SubstratalAccentStrong}"/>
+    <SolidColorBrush x:Key="SubstratalOnAccentBrush" Color="{StaticResource SubstratalOnAccent}"/>
+    <SolidColorBrush x:Key="SubstratalAccentSubtleBrush" Color="{StaticResource SubstratalAccentSubtle}"/>
+    <SolidColorBrush x:Key="SubstratalLinkBrush" Color="{StaticResource SubstratalLink}"/>
+    <SolidColorBrush x:Key="SubstratalSelectionBrush" Color="{StaticResource SubstratalSelection}"/>
+    <SolidColorBrush x:Key="SubstratalControlFillBrush" Color="{StaticResource SubstratalControlFill}"/>
+    <SolidColorBrush x:Key="SubstratalControlFillStrongBrush" Color="{StaticResource SubstratalControlFillStrong}"/>
+    <SolidColorBrush x:Key="SubstratalFocusRingBrush" Color="{StaticResource SubstratalFocusRing}"/>
+    <SolidColorBrush x:Key="TextOnAccentFillColorPrimaryBrush" Color="{StaticResource TextOnAccentFillColorPrimary}"/>
+    <SolidColorBrush x:Key="TextFillColorPrimaryBrush" Color="{StaticResource TextFillColorPrimary}"/>
+    <SolidColorBrush x:Key="TextFillColorSecondaryBrush" Color="{StaticResource TextFillColorSecondary}"/>
+    <SolidColorBrush x:Key="TextFillColorTertiaryBrush" Color="{StaticResource TextFillColorTertiary}"/>
+    <SolidColorBrush x:Key="SolidBackgroundFillColorBaseBrush" Color="{StaticResource SolidBackgroundFillColorBase}"/>
+    <SolidColorBrush x:Key="LayerFillColorDefaultBrush" Color="{StaticResource LayerFillColorDefault}"/>
+    <SolidColorBrush x:Key="CardBackgroundFillColorDefaultBrush" Color="{StaticResource CardBackgroundFillColorDefault}"/>
+    <SolidColorBrush x:Key="DividerStrokeColorDefaultBrush" Color="{StaticResource DividerStrokeColorDefault}"/>
+    <SolidColorBrush x:Key="ControlFillColorDefaultBrush" Color="{StaticResource ControlFillColorDefault}"/>
+</ResourceDictionary>

@@ -1,0 +1,62 @@
+/* Windows 11 — Fluent 2, WinUI 3. NavigationView (Left), Mica, SettingsCard. */
+:root{--font:"Segoe UI Variable Text","Segoe UI","Noto Sans",sans-serif;--mono:"Cascadia Mono",Consolas,"JetBrains Mono",monospace;--fs:14px;
+--wall:#f3f3f3;--bg:#f3f3f3;--content-bg:rgba(255,255,255,.55);--side-bg:transparent;--text:#1b1b1b;--text2:#5d5d5d;--text3:#8a8a8a;--sep:rgba(0,0,0,.08);
+--surface:#fff;--group-r:7px;--group-border:1px solid rgba(0,0,0,.06);--row-sep:1px solid rgba(0,0,0,.06);--row-pad:13px 16px;--row-h:64px;--rtitle-w:400;
+--ghead-fs:14px;--ghead-w:600;--ghead-c:var(--text);--ghead-pad:0 2px 8px;--pad:0 36px 24px;--side-w:300px;--nav-pad:4px 4px;
+--navh-fs:14px;--navh-w:600;--navh-pad:14px 14px 6px;--navi-h:36px;--navi-px:14px;--navi-r:5px;--navi-sel-bg:rgba(0,0,0,.04);--navi-ic:16px;--navi-icc:var(--text);--navi-gap:14px;
+--btn-border:1px solid rgba(0,0,0,.07);--btn-bg:#fbfbfb;--btn-r:4px;--btn-px:12px;--btn-h:32px;--btn-h-sm:30px;--btn-px-sm:11px;--btn-w:400;--btn-shadow:inset 0 -1px 0 rgba(0,0,0,.12);
+--btn-primary-shadow:inset 0 -1px 0 rgba(0,0,0,.25);
+--sw-w:40px;--sw-h:20px;--knob:12px;--knob-inset:3px;--sw-off:transparent;--sw-border:1px solid #858585;--knob-off:#5d5d5d;--knob-shadow:none;
+--seg-bg:rgba(0,0,0,.04);--seg-r:5px;--segi-r:4px;--segi-sel-bg:#fff;--segi-sel-shadow:0 0 0 1px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.08);--segi-pad:5px 14px;
+--tabs-border:0;--tabs-gap:6px;--tab-pad:8px 12px 10px;--tab-ind-inset:calc(50% - 8px);--tab-ind-h:3px;--tab-ind-r:2px;--tab-sel-fg:var(--text);
+--chip-border:1px solid rgba(0,0,0,.08);--chip-bg:#fbfbfb;--chip-r:4px;--chip-h:32px;--chip-sel-bg:var(--accent);--chip-sel-fg:#fff;
+--search-h:32px;--search-r:4px;--search-bg:#fff;--search-border:1px solid rgba(0,0,0,.08);--search-shadow:inset 0 -1px 0 rgba(0,0,0,.4);
+--dd-border:1px solid rgba(0,0,0,.07);--dd-bg:#fbfbfb;--dd-r:4px;--dd-h:32px;--dd-shadow:inset 0 -1px 0 rgba(0,0,0,.12);
+--th-w:600;--th-fs:12px;--th-pad:9px 16px;--td-pad:10px 16px;--row-sel-bg:color-mix(in srgb,var(--accent) 8%,#fff);
+--tf-h:32px;--tf-r:4px;--tf-border:1px solid rgba(0,0,0,.08);--tf-bg:#fff;--tf-shadow:inset 0 -1px 0 rgba(0,0,0,.45);--tf-focus-border:1px solid rgba(0,0,0,.08);--tf-focus-shadow:inset 0 -2px 0 var(--accent);--tf-lw:400;
+--cb:20px;--cb-border:1px solid #858585;--cb-r:4px;
+--scrim:rgba(0,0,0,.3);--dlg-bg:#fff;--dlg-r:8px;--dlg-pad:24px 24px 0;--dlg-w:470px;--dlgt-fs:20px;--dlga-bg:#f3f3f3;--dlga-pad:24px;--dlga-mt:24px;--dlga-border:1px solid rgba(0,0,0,.06);--dlg-border:1px solid rgba(0,0,0,.08);
+--toast-bg:#fff;--toast-fg:var(--text);--toast-r:8px;--tact-bg:var(--accent);--tact-fg:#fff;--tact-r:4px;
+--ctx-bg:rgba(249,249,249,.97);--ctx-r:8px;--ctx-border:1px solid rgba(0,0,0,.1);--ctx-hover-bg:rgba(0,0,0,.05);--ctx-hover-fg:var(--text);--ctxi-h:32px;--ctx-pad:4px;--ctxi-r:4px;
+--mbar-bg:rgba(0,0,0,.1);--mbar-h:4px;--secret-bg:#f9f9f9;--tile-r:8px;--tile-cols:5;--appic-r:6px;--appic-rbig:10px;
+--dtitle-fs:20px;--dtitle-w:600;--banner-r:6px;--banner-border:1px solid rgba(0,0,0,.05);--badge-r:4px;--group-gap:24px}
+.dark{--wall:#202020;--bg:#202020;--content-bg:rgba(58,58,58,.3);--text:#fff;--text2:#c5c5c5;--sep:rgba(255,255,255,.08);--surface:#2b2b2b;--group-border:1px solid rgba(0,0,0,.2);
+--row-sep:1px solid rgba(255,255,255,.06);--navi-sel-bg:rgba(255,255,255,.06);--btn-bg:#2d2d2d;--btn-border:1px solid rgba(255,255,255,.07);--btn-shadow:none;--sw-border:1px solid #9a9a9a;--knob-off:#cfcfcf;
+--seg-bg:rgba(255,255,255,.05);--segi-sel-bg:#3a3a3a;--chip-bg:#2d2d2d;--chip-border:1px solid rgba(255,255,255,.08);--search-bg:#2d2d2d;--dd-bg:#2d2d2d;--tf-bg:#2d2d2d;--mbar-bg:rgba(255,255,255,.15);
+--dlg-bg:#2b2b2b;--dlga-bg:#202020;--ctx-bg:#2c2c2c;--toast-bg:#2c2c2c;--row-sel-bg:rgba(255,255,255,.06)}
+.win{flex-direction:column}
+.titlebar{height:48px;flex:none;display:flex;align-items:center;gap:12px;padding:0 0 0 16px;font-size:12px}
+.titlebar .appglyph{width:16px;height:16px;border-radius:3px;background:repeating-linear-gradient(180deg,var(--accent) 0 3px,var(--accent-strong) 3px 5px,#7FD6DE 5px 7px)}
+.titlebar .tsp{flex:1}
+.titlebar .search{margin:0;width:420px;height:32px;font-size:14px}
+.caps{display:flex;align-self:stretch}
+.caps span{width:46px;display:grid;place-items:center;font-size:13px;color:var(--text)}
+.wbody{flex:1;display:flex;min-height:0}
+.side .burger{height:40px;width:40px;margin:2px 4px 4px;display:grid;place-items:center;border-radius:5px}
+.side .navfoot{margin-top:auto;padding:4px;border-top:1px solid var(--sep)}
+.navi.sel:before{content:"";position:absolute;left:0;top:50%;transform:translateY(-50%);width:3px;height:16px;border-radius:2px;background:var(--accent)}
+.main{border-top-left-radius:8px;border:1px solid rgba(0,0,0,.06);border-right:0;border-bottom:0}
+.pagehead{display:flex;align-items:center;gap:10px;padding:30px 36px 18px}
+.pagehead h1{font-size:28px;font-weight:600;margin:0;line-height:1.1}
+.pagehead .crumb{font-size:28px;font-weight:600;color:var(--text2)}
+.pagehead .tsp{flex:1}
+.cmdbar{display:flex;gap:4px;align-items:center}
+/* SettingsCard stack */
+.gbody{background:transparent;border:0;overflow:visible}
+.gbody .row{background:var(--surface);border:var(--group-border);border-radius:6px;margin-bottom:3px}
+.gbody .row.sel{background:var(--row-sel-bg)}
+.lpane .gbody .row{min-height:52px;padding:8px 14px}
+.paths{background:var(--surface);border:var(--group-border);border-radius:6px;margin:-3px 0 3px;padding-left:64px}
+.swwrap{flex-direction:row}
+.swlabel{display:inline;font-size:14px}
+.sw.on .knob{width:14px;height:14px}
+.tbl{border-radius:8px}.tbl tr.sel td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
+.toast{border:1px solid rgba(0,0,0,.08);bottom:28px}
+.dlg{padding-bottom:0;overflow:hidden}
+.dlga{margin-left:-24px;margin-right:-24px}
+.dlga .btn{flex:1}
+.dlgic{display:none}
+.chip .ic{display:none}
+.split .lpane{width:320px}
+.plancard,.inspector{border-radius:8px}
+.ctx{left:440px!important;top:300px!important}

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Default theme colours for XML (splash, widgets, system bars). Compose uses SubstratalThemes.kt. -->
+<resources>
+  <color name="sub_background">#10150F</color>
+  <color name="sub_sidebar">#151C14</color>
+  <color name="sub_surface">#1A2219</color>
+  <color name="sub_raised">#1F291E</color>
+  <color name="sub_text">#E8EFE2</color>
+  <color name="sub_text_secondary">#9DAA95</color>
+  <color name="sub_text_tertiary">#737C70</color>
+  <color name="sub_separator">#2C3929</color>
+  <color name="sub_accent">#B8E26A</color>
+  <color name="sub_accent_strong">#D3F09A</color>
+  <color name="sub_on_accent">#1A2608</color>
+  <color name="sub_accent_subtle">#2C3B19</color>
+  <color name="sub_link">#B8E26A</color>
+  <color name="sub_selection">#2C3B19</color>
+  <color name="sub_control_fill">#2D372C</color>
+  <color name="sub_control_fill_strong">#374136</color>
+  <color name="sub_focus_ring">#B8E26A</color>
+</resources>

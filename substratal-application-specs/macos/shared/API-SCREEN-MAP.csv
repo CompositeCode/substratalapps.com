@@ -1,0 +1,119 @@
+method,path,summary,screens
+GET,/v1/health,Health check,GLB-03
+POST,/v1/auth/signup,Create an account with email and password,AUTH-03
+POST,/v1/auth/login,Exchange email and password for a session (or an MFA challenge),AUTH-01
+POST,/v1/auth/mfa/verify,Complete a login that returned an MFA challenge,AUTH-02
+POST,/v1/auth/token/refresh,Rotate a platform refresh token for a new access token,GLB-03
+POST,/v1/auth/logout,"Revoke the current session, or every session",ACC-01 GLB-03
+POST,/v1/auth/app-tokens,Mint a per-app JWT from a platform session (embedded login),APP-03
+POST,/v1/auth/oauth/authorization-codes,Mint a one-time authorization code for a hosted launch (PKCE),APP-03
+POST,/v1/auth/oauth/token,Exchange an authorization code or app refresh token for an app token,"(called by the launched Application, not the Hub; see APP-03)"
+POST,/v1/auth/email/verify,Confirm an email address from an emailed token,AUTH-04
+POST,/v1/auth/email/verify/resend,Re-send a verification email (always 202),AUTH-04
+POST,/v1/auth/password/forgot,Send a password-reset email (always 202),AUTH-05
+POST,/v1/auth/password/reset,Set a new password from a reset token (revokes every session),AUTH-06
+POST,/v1/auth/invitations/accept,"Set a password on an invited account, activate it, and sign in",AUTH-07
+POST,/v1/auth/sso/{provider}/callback,Complete an SSO login (reserved — 501 until the broker integration ships),AUTH-01
+POST,/v1/users/{id}/password,Change password given the current one (self only),ACC-03
+POST,/v1/users/{id}/mfa/totp,Begin TOTP enrollment (self only),ACC-05
+DELETE,/v1/users/{id}/mfa/totp,Support reset of a user's TOTP (requires users.manage),USR-03
+POST,/v1/users/{id}/mfa/totp/confirm,Confirm TOTP enrollment with a first code; returns recovery codes once,ACC-05
+POST,/v1/users/{id}/mfa/totp/disable,Turn TOTP off given a current code or recovery code (self only),ACC-06
+GET,/v1/users/{id}/sessions,List active sessions (self or users.manage),ACC-04 USR-04
+DELETE,/v1/users/{id}/sessions/{sessionId},Revoke one session,ACC-04 USR-04
+GET,/v1/users,List or search users,USR-01 NTF-06 GLB-01
+POST,/v1/users,Create (invite) a user,USR-02
+GET,/v1/users/{id},Fetch one user,ACC-01 ACC-04 APP-01 USR-03
+PATCH,/v1/users/{id},"Update email (self, pending verification) or status (users.manage)",ACC-02 USR-03
+DELETE,/v1/users/{id},Soft-delete a user (self or users.manage),USR-03
+POST,/v1/users/{id}/suspend,Suspend a user (users.manage),USR-05
+POST,/v1/users/{id}/invitation,Re-send the invitation email to an invited user (users.manage),USR-03
+GET,/v1/users/{id}/export,Export everything this API holds about this user,ACC-07 USR-03
+POST,/v1/users/{id}/erasure-requests,"Request right-to-erasure (soft-delete now, hard-delete cascade in 7 days)",ACC-08
+DELETE,/v1/users/{id}/erasure-requests/current,Cancel a scheduled erasure inside its 7-day window (users.manage),USR-03
+GET,/v1/users/{id}/profile,Fetch global Profile,ACC-01 USR-03
+PATCH,/v1/users/{id}/profile,Update global Profile (self or users.manage),ACC-01
+GET,/v1/users/{id}/settings,"Fetch global Settings (self, or platform users.list)",SET-01 NTF-03
+PATCH,/v1/users/{id}/settings,Update global Settings (self or users.manage),SET-01
+GET,/v1/users/{id}/apps/{appId}/profile,"Fetch per-app AppProfile (self, the app's own key, or platform users.list; defaults if none written yet)",APP-04
+PATCH,/v1/users/{id}/apps/{appId}/profile,Update per-app AppProfile (custom is merged one level; null removes a key),APP-04
+GET,/v1/users/{id}/apps/{appId}/settings,"Fetch fully resolved per-app settings (self, the app's own key, or platform users.list)",SET-02 SET-01
+PATCH,/v1/users/{id}/apps/{appId}/settings,Write per-app overrides (validated against settings_schema; null clears),SET-02 SET-01
+GET,/v1/applications,List the catalog (filtered by visibility rules),APP-01 ACX-01 APL-01 BIL-01 NTF-01
+POST,/v1/applications,Register an Application (applications.manage),APL-02
+GET,/v1/applications/{id},Fetch one Application,APP-02 SET-02 APL-03
+PATCH,/v1/applications/{id},Update a catalog entry (owner — configuration; applications.manage — anything),APL-03 APL-04 APL-05 APL-06
+GET,/v1/users/{id}/entitlements,"A user's entitlements, personal and org-sourced",APP-01 APP-05 ACX-01
+POST,/v1/users/{id}/entitlements,Grant a personal Entitlement,ACX-02
+GET,/v1/entitlements,List entitlements across users (entitlements.manage or the Application's owner; app keys and owners confined),ACX-05
+GET,/v1/entitlements/{id},Fetch one entitlement,ACX-03
+PATCH,/v1/entitlements/{id},"The toggle: change status, term, source (trial→purchase), order_id, or an org grant's member scope",ORG-06 ORG-07 ACX-01 ACX-03
+DELETE,/v1/entitlements/{id},"Hard-remove a grant made in error (no order_id, under 24 hours old)",ACX-01
+GET,/v1/permissions,List every Permission key the caller can see,ROL-01 ROL-02
+GET,/v1/roles,List Roles,ROL-01
+POST,/v1/roles,Define a Role,ROL-03
+GET,/v1/roles/{id},Fetch one Role,ROL-02
+PATCH,/v1/roles/{id},Change a Role's permissions or description,ROL-02
+DELETE,/v1/roles/{id},"Delete an unassigned, non-seed Role",ROL-02
+GET,/v1/users/{id}/roles,List a user's Role assignments (including implicit default_app_role),ROL-04
+POST,/v1/users/{id}/roles/{roleId},Assign a Role (idempotent — 200 if already held),ROL-04
+DELETE,/v1/users/{id}/roles/{roleId},Remove a Role assignment (idempotent),ROL-04
+GET,/v1/users/{id}/apps/{appId}/effective-permissions,The live access check (always 200),APP-02 ACX-04
+GET,/v1/organizations,"List your Organizations (all, with organizations.manage)",APP-01 ORG-01
+POST,/v1/organizations,Create an Organization (any active User; caller becomes org_admin),ORG-02
+GET,/v1/organizations/{id},Fetch one Organization,ORG-03
+PATCH,/v1/organizations/{id},"Rename (org admin), or suspend/reactivate (organizations.manage)",ORG-08
+GET,/v1/organizations/{id}/members,List members,ORG-03 BIL-02
+POST,/v1/organizations/{id}/members,"Invite a member by email (org admin), or add one directly by user_id (organizations.manage)",ORG-04
+POST,/v1/organizations/{id}/members/me/accept,Accept a pending membership (the invited User's own token),ORG-09
+PATCH,/v1/organizations/{id}/members/{userId},Change a member's role,ORG-05
+DELETE,/v1/organizations/{id}/members/{userId},Remove a member or withdraw an invitation; or leave or decline (userId = me),ORG-05 ORG-08 ORG-09
+GET,/v1/organizations/{id}/entitlements,List org-wide (seat) grants,ORG-06
+POST,/v1/organizations/{id}/entitlements,Grant an app to the whole Organization,ORG-07
+GET,/v1/tenants,List Tenants (your own; all with tenants.manage),BIL-04
+GET,/v1/tenants/{id},Fetch one Tenant,BIL-04
+GET,/v1/tenants/{id}/tier-change-requests,List tier-change requests for a Tenant,BIL-04
+POST,/v1/tenants/{id}/tier-change-requests,Open a tier-change request on a customer's behalf (tenants.manage),BIL-04
+GET,/v1/tenants/{id}/tier-change-requests/{requestId},Fetch one tier-change request,BIL-04
+PATCH,/v1/tenants/{id}/tier-change-requests/{requestId},"Schedule, start, complete, or cancel a tier-change request (tenants.manage)",BIL-04
+GET,/v1/users/{id}/subscription,"A User's plan, what covers it, and their own subscription (self or billing.manage)",USR-03 BIL-01
+POST,/v1/users/me/billing/checkout-sessions,Start a Stripe Checkout to subscribe yourself to Standard (User token),BIL-03
+POST,/v1/users/me/billing/portal-sessions,Open the Stripe Customer Portal for your own subscription (User token),BIL-03
+GET,/v1/organizations/{id}/subscription,An Organization's plan and Standard subscription (org admin or billing.manage),BIL-02
+PATCH,/v1/organizations/{id}/subscription,Choose which members the Organization's subscription covers (org admin),BIL-02
+POST,/v1/organizations/{id}/billing/checkout-sessions,"Start a Stripe Checkout to subscribe the Organization to Standard (org admin, User token)",BIL-03
+POST,/v1/organizations/{id}/billing/portal-sessions,"Open the Stripe Customer Portal for the Organization's subscription (org admin or billing.manage, User token)",BIL-03
+GET,/v1/audit-events,Query the audit log (hot window only),KEY-04 AUD-01
+GET,/v1/audit-events/{id},Fetch one Audit Event,AUD-02
+GET,/v1/webhooks,List subscriptions visible to the caller,WHK-01
+POST,/v1/webhooks,Subscribe a URL to event types,WHK-02
+GET,/v1/webhooks/{id},Fetch one subscription,WHK-03
+PATCH,/v1/webhooks/{id},"Change url, events, description, api_version, or re-enable",WHK-02
+DELETE,/v1/webhooks/{id},Unsubscribe,WHK-03
+POST,/v1/webhooks/{id}/rotate-secret,Issue a new signing secret (24-hour overlap),WHK-03
+POST,/v1/webhooks/{id}/test,Send a webhook.test event now,WHK-03
+GET,/v1/webhooks/{id}/deliveries,Recent delivery attempts (30-day log),WHK-03
+POST,/v1/webhooks/{id}/deliveries/{deliveryId}/redeliver,Re-send one past event (same event id),WHK-03
+GET,/v1/applications/{id}/push-credentials,"List the push providers an Application has configured (the owner, the app's own key, or applications.manage)",APL-07
+POST,/v1/applications/{id}/push-credentials,"Configure one push provider (the owner or applications.manage, User token only)",APL-07
+GET,/v1/applications/{id}/push-credentials/{provider},Fetch one provider's configuration,APL-07
+PATCH,/v1/applications/{id}/push-credentials/{provider},"Replace key material, change non-secret fields, or re-enable a failed credential (User token only)",APL-07
+DELETE,/v1/applications/{id}/push-credentials/{provider},Remove a push provider (User token only),APL-07
+GET,/v1/users/{id}/devices,"List a User's push devices (self, the app's own key, or users.list)",NTF-03 NTF-05
+POST,/v1/users/{id}/devices,"Register a push device, or refresh an existing registration (self or the app's own key)",NTF-04
+GET,/v1/users/{id}/devices/{deviceId},Fetch one device,NTF-05
+PATCH,/v1/users/{id}/devices/{deviceId},"Update a device's name, app version, environment, or rotated token (self or the app's own key)",NTF-03 NTF-04
+DELETE,/v1/users/{id}/devices/{deviceId},"Unregister a device (self, the app's own key, or users.manage)",NTF-03 NTF-05
+POST,/v1/users/{id}/devices/{deviceId}/test,Send a test push to one device and wait for the provider's answer (self or the app's own key),NTF-03
+GET,/v1/users/{id}/notifications,"List a User's notification inbox (self, the app's own key, or users.list)",NTF-01 NTF-05
+POST,/v1/users/{id}/notifications,"Send one notification to one User (the app's own key with notifications.send, or platform notifications.send)",NTF-06
+GET,/v1/users/{id}/notifications/unread-count,"Count unread notifications, in total and per Application (self or the app's own key)",APP-01 NTF-01 GLB-03
+POST,/v1/users/{id}/notifications/mark-read,Mark every unread notification matching the filters as read (self or the app's own key),NTF-01
+GET,/v1/users/{id}/notifications/{notificationId},"Fetch one notification, with its per-device deliveries",NTF-02 NTF-05
+PATCH,/v1/users/{id}/notifications/{notificationId},"Mark one notification read, unread, or archived (self or the app's own key)",NTF-01 NTF-02
+GET,/v1/api-keys,List keys the caller may manage,KEY-01
+POST,/v1/api-keys,"Create a key (api_keys.manage, or the Application's owner for an app-scoped key)",KEY-02
+GET,/v1/api-keys/{id},Fetch one key (never the secret),KEY-04
+PATCH,/v1/api-keys/{id},"Change name, permissions, or restrict_destructive",KEY-04
+DELETE,/v1/api-keys/{id},Revoke permanently,KEY-04
+POST,/v1/api-keys/{id}/rotate,"Issue a new secret, invalidating the old one immediately (no overlap)",KEY-04

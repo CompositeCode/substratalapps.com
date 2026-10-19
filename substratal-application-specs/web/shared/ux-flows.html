@@ -1,0 +1,142 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Substratal UX Flows</title>
+<style>:root{color-scheme:light dark}body{font:15px/1.5 system-ui,sans-serif;max-width:980px;margin:0 auto;padding:24px}h2{margin-top:40px;border-top:1px solid #8884;padding-top:20px}.li{margin:4px 0}pre.mermaid{background:#8881;border-radius:12px;padding:16px;overflow:auto}</style>
+<script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";mermaid.initialize({startOnLoad:true});</script>
+</head><body><p><em>Diagrams render with Mermaid (needs internet); offline SVGs are in flows/. Source: UX-FLOWS.md.</em></p><h1>UX Flows</h1><p>Screen IDs in brackets refer to `SCREEN-SPECS.md`. Flow → screens: F1 AUTH-03/04 · F2 AUTH-01/02/05/06 · F3 APP-01/02/03 · F4 ACC-04/05/06 · F5 ACC-07/08 · F6 USR-01/03, ACX-01..04 · F7 ROL-01..04 · F8 ORG-01..09 · F9 APL-02/03, KEY-02/03, WHK-02/03 · F10 BIL-01/03 · F11 AUD-01/02 · F12 NTF-04/03 · F13 NTF-01/02, ORG-09 · F14 BIL-02/03, ORG-03 · F15 APL-07, NTF-03 · F16 NTF-05/06.</p><p>Each flow lists the screens, the API calls behind each step, and the branches the UI must handle. Diagrams are Mermaid (render in GitHub, VS Code, or open `ux-flows.html` in this folder).</p><h2>F1 · First run: sign up → verify → home</h2><pre class="mermaid">flowchart TD
+  A[Welcome] --&gt;|Create account| B[Sign up form]
+  A --&gt;|Sign in| L[Sign in]
+  A -.-&gt;|Opened from invite link| INV[Accept invitation]
+  B --&gt;|POST /auth/signup| C{201}
+  C --&gt;|session issued| D[Check your email screen]
+  D --&gt;|Resend · POST /auth/email/verify/resend 202| D
+  D --&gt;|deep link token · POST /auth/email/verify| E[Email verified ✓]
+  E --&gt; H[Home · My Apps]
+  C --&gt;|422 validation_failed| B
+  INV --&gt;|POST /auth/invitations/accept| H
+</pre><p class="li">• Signup returns a session immediately; unverified users reach Home with a persistent &quot;Verify your email&quot; banner.</p><p class="li">• Every new account is on **Free** with access to every free app (platform-managed `free` entitlements); standard apps show as &quot;Included with Standard&quot;.</p><p class="li">• Password field: show strength meter, show/hide toggle, platform password-manager autofill (`textContentType=.newPassword`, `autocomplete=&quot;new-password&quot;`).</p><h2>F2 · Sign in with MFA and session upkeep</h2><pre class="mermaid">flowchart TD
+  L[Sign in] --&gt;|POST /auth/login| R{response}
+  R --&gt;|session| H[Home]
+  R --&gt;|mfa challenge + methods| M[Two-factor code]
+  M --&gt;|POST /auth/mfa/verify| H
+  M --&gt;|Use a recovery code| MR[Recovery code entry] --&gt; H
+  R --&gt;|401 unauthenticated| L
+  R --&gt;|429 rate_limited| W[Wait message w/ Retry-After] --&gt; L
+  L --&gt;|Forgot password| FP[Email entry] --&gt;|POST /auth/password/forgot 202| FS[If an account exists, we sent a link]
+  FS -.-&gt;|deep link| RP[New password] --&gt;|POST /auth/password/reset| SO[Signed out everywhere notice] --&gt; L
+  H -.-&gt;|access token 15 min; refresh in background| RT[POST /auth/token/refresh]
+  RT -.-&gt;|401 session_revoked| L
+</pre><p class="li">• MFA challenge expires (`expires_in` ≈ 300 s): show a quiet countdown; on expiry return to Sign in with message.</p><p class="li">• Store refresh token in the platform secure store only (Keychain, Credential Locker/DPAPI, Android Keystore-backed EncryptedSharedPreferences/DataStore, libsecret).</p><p class="li">• Offer biometric unlock to re-open the app (Touch ID/Face ID, Windows Hello, BiometricPrompt, — on Linux, OS keyring unlock) — this gates access to the stored refresh token; it is not a server auth factor.</p><h2>F3 · Launch an app (the MVP happy path)</h2><pre class="mermaid">flowchart TD
+  H[Home · My Apps] --&gt;|GET /applications + GET /users/me/entitlements| G[Grid of tiles w/ resolved status]
+  G --&gt;|tap active tile| X{launch mode}
+  X --&gt;|embedded| T[POST /auth/app-tokens] --&gt; O[Open launch_url with app token&lt;br/&gt;in-app browser / system browser]
+  X --&gt;|hosted PKCE, Phase 3| P[POST /auth/oauth/authorization-codes] --&gt; O
+  G --&gt;|disabled/expired tile| I[Info sheet: why + who to contact]
+  G --&gt;|none + public| GA[Get access → app&#x27;s own page]
+  G --&gt;|long-press / right-click| CM[Context menu: App settings · App profile · Copy app ID]
+</pre><p class="li">• Tile ordering: Recently launched, then alphabetical. Pin/favorite is client-side only.</p><p class="li">• App token TTL is 5 minutes — mint at tap time, never cache.</p><h2>F4 · Account security: enable two-factor</h2><pre class="mermaid">flowchart LR
+  S[Account › Security] --&gt;|Turn on| E[POST /users/me/mfa/totp] --&gt; Q[QR + secret, Copy / open in authenticator]
+  Q --&gt; C[Enter 6-digit code] --&gt;|POST …/totp/confirm| RC[Recovery codes — shown once]
+  RC --&gt;|Copy · Save · Print| D[Done — I&#x27;ve saved them]
+  D --&gt; S
+  S --&gt;|Turn off| OFF[Enter code or recovery code] --&gt;|POST …/totp/disable| S
+</pre><p class="li">• Recovery-code screen blocks dismissal until &quot;I&#x27;ve saved these&quot; is checked.</p><p class="li">• Sessions list: current device marked &quot;This device&quot;; &quot;Sign out of all other sessions&quot; revokes each other session (`DELETE /users/me/sessions/{id}`), which also deactivates their push devices.</p><p class="li">• Turning 2FA off raises a `security.mfa_disabled` platform alert to every Hub device (F13).</p><h2>F5 · Delete my account / export my data</h2><pre class="mermaid">flowchart LR
+  P[Account › Privacy] --&gt;|Download my data| X[GET /users/me/export] --&gt; SV[Save file dialog / share sheet]
+  P --&gt;|Delete account| W[Warning: 7-day window, what is erased] --&gt; TY[Type DELETE to confirm] --&gt;|POST erasure-requests| SC[Scheduled for date — signed out]
+</pre><h2>F6 · Admin turns a user&#x27;s access off (and back on)</h2><pre class="mermaid">flowchart TD
+  U[Users] --&gt;|search| UD[User detail › Access tab]
+  UD --&gt;|GET /users/:id/entitlements| AL[Per-app rows: resolved status + paths]
+  AL --&gt;|toggle off on a personal path| CF[Confirm: Turn off Timetrack for Dana? reason]
+  CF --&gt;|PATCH /entitlements/:id status=disabled| AL
+  AL --&gt;|org-seat path still active| WN[Warning: still has access via Org Acme — manage seat grant]
+  AL --&gt;|Why?| EP[GET effective-permissions → inspector sheet]
+  AL --&gt;|Grant access| GR[Grant sheet: app, source, starts/ends] --&gt;|POST /users/:id/entitlements| AL
+</pre><p class="li">• Optimistic toggle with rollback on error; success toast &quot;Access turned off · Undo&quot; (Undo = PATCH back to `active`, within toast lifetime).</p><p class="li">• If the user only has access through an organization, the switch on that row is replaced by &quot;Via Acme (seat)&quot; with a link to the org&#x27;s seat grant.</p><p class="li">• `DELETE` (hard remove) appears only when eligible (developer grant, no `order_id`, &lt; 24h) as &quot;Remove grant made in error&quot;.</p><p class="li">• Platform-managed rows (`free`, `subscription`) only toggle off/on; the confirm explains the access comes with their plan and stays off until turned back on.</p><h2>F7 · Roles</h2><pre class="mermaid">flowchart LR
+  RL[Roles] --&gt; RD[Role detail: permissions checklist]
+  RL --&gt;|New role| NR[Name, scope platform/app, permissions] --&gt;|POST /roles| RD
+  RD --&gt;|Edit, non-seed only| PATCH[PATCH /roles/:id]
+  UD[User detail › Roles tab] --&gt;|Assign role| PICK[Role picker] --&gt;|POST /users/:id/roles/:roleId| UD
+</pre><h2>F8 · Organization admin</h2><pre class="mermaid">flowchart TD
+  O[Organizations] --&gt;|New| NO[Name] --&gt;|POST /organizations| OD[Org detail]
+  OD --&gt; MEM[Members tab] --&gt;|Invite by email| INV[POST /organizations/:id/members]
+  MEM --&gt;|change role / remove| MR[PATCH / DELETE member]
+  OD --&gt; SEATS[Apps &amp; Seats tab] --&gt;|Grant app to org| SG[POST /organizations/:id/entitlements]
+  SEATS --&gt;|Member scope: all / allowlist / denylist| MS[PATCH /entitlements/:id member_scope]
+  INVITEE[Invited user · Home banner] --&gt;|Accept| ACC[POST members/me/accept] --&gt; OD
+  INVITEE --&gt;|Decline| DEC[DELETE members/me]
+</pre><h2>F9 · Developer: register an app, get credentials, wire webhooks</h2><pre class="mermaid">flowchart TD
+  A[Applications] --&gt;|Register| R[Name, slug immutable, launch URL, redirect URIs, visibility]
+  R --&gt;|POST /applications| AD[App detail: Overview · Settings schema · Roles · Keys · Webhooks · Activity]
+  AD --&gt;|Create app key| K[Name, mode live/test, use service/agent, permissions, restrict destructive]
+  K --&gt;|POST /api-keys| SECRET[Secret shown once — Copy]
+  AD --&gt;|Add webhook| W[URL + event types] --&gt;|POST /webhooks| WS[Signing secret shown once]
+  WS --&gt;|Send test| T[POST /webhooks/:id/test] --&gt; DL[Deliveries log]
+  DL --&gt;|failed row| RD[Redeliver]
+</pre><p class="li">• Key rotation copy: &quot;The current secret stops working immediately.&quot; Webhook secret rotation copy: &quot;Both secrets are valid for 24 hours.&quot;</p><h2>F10 · A person upgrades to Standard</h2><pre class="mermaid">flowchart TD
+  H[Home: standard app tile &#x27;Included with Standard&#x27;] --&gt; U[Upsell sheet: every app for $6/month]
+  P[Plan &amp; Billing BIL-01] --&gt; U
+  U --&gt;|Upgrade to Standard| C[POST /users/me/billing/checkout-sessions · Idempotency-Key]
+  C --&gt;|201 url| S[Stripe Checkout in browser]
+  C --&gt;|409 subscription_exists| PO[POST /users/me/billing/portal-sessions → Portal]
+  S --&gt;|success_url → app deep link| W[Finishing up… poll GET /users/me/subscription]
+  W --&gt;|plan = standard| D[Refresh Capabilities + entitlements → standard apps unlock on Home]
+  W --&gt;|30 s, still free| L[Taking longer than usual · check again later]
+  S --&gt;|cancel_url| X[Toast: Checkout cancelled]
+  P --&gt;|Manage billing| PO
+</pre><p class="li">• Mobile store builds show the Upgrade button only when its store flag is on (OPEN-QUESTIONS #10).</p><p class="li">• Covered by an org and also subscribed individually → BIL-01 suggests cancelling the individual subscription in the Portal.</p><p class="li">• `past_due` keeps access (Stripe retries ~3 weeks); BIL-01 shows &quot;Payment issue · Update it in Manage billing&quot;.</p><h2>F11 · Audit investigation</h2><pre class="mermaid">flowchart LR
+  AU[Audit Log] --&gt;|filters: actor type, action, resource, date| L[GET /audit-events]
+  L --&gt; D[Event detail: actor, resource link, before/after diff, request id]
+  D --&gt;|open resource| RES[User / App / Org detail]
+</pre><h2>F12 · Turn on push notifications (iOS, macOS, Android, Web)</h2><pre class="mermaid">flowchart TD
+  M[Meaningful moment: first sign-in on mobile, org invite, or toggle in NTF-03/SET-01] --&gt; PR[NTF-04 primer]
+  PR --&gt;|Not now| SN[Snooze 14 days]
+  PR --&gt;|Turn on| OS{OS permission prompt}
+  OS --&gt;|denied| BL[NTF-03 shows Blocked · Open system settings]
+  OS --&gt;|granted| TK[Get APNs token / FCM token / PushSubscription with app_hub VAPID key]
+  TK --&gt; RG[POST /users/me/devices application_id=app_hub]
+  RG --&gt;|201 or 200| ST[Store dvc_ id · This device: On]
+  RG --&gt;|403 entitlement_required| IO[Inbox-only mode explained]
+  ST -.-&gt;|daily on launch| RR[POST again to refresh]
+  ST -.-&gt;|OS rotates token| PT[PATCH /users/me/devices/:id]
+  ST -.-&gt;|Turn off on this device| DL[DELETE /users/me/devices/:id]
+  ST -.-&gt;|Send test| TS[POST …/devices/:id/test → sent / failed]
+</pre><p class="li">• Windows and Linux skip this flow: notifications come from polling and are shown locally (CLIENT-ARCHITECTURE §6.2).</p><p class="li">• Sign-out deactivates the device server-side; signing in again re-registers it under the new session.</p><h2>F13 · Receive and act on a notification</h2><pre class="mermaid">flowchart TD
+  EV[Platform alert or app_hub notification is sent] --&gt; IN[Lands in inbox — always]
+  EV --&gt; PU{Device for app_hub and push on?}
+  PU --&gt;|yes| PN[System notification with actions]
+  PU --&gt;|no| IB[Badge updates on next unread-count]
+  PN --&gt;|tap| RD[PATCH state=read] --&gt; RT{action_url}
+  RT --&gt;|Hub route| NAV[Navigate in-app]
+  RT --&gt;|other URL| EXT[Open externally]
+  RT --&gt;|none| ND[NTF-02 detail]
+  PN --&gt;|Accept invitation action| AC[POST /organizations/:id/members/me/accept]
+  PN --&gt;|Review sessions action| SE[ACC-04 sessions]
+  IN --&gt; NT[NTF-01 Inbox: filter, mark read, archive, mark all read]
+</pre><p class="li">• Foreground pushes become an in-app banner and refresh the inbox; the badge always comes from `unread-count`.</p><p class="li">• Other apps&#x27; notifications appear in the Hub inbox but push only to those apps&#x27; own installs.</p><h2>F14 · An organization subscribes to Standard for its members</h2><pre class="mermaid">flowchart TD
+  O[ORG-03 › Subscription tab BIL-02] --&gt;|no subscription| SB[Subscribe the organization]
+  SB --&gt; SC[Choose who&#x27;s covered: everyone / selected / everyone except]
+  SC --&gt; CK[POST /organizations/:id/billing/checkout-sessions · member_scope]
+  CK --&gt; ST[Stripe Checkout] --&gt;|success| PL[Poll GET /organizations/:id/subscription until plan = standard]
+  PL --&gt; CV[Covered members get Standard apps at once]
+  O --&gt;|subscription in force| ED[Edit coverage]
+  ED --&gt; CF[Confirm: n gain, m lose access now; billed from next daily sync]
+  CF --&gt; PA[PATCH /organizations/:id/subscription · If-Match]
+  O --&gt;|Manage billing| PO[POST …/billing/portal-sessions → Stripe Portal]
+</pre><p class="li">• Billed users = covered active members (`quantity.current`); the invoice uses the daily-synced count (`quantity.last_synced`).</p><p class="li">• Removing a member from the org removes their coverage immediately.</p><h2>F15 · Developer sets up push for their app</h2><pre class="mermaid">flowchart LR
+  A[APL-03 › Push tab APL-07] --&gt; P{Provider}
+  P --&gt;|APNs| AP[team_id, key_id, topic, .p8 file]
+  P --&gt;|FCM| FC[service account JSON]
+  P --&gt;|Web Push| WP[subject → platform generates VAPID; copy public key]
+  AP &amp; FC &amp; WP --&gt; POST[POST /applications/:id/push-credentials]
+  POST --&gt;|201| OK[Active]
+  POST --&gt;|422 invalid_push_credential| ER[Field error]
+  OK --&gt; T[Prove it: owner&#x27;s own device test]
+  OK -.-&gt;|provider rejects key| F[Status: Needs attention · push_credential.failed webhook] --&gt; FX[PATCH new key material]
+  A --&gt; TG[Toggle platform alerts receives_platform_notifications]
+</pre><h2>F16 · Support investigates &quot;I never got the alert&quot;</h2><pre class="mermaid">flowchart LR
+  U[USR-03 › Notifications tab NTF-05] --&gt; N[Find notification by category/time]
+  N --&gt; D[push.status + skip_reason + deliveries]
+  D --&gt;|push_disabled| P[Person turned push off — explain]
+  D --&gt;|no_devices| V[Devices table: inactive reasons]
+  D --&gt;|failed| E[Provider error per device]
+  V --&gt;|users.manage| X[Delete stale device]
+  U --&gt; S[Staff with notifications.send: NTF-06 send a test notification on behalf of an app]
+</pre><h2>Cross-cutting behavior</h2></body></html>

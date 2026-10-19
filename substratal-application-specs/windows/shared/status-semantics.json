@@ -1,0 +1,252 @@
+{
+  "$description": "Status meaning shared by every app (spec v1.4.0). Colors are intentionally absent: the theming effort maps each semantic role to a palette. Every badge = icon + label.",
+  "semanticRoles": [
+    "success",
+    "info",
+    "warning",
+    "critical",
+    "neutral",
+    "accent"
+  ],
+  "statuses": {
+    "active": {
+      "label": "Active",
+      "role": "success",
+      "icon": {
+        "sfSymbol": "checkmark.circle.fill",
+        "fluent": "CheckmarkCircle",
+        "material": "check_circle",
+        "adwaita": "emblem-ok-symbolic",
+        "lucide": "circle-check"
+      }
+    },
+    "scheduled": {
+      "label": "Scheduled",
+      "role": "info",
+      "icon": {
+        "sfSymbol": "calendar",
+        "fluent": "Calendar",
+        "material": "calendar_today",
+        "adwaita": "x-office-calendar-symbolic",
+        "lucide": "calendar"
+      }
+    },
+    "disabled": {
+      "label": "Turned off",
+      "role": "warning",
+      "icon": {
+        "sfSymbol": "pause.circle.fill",
+        "fluent": "PauseCircle",
+        "material": "pause_circle",
+        "adwaita": "media-playback-pause-symbolic",
+        "lucide": "circle-pause"
+      }
+    },
+    "expired": {
+      "label": "Expired",
+      "role": "neutral",
+      "icon": {
+        "sfSymbol": "clock",
+        "fluent": "Clock",
+        "material": "schedule",
+        "adwaita": "alarm-symbolic",
+        "lucide": "clock"
+      }
+    },
+    "revoked": {
+      "label": "Revoked",
+      "role": "critical",
+      "icon": {
+        "sfSymbol": "xmark.circle.fill",
+        "fluent": "DismissCircle",
+        "material": "cancel",
+        "adwaita": "process-stop-symbolic",
+        "lucide": "circle-x"
+      }
+    },
+    "none": {
+      "label": "No access",
+      "role": "neutral",
+      "icon": {
+        "sfSymbol": "minus.circle",
+        "fluent": "SubtractCircle",
+        "material": "do_not_disturb_on",
+        "adwaita": "list-remove-symbolic",
+        "lucide": "circle-minus"
+      }
+    },
+    "invited": {
+      "label": "Invited",
+      "role": "accent",
+      "icon": {
+        "sfSymbol": "envelope",
+        "fluent": "Mail",
+        "material": "mail",
+        "adwaita": "mail-unread-symbolic",
+        "lucide": "mail"
+      }
+    },
+    "suspended": {
+      "label": "Suspended",
+      "role": "warning",
+      "icon": {
+        "sfSymbol": "pause.circle.fill",
+        "fluent": "PauseCircle",
+        "material": "pause_circle",
+        "adwaita": "media-playback-pause-symbolic",
+        "lucide": "circle-pause"
+      }
+    },
+    "deleted": {
+      "label": "Deleted",
+      "role": "critical",
+      "icon": {
+        "sfSymbol": "trash",
+        "fluent": "Delete",
+        "material": "delete",
+        "adwaita": "user-trash-symbolic",
+        "lucide": "trash-2"
+      }
+    },
+    "pending": {
+      "label": "Pending",
+      "role": "info",
+      "icon": {
+        "sfSymbol": "hourglass",
+        "fluent": "HourglassHalf",
+        "material": "hourglass_empty",
+        "adwaita": "content-loading-symbolic",
+        "lucide": "hourglass"
+      }
+    },
+    "important": {
+      "label": "Important",
+      "role": "critical",
+      "icon": {
+        "sfSymbol": "exclamationmark.circle",
+        "fluent": "Important",
+        "material": "priority_high",
+        "adwaita": "dialog-warning-symbolic",
+        "lucide": "circle-alert"
+      }
+    },
+    "unread": {
+      "label": "Unread",
+      "role": "accent",
+      "icon": {
+        "sfSymbol": "circle.fill",
+        "fluent": "CircleSmall",
+        "material": "fiber_manual_record",
+        "adwaita": "media-record-symbolic",
+        "lucide": "dot"
+      }
+    }
+  },
+  "mappings": {
+    "entitlement.resolved_status": [
+      "active",
+      "scheduled",
+      "disabled",
+      "expired",
+      "revoked",
+      "none"
+    ],
+    "user.status": [
+      "active",
+      "invited",
+      "suspended",
+      "deleted"
+    ],
+    "organization.status": {
+      "active": "active",
+      "suspended": "suspended"
+    },
+    "membership_status": {
+      "pending": "invited",
+      "active": "active"
+    },
+    "application.review_status": {
+      "approved": "active",
+      "pending_review": "pending",
+      "rejected": "revoked",
+      "suspended": "suspended"
+    },
+    "webhook.status": {
+      "healthy": "active",
+      "unhealthy": "disabled",
+      "disabled": "expired"
+    },
+    "webhook_delivery.status": {
+      "pending": "pending",
+      "succeeded": "active",
+      "failed": "revoked"
+    },
+    "tenant.status": {
+      "active": "active",
+      "migrating": "scheduled",
+      "suspended": "suspended"
+    },
+    "tier_change_request.status": {
+      "pending": "pending",
+      "scheduled": "scheduled",
+      "in_progress": "scheduled",
+      "completed": "active",
+      "cancelled": "expired"
+    },
+    "erasure_request.status": {
+      "scheduled": "scheduled",
+      "cancelled": "expired",
+      "completed": "deleted"
+    },
+    "subscription.status": {
+      "active": "active",
+      "trialing": "scheduled",
+      "past_due": "disabled",
+      "canceled": "expired",
+      "unpaid": "revoked",
+      "incomplete": "pending",
+      "incomplete_expired": "expired",
+      "paused": "suspended"
+    },
+    "api_key": {
+      "active": "active",
+      "expired (expires_at past)": "expired",
+      "revoked (revoked_at set)": "revoked"
+    },
+    "user.plan": {
+      "free": "none",
+      "standard": "active"
+    },
+    "entitlement.source_labels": {
+      "purchase": "Purchased",
+      "trial": "Trial",
+      "admin_grant": "Granted by admin",
+      "org_seat": "Via {org}",
+      "free": "Free (managed by Substratal)",
+      "subscription": "Standard (managed by Substratal)"
+    },
+    "device.status": {
+      "active": "active",
+      "inactive": "expired"
+    },
+    "notification.state": {
+      "unread": "unread",
+      "read": "(no badge)",
+      "archived": "(no badge)"
+    },
+    "notification.priority": {
+      "high": "important",
+      "normal": "(no badge)"
+    },
+    "notification.push.status": {
+      "queued": "pending",
+      "sent": "active",
+      "failed": "revoked",
+      "skipped": "none"
+    },
+    "push_credential.status": {
+      "active": "active",
+      "failed": "disabled"
+    }
+  }
+}
