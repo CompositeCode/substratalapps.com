@@ -270,6 +270,10 @@ func (s *Server) UsersUpdate(w http.ResponseWriter, r *http.Request, id gen.User
 				if err := c.sendVerification(u.ID, newEmail, nil, nil); err != nil {
 					return err
 				}
+				if err := c.platformAlert(u.ID, "security.email_changed", "Your Substratal email address was changed",
+					strp("Your account's email address is now "+newEmail+". If this wasn't you, contact support."), nil); err != nil {
+					return err
+				}
 				if err := c.audit(Audit{Action: "user.email_changed", TargetType: "user", TargetID: u.ID, TargetUserID: &u.ID,
 					Before: map[string]any{"email": u.Email}, After: map[string]any{"email": newEmail}}); err != nil {
 					return err

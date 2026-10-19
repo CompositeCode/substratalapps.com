@@ -501,6 +501,19 @@ func (s *Server) OrganizationsAddMember(w http.ResponseWriter, r *http.Request, 
 			TargetUserID: &uid, OrganizationID: &o.ID, After: map[string]any{"user_id": uid, "role": role}}); err != nil {
 			return err
 		}
+		if !direct {
+			// An existing active User hears about it in their inbox too; a
+			// new or invited one has no inbox yet, only the email. The
+			// caller can't tell which, so nothing about the account leaks.
+			data := map[string]string{"organization_id": o.ID}
+			if c.p.IsUser() {
+				data["invited_by"] = c.p.UserID
+			}
+			if err := c.platformAlert(uid, "account.organization_invitation", "You've been invited to join "+o.Name,
+				strp("Open the invitation to accept it."), data); err != nil {
+				return err
+			}
+		}
 		if direct {
 			pairs, err := c.orgAppPairs(uid, o.ID)
 			if err != nil {

@@ -428,6 +428,7 @@ locals {
     "cleanup"              = "cron(0 3 * * ? *)"
     "audit-archive"        = "cron(30 3 * * ? *)"
     "settings-projections" = "cron(0 4 * * ? *)"
+    "push-maintenance"     = "cron(30 4 * * ? *)"
   }
 }
 

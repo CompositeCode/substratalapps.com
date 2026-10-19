@@ -34,6 +34,12 @@ type LocalNotifier struct {
 
 // NewLocal starts the in-process loop and returns its notifier.
 func NewLocal(ctx context.Context, d *Deliverer, every time.Duration) *LocalNotifier {
+	return NewLocalRunner(ctx, d.Log, every, d.Run)
+}
+
+// NewLocalRunner is NewLocal for any pass, such as push delivery followed
+// by webhook delivery.
+func NewLocalRunner(ctx context.Context, log *slog.Logger, every time.Duration, run func(context.Context) error) *LocalNotifier {
 	n := &LocalNotifier{kick: make(chan struct{}, 1)}
 	go func() {
 		t := time.NewTicker(every)
@@ -45,8 +51,8 @@ func NewLocal(ctx context.Context, d *Deliverer, every time.Duration) *LocalNoti
 			case <-n.kick:
 			case <-t.C:
 			}
-			if err := d.Run(ctx); err != nil && ctx.Err() == nil {
-				d.Log.Error("webhook worker pass failed", "err", err)
+			if err := run(ctx); err != nil && ctx.Err() == nil {
+				log.Error("worker pass failed", "err", err)
 			}
 		}
 	}()

@@ -17,7 +17,7 @@ How alerts and other updates reach a User: on their devices through Apple Push N
 ---
 
 {: .note }
-**Implementation status.** Specified 2026-10-17 ([Changelog](../../changelog/)). Until the reference implementation builds it, every operation on this page returns `501 not_implemented`. Its defaults are settled: platform alerts push only through Applications that opt in, sending is one User per call (no broadcast yet), each recipient gets at most 60 notifications per Application per hour, the inbox keeps 90 days, the `notifications.push` channel is the only preference, and the push providers are sub-processors.
+Specified 2026-10-17 and implemented 2026-10-18 ([Changelog](../../changelog/)). Its defaults are settled: platform alerts push only through Applications that opt in, sending is one User per call (no broadcast yet), each recipient gets at most 60 notifications per Application per hour, the inbox keeps 90 days, the `notifications.push` channel is the only preference, and the push providers are sub-processors.
 
 ## How it fits together
 
@@ -213,7 +213,7 @@ A malformed `token` or `subscription` is `422 invalid_device_token`.
 
 **What makes a registration "the same" device** is the token: one Device per (`application_id`, `provider`, token) and mode, where a `web_push` device's token is its `endpoint`. Registering an existing token:
 
-- **for the same User** refreshes it and returns `200`. `last_registered_at` moves forward, `name`, `app_version`, and `environment` take the new values, and `session_id` becomes the caller's current session. An `inactive` device becomes `active` again and fires `device.registered`.
+- **for the same User** refreshes it and returns `200`. `last_registered_at` moves forward, `name`, `app_version`, and `environment` take the new values, and `session_id` becomes the caller's current session (`null` when an app key registers it). An `inactive` device becomes `active` again and fires `device.registered`.
 - **for a different User** (someone else signed in on that install) deletes the previous registration and creates a new Device for the caller (`201`). A device never carries one User's history over to another. The previous owner's Device is gone, and `device.deleted` fires for it.
 
 **The token itself is never returned.** It's stored KMS-encrypted, and responses carry only `token_hint`, its last four characters. Device tokens aren't bearer credentials, but they are personal data, and a client never needs to read one back.
@@ -482,7 +482,7 @@ The platform raises a small, fixed set of notifications itself, about the User's
 
 | `category` | `priority` | Raised when | `data` |
 |---|---|---|---|
-| `security.new_sign_in` | `high` | A login creates a session from a user agent not seen in the User's sessions during the last 90 days. | `session_id`, `user_agent`, `ip_address` |
+| `security.new_sign_in` | `high` | A login creates a session from a user agent not seen in the User's sessions during the last 90 days. A User's first session, at signup, raises nothing. | `session_id`, `user_agent`, `ip_address` |
 | `security.password_changed` | `high` | `POST /v1/users/{id}/password`, or a password reset. | — |
 | `security.email_changed` | `high` | An email change completes. | — |
 | `security.mfa_disabled` | `high` | TOTP is turned off by the User, or reset by support. | — |
@@ -593,4 +593,3 @@ Five events tell an Application's backend about its devices, credentials, and fa
 | `read_only_field` | 422 | A `PATCH` touched a read-only field, such as a device's `provider` or a credential's `application_id`. |
 | `invalid_status_transition` | 409 | A credential `PATCH status` other than `failed → active`. |
 | `rate_limited` | 429 | Over the per-sender or per-recipient limit. `details.scope` is `sender` or `recipient`. |
-| `not_implemented` | 501 | Every operation on this page, until it's built. See the status note at the top. |

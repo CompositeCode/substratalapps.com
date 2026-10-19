@@ -553,6 +553,9 @@ notifications (
   push_status text not null check (push_status in ('queued','sent','failed','skipped')),
   skip_reason text check (skip_reason in
     ('push_not_requested','push_disabled','no_devices','no_credentials','credential_failed','expired')),
+  push_devices_targeted integer not null default 0,  -- the push summary; kept here because deliveries
+  push_devices_sent integer not null default 0,      -- are deleted after 30 days and notifications
+  push_devices_failed integer not null default 0,    -- after 90
   sender_type text not null check (sender_type in ('api_key','user','system')),
   sender_id text not null,                     -- key_..., usr_..., or 'system'; not a foreign key, since it spans tables
   read_at timestamptz,

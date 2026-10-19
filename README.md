@@ -232,6 +232,7 @@ Then `make quickstart` runs the [Quickstart](https://compositecode.github.io/sub
 | REST API, `/mcp`, `/internal/stripe/webhook` | `cmd/devserver`: every route on `:8080`, the same handlers the Lambdas use | One Lambda per function behind API Gateway |
 | Database | Postgres 16 container on host port `55432` through pgx, connecting as the non-superuser `substratal` role so Row-Level Security applies | Aurora Serverless v2 through the Data API |
 | Webhook delivery | In-process: the devserver nudges its own worker after each commit and sweeps every 2 seconds. Set `WEBHOOKS_ALLOW_PRIVATE=true` (the default in `.env.example`) to deliver to `http://localhost` receivers. | SQS nudge → worker Lambda, plus a 1-minute sweep |
+| Push delivery | The same in-process worker, with `PUSH_BACKEND=log` (the default in `.env.example`): every push is logged, nothing is sent, and the notification still settles as sent. Set `PUSH_BACKEND=live` to send to APNs, FCM, and Web Push with an Application's real credentials. | The same queue, worker Lambda, and sweep as webhooks, with `PUSH_BACKEND=live` |
 | Scheduled jobs | The entitlement sweep runs in the devserver every 5 minutes; run any job on demand with `make job name=…` (`make jobs` lists them) | EventBridge Scheduler → `jobs` Lambda |
 | JWT signing, secret encryption | A local RSA-2048 key, generated into `.dev/signing-key.pem` on first run, and a fixed development AES key (set `KMS_*_KEY_ID` to use KMS instead, including LocalStack's) | AWS KMS |
 | Secrets | `.env` | Secrets Manager (`APP_SECRET_ARN`) |

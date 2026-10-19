@@ -12,6 +12,18 @@ What's changed in this specification over time. Every decision is written into t
 
 ---
 
+## 2026-10-18 — Push notifications implemented
+
+[Push Notifications](../api-reference/notifications/) is built: all 17 operations work, and none returns `501` any more. Nothing about the API's shape changed. A few behaviors the spec left implicit are now stated:
+
+- A User's first session (at signup) never raises `security.new_sign_in`; there's nothing yet to compare it with.
+- A device an app key registers or refreshes has `session_id: null`.
+- An unknown `{provider}` in a push-credential path is `404 push_credential_not_found`.
+- A push-credential `POST` validates its fields before checking whether the provider is already configured, so an invalid body is `422` even when a credential exists.
+- [Database Schema](../domain-model/database-schema/#push_credentials-devices-notifications-notification_deliveries) records each notification's push counts on the notification itself, since deliveries are deleted after 30 days.
+
+Delivery shares the webhook queue, worker, and 1-minute sweep (see the repository's `DEPLOYMENT.md` → Push delivery), and a daily `push-maintenance` job runs the device and inbox retention rules. Locally, `PUSH_BACKEND=log` logs pushes instead of sending them.
+
 ## 2026-10-18 — Billing options settled; decision log retired
 
 - **Billing options** (decision #31, the last open question): Standard is billed **monthly in USD only**, with **no annual plan and no trial**. Free is the way to try Substratal's apps, and never needs a card. See [Pricing → Stripe catalog](../pricing/#stripe-catalog). Either option can be added later as Stripe configuration, without an API change.

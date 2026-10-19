@@ -69,6 +69,9 @@ func (c *Call) issueSession(u userRow, amr []string, identityID string) (authSes
 			"idle": db.Time(c.now.Add(sessionIdleTTL)), "abs": db.Time(c.now.Add(sessionAbsTTL))}); err != nil {
 		return authSession{}, err
 	}
+	if err := c.alertNewSignIn(u.ID, sid, ua, c.ip); err != nil {
+		return authSession{}, err
+	}
 	rtk := ids.Secret(ids.RefreshToken)
 	if _, err := c.q.Exec(c.ctx, `insert into refresh_tokens (token_hash, session_id) values (:h, :s)`,
 		db.Args{"h": ids.Hash(rtk), "s": sid}); err != nil {
@@ -92,12 +95,44 @@ func (c *Call) issueSession(u userRow, amr []string, identityID string) (authSes
 		SessionID: sid, UserID: u.ID, EmailVerified: u.EmailVerified}, nil
 }
 
-// revokeSessions revokes a User's sessions (all, or all but `except`).
+// revokeSessions revokes a User's sessions (all, or all but `except`),
+// and deactivates the push devices they registered. Suspension and
+// deletion deactivate every device the User holds, including ones an app
+// key registered with no session (Push Notifications → Sessions and
+// device lifecycle).
 func (c *Call) revokeSessions(userID, reason, except string) error {
-	_, err := c.q.Exec(c.ctx, `update sessions set revoked_at = now(), revoked_reason = :r
-		where user_id = :u and revoked_at is null and id <> :except`,
+	switch reason {
+	case "suspended":
+		if err := c.deactivateDevices("d.user_id = :u", db.Args{"u": userID}, "user_suspended"); err != nil {
+			return err
+		}
+	case "deleted":
+		if err := c.deactivateDevices("d.user_id = :u", db.Args{"u": userID}, "user_deleted"); err != nil {
+			return err
+		}
+	}
+	sids, err := db.All[string](c.ctx, c.q, `update sessions set revoked_at = now(), revoked_reason = :r
+		where user_id = :u and revoked_at is null and id <> :except returning to_jsonb(id)`,
 		db.Args{"u": userID, "r": reason, "except": except})
-	return err
+	if err != nil {
+		return err
+	}
+	return c.sessionsEnded(sids)
+}
+
+// revokeSession revokes one session, if it's still live, and deactivates
+// the push devices it registered. It reports whether anything changed.
+func (c *Call) revokeSession(where string, args db.Args, reason string) (bool, error) {
+	a := db.Args{"r": reason}
+	for k, v := range args {
+		a[k] = v
+	}
+	sids, err := db.All[string](c.ctx, c.q, `update sessions set revoked_at = now(), revoked_reason = :r
+		where revoked_at is null and `+where+` returning to_jsonb(id)`, a)
+	if err != nil {
+		return false, err
+	}
+	return len(sids) > 0, c.sessionsEnded(sids)
 }
 
 func weakPassword(err error) error {
@@ -503,8 +538,13 @@ func (c *Call) lookupRefresh(tok string) (refreshRow, userRow, error) {
 func (c *Call) rotateRefresh(rt refreshRow) (string, error) {
 	if rt.RotatedAt != nil {
 		c.CommitAnyway()
-		if _, err := c.q.Exec(c.ctx, `update sessions set revoked_at = now(), revoked_reason = 'refresh_token_reused'
-			where id = :s and revoked_at is null`, db.Args{"s": rt.SessionID}); err != nil {
+		// Warn the User's devices before the revocation signs them out.
+		if err := c.platformAlert(rt.UserID, "security.session_reuse_detected", "A session was signed out for your safety",
+			strp("Someone tried to reuse an old sign-in token, so that session was ended. If this wasn't you, change your password."),
+			map[string]string{"session_id": rt.SessionID}); err != nil {
+			return "", err
+		}
+		if _, err := c.revokeSession("id = :s", db.Args{"s": rt.SessionID}, "refresh_token_reused"); err != nil {
 			return "", err
 		}
 		c.s.Log.Warn("security", "event", "refresh_token_reused", "user", rt.UserID, "session", rt.SessionID,
@@ -586,8 +626,7 @@ func (s *Server) AuthLogout(w http.ResponseWriter, r *http.Request) {
 		if in.AllSessions {
 			err = c.revokeSessions(c.p.UserID, "logout", "")
 		} else {
-			_, err = c.q.Exec(c.ctx, `update sessions set revoked_at = now(), revoked_reason = 'logout'
-				where id = :s and revoked_at is null`, db.Args{"s": c.p.SessionID})
+			_, err = c.revokeSession("id = :s", db.Args{"s": c.p.SessionID}, "logout")
 		}
 		if err != nil {
 			return err

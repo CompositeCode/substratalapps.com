@@ -97,6 +97,16 @@ func (s *Server) UsersExport(w http.ResponseWriter, r *http.Request, id gen.User
 			return err
 		}
 		out["audit_events"] = events
+		devs, err := c.queryDevices("d.user_id = :u order by d.created_at", db.Args{"u": uid})
+		if err != nil {
+			return err
+		}
+		out["devices"] = devs
+		notes, err := c.queryNotifications("n.user_id = :u order by n.created_at desc, n.id desc", db.Args{"u": uid})
+		if err != nil {
+			return err
+		}
+		out["notifications"] = notes
 		return c.OK(out)
 	})
 }

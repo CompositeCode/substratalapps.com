@@ -172,6 +172,9 @@ func (s *Server) erase(ctx context.Context, tm bool, uid string) error {
 				`delete from refresh_tokens where session_id in (select id from sessions where user_id = :u)`,
 				`delete from sessions where user_id = :u`,
 				`delete from auth_tokens where user_id = :u`,
+				// Push: notifications (their deliveries cascade) and devices.
+				`delete from notifications where user_id = :u`,
+				`delete from devices where user_id = :u`,
 			} {
 				if _, err := c.q.Exec(ctx, q, db.Args{"u": uid}); err != nil {
 					return err
@@ -361,6 +364,9 @@ func (s *Server) PurgeTestData(ctx context.Context) error {
 		old := `test_mode and created_at < now() - interval '30 days'`
 		users := `(select id from users where ` + old + `)`
 		for _, q := range []string{
+			`delete from notification_deliveries where ` + old,
+			`delete from notifications where ` + old,
+			`delete from devices where ` + old,
 			`delete from webhook_deliveries where ` + old,
 			`delete from webhook_events where ` + old,
 			`delete from webhook_subscriptions where ` + old,

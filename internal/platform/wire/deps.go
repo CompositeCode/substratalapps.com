@@ -20,6 +20,7 @@ import (
 	"github.com/CompositeCode/substratalapps.com/internal/email"
 	"github.com/CompositeCode/substratalapps.com/internal/httpx"
 	"github.com/CompositeCode/substratalapps.com/internal/platform/config"
+	"github.com/CompositeCode/substratalapps.com/internal/push"
 	"github.com/CompositeCode/substratalapps.com/internal/webhooks"
 )
 
@@ -111,6 +112,23 @@ func Billing(cfg config.Config, log *slog.Logger) core.Billing {
 	return billing.New(cfg.StripeSecretKey, cfg.StripePrices, log)
 }
 
+// Push builds the push sender for PUSH_BACKEND.
+func Push(cfg config.Config, log *slog.Logger) (push.Sender, error) {
+	switch cfg.PushBackend {
+	case "live":
+		l := push.NewLive()
+		if cfg.Env != "production" && os.Getenv("WEBHOOKS_ALLOW_PRIVATE") == "true" {
+			l.AllowHTTP = true // a local Web Push fake on http://localhost
+		} else {
+			l.CheckHost = core.CheckPublicHost
+		}
+		return l, nil
+	case "log":
+		return push.Log{Logger: log}, nil
+	}
+	return nil, fmt.Errorf("wire: unknown PUSH_BACKEND %q", cfg.PushBackend)
+}
+
 // Base is everything every entry point shares.
 type Base struct {
 	Config    config.Config
@@ -119,6 +137,7 @@ type Base struct {
 	Signer    auth.Signer
 	Encrypter auth.Encrypter
 	Email     email.Sender
+	Push      push.Sender
 }
 
 // NewBase builds the shared dependencies.
@@ -144,7 +163,11 @@ func NewBase(ctx context.Context) (*Base, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Base{Config: cfg, Log: log, DB: d, Signer: signer, Encrypter: enc, Email: mail}, nil
+	sender, err := Push(cfg, log)
+	if err != nil {
+		return nil, err
+	}
+	return &Base{Config: cfg, Log: log, DB: d, Signer: signer, Encrypter: enc, Email: mail, Push: sender}, nil
 }
 
 // Deliverer is the webhook delivery engine.
@@ -174,7 +197,7 @@ func (b *Base) Server(n core.Notifier) *core.Server {
 	}
 	core.AllowPrivateWebhookTargets = b.Config.Env != "production" && os.Getenv("WEBHOOKS_ALLOW_PRIVATE") == "true"
 	return core.New(core.Deps{
-		DB: b.DB, Signer: b.Signer, Encrypter: b.Encrypter, Email: b.Email, Notifier: n,
+		DB: b.DB, Signer: b.Signer, Encrypter: b.Encrypter, Email: b.Email, Notifier: n, Push: b.Push,
 		Billing: Billing(b.Config, b.Log), Cursors: httpx.Cursors{Key: key}, Log: b.Log,
 		Issuer: b.Config.Issuer, PublicBaseURL: b.Config.PublicBaseURL, AuthorizeURL: b.Config.AuthorizeURL,
 		DashboardURL: b.Config.DashboardURL, CORSOrigins: b.Config.CORSOrigins,

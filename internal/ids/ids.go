@@ -17,19 +17,23 @@ import (
 
 // Resource id prefixes.
 const (
-	User          = "usr_"
-	Organization  = "org_"
-	Tenant        = "tnt_"
-	TierChange    = "tcr_"
-	Entitlement   = "ent_"
-	AuditEvent    = "evt_"
-	Webhook       = "whk_"
-	APIKey        = "key_"
-	UserIdentity  = "uid_"
-	SSOConnection = "ssc_"
-	Session       = "ses_"
-	WebhookEvent  = "wev_"
-	Delivery      = "dlv_"
+	User                 = "usr_"
+	Organization         = "org_"
+	Tenant               = "tnt_"
+	TierChange           = "tcr_"
+	Entitlement          = "ent_"
+	AuditEvent           = "evt_"
+	Webhook              = "whk_"
+	APIKey               = "key_"
+	UserIdentity         = "uid_"
+	SSOConnection        = "ssc_"
+	Session              = "ses_"
+	WebhookEvent         = "wev_"
+	Delivery             = "dlv_"
+	Device               = "dvc_"
+	PushCredential       = "pcr_"
+	Notification         = "ntf_"
+	NotificationDelivery = "ndl_"
 )
 
 // Credential prefixes. Never logged, never echoed after issuance.

@@ -49,8 +49,6 @@ tags:
   - name: Notifications
     description: >-
       Push notifications (APNs, FCM, Web Push) and the notification inbox.
-      Specified 2026-10-17; every operation returns 501 not_implemented until
-      the reference implementation builds it.
   - name: API Keys
   - name: Meta
 

@@ -28,6 +28,7 @@ var principalLimits = map[string]limit{
 	"organizations.grantEntitlement": perMinute(20),
 	"permissions.getEffective":       perMinute(300),
 	"auth.createAppToken":            perMinute(300),
+	"notifications.send":             perMinute(600),
 }
 
 // publicLimits are per client IP on unauthenticated endpoints.

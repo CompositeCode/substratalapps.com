@@ -65,7 +65,7 @@ Matches [Roadmap → Phase 2](https://compositecode.github.io/substratalapps.com
 6. **[Tenancy](https://compositecode.github.io/substratalapps.com/domain-model/tenancy/)** — `tenants` table, the `shared` tier (free, automatic, every Application owner gets one). `isolated`/`dedicated_region` provisioning mechanics ([DEPLOYMENT.md → Tenancy tiers](DEPLOYMENT.md#tenancy-tiers--where-they-run)) can lag slightly behind the schema, since they're support-run and gated by an actual customer need, not a launch-day requirement.
 7. **Stripe Billing** — [DEPLOYMENT.md → Stripe Billing](DEPLOYMENT.md#stripe-billing) and [API Reference → Billing](https://compositecode.github.io/substratalapps.com/api-reference/billing/) in full: the `subscriptions` table, `applications.access_tier`, the platform-managed `free`/`subscription` Entitlements and their reconcile, the catalog sync script, the User and Organization Checkout/Portal endpoints, the webhook handler, and the daily Organization quantity sync, in Stripe test mode first. This is what makes [Pricing](https://compositecode.github.io/substratalapps.com/pricing/) real rather than aspirational — build it alongside Organizations, since Organization subscriptions reuse their member scoping.
 8. **The [MCP server](https://compositecode.github.io/substratalapps.com/mcp-server/)** — generated from `openapi.yaml`'s `operationId`s, per [DEPLOYMENT.md → MCP server](DEPLOYMENT.md#mcp-server). Natural to build once the REST surface it wraps is otherwise stable, late in this phase rather than early.
-9. **[Push notifications](https://compositecode.github.io/substratalapps.com/api-reference/notifications/)** (specified 2026-10-17, not built). Every route exists and returns `501 not_implemented` (`internal/core/notifications.go`). Build, in order:
+9. **[Push notifications](https://compositecode.github.io/substratalapps.com/api-reference/notifications/)** (specified 2026-10-17, built 2026-10-18), in this order:
    - The `push_credentials`, `devices`, `notifications`, and `notification_deliveries` tables ([Database Schema](https://compositecode.github.io/substratalapps.com/domain-model/database-schema/#push_credentials-devices-notifications-notification_deliveries)), as one expand-only migration, plus `applications.receives_platform_notifications`.
    - `notifications.send` in the permission catalog, app-confined.
    - The credential and device endpoints, including deactivation on session revocation, suspension, and deletion.
@@ -73,7 +73,7 @@ Matches [Roadmap → Phase 2](https://compositecode.github.io/substratalapps.com
    - The delivery worker: APNs (HTTP/2, token auth), FCM HTTP v1, and Web Push (VAPID and RFC 8291 encryption). Retries, token invalidation, and credential failure handling. See [DEPLOYMENT.md → Push delivery](DEPLOYMENT.md#push-delivery).
    - The platform alerts, the export and erasure-cascade additions, the stale-device and retention jobs, and the webhook events.
 
-   Then remove the `501` stubs. The contract tests already cover every response shape.
+   The provider clients live in `internal/push`, and the endpoints, worker, and alerts in `internal/core`.
 
 **Exit criteria:** a real third-party-shaped integration test, an app that isn't Substratal's own, can sign a user in through the embedded flow, receive `access.revoked` and kill the session, call introspection, have its own `settings_schema` validated and typed on write, and register a test device and receive a push sent through its app key. A test-mode User and a test-mode Organization can subscribe to Standard through Checkout, gain the standard Applications, and lapse back to Free. The hosted PKCE flow is Phase 3, with the hosted sign-in page.
 
@@ -97,10 +97,10 @@ Not a phase — these apply from Phase 0 onward and should never be "added later
 
 ## Status
 
-**Build status (2026-10-06):** the code for every phase's API surface is implemented, except push notifications (added to the spec on 2026-10-17, Phase 2 item 9, whose routes return `501` until built), including Phase 3's hosted PKCE endpoints (SSO still returns `501` until the broker integration, as specified), and the Quickstart acceptance test passes against the devserver. The Phase 0 *infrastructure* items above are written as Terraform (`infra/terraform/`) but not yet applied; see [README → One-time setup](README.md#one-time-setup-phase-0). The choices the implementation made where the spec was silent or self-contradictory are written into the spec pages they govern.
+**Build status (2026-10-06):** the code for every phase's API surface is implemented, push notifications included (built 2026-10-18), along with Phase 3's hosted PKCE endpoints (SSO still returns `501` until the broker integration, as specified), and the Quickstart acceptance test passes against the devserver. The Phase 0 *infrastructure* items above are written as Terraform (`infra/terraform/`) but not yet applied; see [README → One-time setup](README.md#one-time-setup-phase-0). The choices the implementation made where the spec was silent or self-contradictory are written into the spec pages they govern.
 
 **No product decisions are open.** Each one is written into the spec page it governs, and recorded in the [Changelog](https://compositecode.github.io/substratalapps.com/changelog/). The separate decision log was retired on 2026-10-18.
 
-**Push notifications were added on 2026-10-17** (Phase 2 item 9 above), with their defaults settled in the spec.
+**Push notifications were added on 2026-10-17 and built on 2026-10-18** (Phase 2 item 9 above).
 
 **Pricing changed on 2026-10-17**: two tiers, Free and Standard ($6 per user per month), paid by the people using Substratal's apps, individually or through an Organization. **Subscriber billing was built on 2026-10-18**: Phase 2 item 7 now implements it, replacing the earlier developer-billed Starter/Team/Enterprise code. Billing is monthly in USD, with no annual plan and no Standard trial ([Pricing → Stripe catalog](https://compositecode.github.io/substratalapps.com/pricing/#stripe-catalog)). Either can be added later as Stripe configuration.
