@@ -11,7 +11,7 @@ See [README.md](README.md) for why this file — and the others alongside it —
 5. [Phase 2 — Per-app customization & trust](#phase-2--per-app-customization--trust)
 6. [Phase 3 — Marketplace & scale features](#phase-3--marketplace--scale-features)
 7. [Cross-cutting, build throughout](#cross-cutting-build-throughout)
-8. [What's still open, and what it blocks](#whats-still-open-and-what-it-blocks)
+8. [Status](#status)
 
 ---
 
@@ -22,8 +22,7 @@ Read, in this order — each is short, and skipping one tends to show up as a wr
 1. **[Getting Started](https://compositecode.github.io/substratalapps.com/getting-started/)** and **[Domain Model](https://compositecode.github.io/substratalapps.com/domain-model/)** — the nine-ish entities and how they relate. Everything else assumes this.
 2. **[Access Control](https://compositecode.github.io/substratalapps.com/access-control/)** — the one algorithm (`allow(user, application, permission)`) every endpoint ultimately defers to.
 3. **[Database Schema](https://compositecode.github.io/substratalapps.com/domain-model/database-schema/)** — Postgres types, constraints, indexes, Row-Level Security. This is the literal starting migration.
-4. **This project's own [DECISIONS.md](DECISIONS.md)** — do not start building against an entity or flow whose underlying decision is still 🟡 awaiting confirmation without checking whether it changed since this was written. Resolved decisions live on the spec pages themselves; `DECISIONS.md` only holds questions still waiting on an answer.
-5. **[DEPLOYMENT.md](DEPLOYMENT.md)** — where it all runs, and the infrastructure build checklist that interleaves with the phases below.
+4. **[DEPLOYMENT.md](DEPLOYMENT.md)** — where it all runs, and the infrastructure build checklist that interleaves with the phases below.
 
 ## Build order
 
@@ -94,14 +93,14 @@ Not a phase — these apply from Phase 0 onward and should never be "added later
 - **[Access Control](https://compositecode.github.io/substratalapps.com/access-control/)'s permission checks**, on every endpoint, from the first one. Retrofitting authorization onto endpoints built "open" is how it gets missed somewhere.
 - **[Conventions](https://compositecode.github.io/substratalapps.com/api-reference/conventions/)'s error shape, pagination, idempotency, and `me` self-addressing** — pick these once, in Phase 1, as shared middleware/helpers. Every later endpoint should get them for free, not reimplement them.
 - **Contract tests against `openapi.yaml`** — every endpoint, the day it's built, not batched at the end of a phase.
-- **[Changelog](https://compositecode.github.io/substratalapps.com/changelog/) and this project's [DECISIONS.md](DECISIONS.md)** stay live documents during implementation, the same way they were during spec-writing — an implementation detail that contradicts or resolves something in either belongs there immediately, not in a end-of-project cleanup pass.
+- **The spec pages and the [Changelog](https://compositecode.github.io/substratalapps.com/changelog/)** stay live documents during implementation, the same way they were during spec-writing. An implementation detail that contradicts or settles something in the spec gets written into the page it governs, with a Changelog entry, immediately, not in an end-of-project cleanup pass.
 
-## What's still open, and what it blocks
+## Status
 
-**Build status (2026-10-06):** the code for every phase's API surface is implemented, except push notifications (added to the spec on 2026-10-17, Phase 2 item 9, whose routes return `501` until built), including Phase 3's hosted PKCE endpoints (SSO still returns `501` until the broker integration, as specified), and the Quickstart acceptance test passes against the devserver. The Phase 0 *infrastructure* items above are written as Terraform (`infra/terraform/`) but not yet applied; see [README → One-time setup](README.md#one-time-setup-phase-0). The choices the implementation made where the spec was silent or self-contradictory are written into the spec pages they govern (DECISIONS.md #32–#37, resolved).
+**Build status (2026-10-06):** the code for every phase's API surface is implemented, except push notifications (added to the spec on 2026-10-17, Phase 2 item 9, whose routes return `501` until built), including Phase 3's hosted PKCE endpoints (SSO still returns `501` until the broker integration, as specified), and the Quickstart acceptance test passes against the devserver. The Phase 0 *infrastructure* items above are written as Terraform (`infra/terraform/`) but not yet applied; see [README → One-time setup](README.md#one-time-setup-phase-0). The choices the implementation made where the spec was silent or self-contradictory are written into the spec pages they govern.
 
-See [DECISIONS.md](DECISIONS.md) for the current list. Every decision except #31 is resolved, and each answer is written into the spec page it governs.
+**No product decisions are open.** Each one is written into the spec page it governs, and recorded in the [Changelog](https://compositecode.github.io/substratalapps.com/changelog/). The separate decision log was retired on 2026-10-18.
 
-**Push notifications were added on 2026-10-17** (Phase 2 item 9 above), with their defaults confirmed (#40).
+**Push notifications were added on 2026-10-17** (Phase 2 item 9 above), with their defaults settled in the spec.
 
-**Pricing changed on 2026-10-17** (#38): two tiers, Free and Standard ($6 per user per month), paid by the people using Substratal's apps, individually or through an Organization. **Subscriber billing was built on 2026-10-18** (#39): Phase 2 item 7 now implements it, replacing the earlier developer-billed Starter/Team/Enterprise code. The one open question, [#31](DECISIONS.md#31-published-prices-and-billing-options) (annual plans and a Standard trial), blocks nothing: each option is additive Stripe configuration.
+**Pricing changed on 2026-10-17**: two tiers, Free and Standard ($6 per user per month), paid by the people using Substratal's apps, individually or through an Organization. **Subscriber billing was built on 2026-10-18**: Phase 2 item 7 now implements it, replacing the earlier developer-billed Starter/Team/Enterprise code. Billing is monthly in USD, with no annual plan and no Standard trial ([Pricing → Stripe catalog](https://compositecode.github.io/substratalapps.com/pricing/#stripe-catalog)). Either can be added later as Stripe configuration.

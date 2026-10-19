@@ -29,9 +29,6 @@ callouts:
   note:
     title: Note
     color: blue
-  decision:
-    title: Awaiting decision
-    color: yellow
   important:
     title: Important
     color: red

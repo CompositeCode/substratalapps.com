@@ -90,7 +90,7 @@ The Products and Prices configured in Stripe. Lookup keys are what the code refe
 | Substratal Standard | `standard_monthly_usd` | $6.00 per user | Licensed (not metered), `billing_scheme: per_unit`, monthly. `quantity: 1` for an individual subscription. For an Organization, `quantity` is the covered-member count from the daily sync, at least 1. |
 
 - **Free has no Stripe Subscription**, and a User or Organization has no Stripe Customer until its first Checkout. That avoids $0 subscriptions that would need cancelling and replacing on upgrade.
-- **Monthly, USD, tax-exclusive** (Stripe Tax enabled) at launch. Annual plans and a Standard trial are open questions ([DECISIONS.md #31](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#31-published-prices-and-billing-options)). They don't block the build.
+- **Monthly, USD, tax-exclusive** (Stripe Tax enabled). There are no annual plans and no Standard trial: Free is the way to try Substratal's apps, and it never needs a card. Either can be added later as Stripe configuration (a second price, or `subscription_data.trial_period_days` on Checkout) without an API change.
 - **Organization quantity** is written to the subscription item by a daily job (00:15 UTC) with `proration_behavior: none`.
 - Business and Enterprise prices will be created per customer when those tiers ship.
 
