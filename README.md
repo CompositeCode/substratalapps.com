@@ -16,7 +16,6 @@ This repository is split deliberately, by audience:
 Root-level documents:
 
 - **[PLAN.md](PLAN.md)** — the build order: what to implement first, which spec page governs each piece, phase-by-phase exit criteria.
-- **[DECISIONS.md](DECISIONS.md)** — questions awaiting a product or business decision, and an index of where each resolved decision now lives in the spec. Resolved answers are written into the spec pages themselves, not kept here.
 - **[DEPLOYMENT.md](DEPLOYMENT.md)** — AWS infrastructure (cost-capped, Aurora Serverless v2, Lambda, no VPC/NAT at Tier 0), Stripe Billing implementation, the MCP servers recommended for building against AWS/Postgres/Stripe, and the scale-out triggers for when any of this needs to change.
 - **[LICENSE](LICENSE)** — MIT.
 - **[ORIGINAL-SPEC-DRAFT.md](ORIGINAL-SPEC-DRAFT.md)** — the original single-document draft this whole spec was elaborated from. Kept for history, moved here (out of `docs/`) specifically so it can't be mistaken for current spec — it contradicts several later decisions.
@@ -30,7 +29,7 @@ Deliberately **staying** on the docs site despite being borderline: `compliance.
 
 ## Status
 
-**Implemented; not yet deployed.** Every operation in [`docs/openapi.yaml`](docs/openapi.yaml) is implemented in Go (see [Technology stack](#technology-stack)), along with the webhook worker, Stripe billing sync, scheduled jobs, the MCP server, CI/CD, and Terraform for AWS. The integration suite runs against real Postgres and validates every response against `openapi.yaml`. Production doesn't exist yet: the [one-time setup](#one-time-setup-phase-0) hasn't been run, so `deploy.yml` skips with a notice until it is. Day-to-day work happens on the `dev` branch (see [Branches, CI, and deployment](#branches-ci-and-deployment)). Every decision the build surfaced is resolved and written into the spec; [DECISIONS.md](DECISIONS.md) holds the one open business question (billing options), which blocks nothing.
+**Implemented; not yet deployed.** Every operation in [`docs/openapi.yaml`](docs/openapi.yaml) is implemented in Go (see [Technology stack](#technology-stack)), along with the webhook worker, Stripe billing sync, scheduled jobs, the MCP server, CI/CD, and Terraform for AWS. The integration suite runs against real Postgres and validates every response against `openapi.yaml`. Production doesn't exist yet: the [one-time setup](#one-time-setup-phase-0) hasn't been run, so `deploy.yml` skips with a notice until it is. Day-to-day work happens on the `dev` branch (see [Branches, CI, and deployment](#branches-ci-and-deployment)). Every product decision is settled and written into the spec page it governs; the [Changelog](https://compositecode.github.io/substratalapps.com/changelog/) records when each was made.
 
 ## Technology stack
 

@@ -1,4 +1,4 @@
--- 0002_subscriptions: subscriber billing (DECISIONS.md #39).
+-- 0002_subscriptions: subscriber billing (API Reference → Billing; Changelog 2026-10-18).
 --
 -- Pricing bills the people who use Substratal's apps (Free and Standard,
 -- individually or through an Organization) instead of the Application

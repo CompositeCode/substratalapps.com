@@ -488,7 +488,7 @@ The platform raises a small, fixed set of notifications itself, about the User's
 | `security.mfa_disabled` | `high` | TOTP is turned off by the User, or reset by support. | — |
 | `security.session_reuse_detected` | `high` | A reused refresh token revokes a session ([`refresh_token_reused`](../auth/#post-v1authtokenrefresh)). | `session_id` |
 | `account.organization_invitation` | `normal` | A `pending` membership is created for an existing User ([Organizations → Adding members](../organizations/#post-v1organizationsidmembers)). | `organization_id`, `invited_by` |
-| `account.access_granted` | `normal` | The User gains resolved access to an Application (the same moment `access.granted` fires). Not raised for access granted in the transaction that creates the User, or within 60 seconds of signup, so a new account isn't greeted with one alert per app it starts with. | `application_id` |
+| `account.access_granted` | `normal` | The User gains resolved access to an Application (the same moment `access.granted` fires). Raised only for access a developer or admin grants (`purchase`, `trial`, `admin_grant`, or `org_seat`), never for [platform-managed](../../domain-model/entitlements/#platform-managed-entitlements) `free` or `subscription` Entitlements: signing up, subscribing to Standard, or a new free Application would otherwise push one alert per app. Also not raised within 60 seconds of signup. | `application_id` |
 
 `billing.` categories are reserved for [subscription](../billing/) alerts, such as a failed payment. None are sent yet; Stripe emails the customer directly.
 

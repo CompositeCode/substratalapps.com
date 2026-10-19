@@ -7,14 +7,20 @@ nav_order: 15
 # Changelog
 {: .no_toc }
 
-What's changed in this specification over time. Questions still awaiting a decision are tracked in the repo's [`DECISIONS.md`](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md) and marked with an "Awaiting decision" callout on the pages they affect; this page tracks what's already *changed*. When a decision is made, add a new dated entry here rather than editing an old one.
+What's changed in this specification over time. Every decision is written into the page it governs, and recorded here as a dated entry. Add a new entry rather than editing an old one. Numbers like "#39" in older entries refer to the decision log the repository kept until 2026-10-18.
 {: .fs-6 .fw-300 }
 
 ---
 
+## 2026-10-18 — Billing options settled; decision log retired
+
+- **Billing options** (decision #31, the last open question): Standard is billed **monthly in USD only**, with **no annual plan and no trial**. Free is the way to try Substratal's apps, and never needs a card. See [Pricing → Stripe catalog](../pricing/#stripe-catalog). Either option can be added later as Stripe configuration, without an API change.
+- **Push alerts and platform-managed access.** The [`account.access_granted`](../api-reference/notifications/#platform-alerts) platform alert is raised only for access a developer or admin grants, never for platform-managed `free` or `subscription` Entitlements. Under subscriber billing, subscribing to Standard or publishing a free Application would otherwise have pushed one alert per app to every affected User.
+- **The repository's `DECISIONS.md` is retired.** No decisions are open, every answer lives on the page it governs, and this Changelog records when each was made. The "Awaiting decision" callout style is removed from the site.
+
 ## 2026-10-18 — Subscriber billing applied; decisions folded into the spec
 
-**Subscriber billing** ([DECISIONS.md #39](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#resolved), now resolved). The Free/Standard pricing from 2026-10-17 is now the API:
+**Subscriber billing** (decision #39, now resolved). The Free/Standard pricing from 2026-10-17 is now the API:
 
 - **[Billing](../api-reference/billing/) is rewritten.** The four `/v1/tenants/{id}/…` billing endpoints are gone. In their place: `GET /v1/users/{id}/subscription`, `POST /v1/users/me/billing/checkout-sessions` and `…/portal-sessions`, and `GET`/`PATCH /v1/organizations/{id}/subscription` with the Organization's own Checkout and Portal sessions. A new Subscription object (`sbs_`) belongs to a User or an Organization; Organizations choose which members it covers with `member_scope`.
 - **Access stays Entitlement-based.** `Entitlement.source` gains `free` and `subscription`, both [platform-managed](../domain-model/entitlements/#platform-managed-entitlements): every User gets free Applications at signup, and a covering subscription grants every standard Application. Admins can disable and re-enable them; anything else returns `409 entitlement_platform_managed`. Entitlements gain `subscription_id`.
@@ -36,19 +42,19 @@ New: [Push Notifications](../api-reference/notifications/), so an Application ca
 - **Platform alerts.** A fixed catalog of `security.*` and `account.*` notifications (new sign-in, password or email changed, MFA disabled, token reuse, organization invitation, access granted), pushed to the devices of Applications that opt in with the new `receives_platform_notifications` field.
 - **Everywhere else it touches:** 17 operations under a new Notifications tag in `openapi.yaml` (`info.version` `1.0.0-draft.3`), new id prefixes (`dvc_`, `pcr_`, `ntf_`, `ndl_`), webhook events (`device.registered`, `device.deactivated`, `device.deleted`, `notification.push_failed`, `push_credential.failed`), audit actions (`push_credential.created`/`updated`/`deleted`, `device.deleted`), [Database Schema](../domain-model/database-schema/#push_credentials-devices-notifications-notification_deliveries), a new [Domain Model → Notifications](../domain-model/notifications/) page, rate limits and an SLO in [Non-Functional Requirements](../non-functional-requirements/), the export and erasure cascade, Apple, Google, and browser push services as [sub-processors](../compliance/), two new [Workflows](../workflows/#an-application-sends-a-push-alert), and the [Roadmap](../roadmap/#phase-2).
 
-The defaults this rests on (opt-in platform pushes, no broadcast endpoint yet, the per-recipient limit, 90-day retention, no quiet hours yet) are listed for confirmation in [DECISIONS.md #40](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#resolved). None blocks building. Until the reference implementation builds the feature, every Notifications operation returns `501 not_implemented`.
+The defaults this rests on (opt-in platform pushes, no broadcast endpoint yet, the per-recipient limit, 90-day retention, no quiet hours yet) are listed for confirmation in decision #40. None blocks building. Until the reference implementation builds the feature, every Notifications operation returns `501 not_implemented`.
 
 ## 2026-10-17 — Free and Standard pricing; OpenAPI Specification section
 
-**Pricing** ([DECISIONS.md #38](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#resolved)). Pricing now has two tiers, paid by the people who use Substratal's apps rather than by the Application owner:
+**Pricing** (decision #38). Pricing now has two tiers, paid by the people who use Substratal's apps rather than by the Application owner:
 
 - **Free** gives every User the Applications, features, and services Substratal designates as free. No card is required.
 - **Standard** is **$6 per user per month** for access to every Application and service. A User subscribes for themselves, or an Organization subscribes for the members it covers.
 - **Business and Enterprise** pricing, tailored to an Organization's needs, tenancy, and data location, comes later. Until then, `isolated` and `dedicated_region` tenancy are reserved for it.
 
-The previous Starter / Team / Enterprise plans, their per-Tenant limits, and Tenant restricted mode are retired from [Pricing](../pricing/). [Billing system of record](../domain-model/orders-and-audit/#billing-system-of-record), the [Glossary](../glossary/), the [Roadmap](../roadmap/), and [NFR → Audit log lifecycle](../non-functional-requirements/#audit-log-lifecycle) are updated to match. [DECISIONS.md #31](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#31-published-prices-and-billing-options) now covers only annual plans and a Standard trial, and #35 is withdrawn.
+The previous Starter / Team / Enterprise plans, their per-Tenant limits, and Tenant restricted mode are retired from [Pricing](../pricing/). [Billing system of record](../domain-model/orders-and-audit/#billing-system-of-record), the [Glossary](../glossary/), the [Roadmap](../roadmap/), and [NFR → Audit log lifecycle](../non-functional-requirements/#audit-log-lifecycle) are updated to match. decision #31 now covers only annual plans and a Standard trial, and #35 is withdrawn.
 
-The API changes that implement the new model aren't applied yet. They're proposed in [DECISIONS.md #39](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#resolved), and every affected page (Billing, Tenancy, Entitlements, Applications, Organizations, Webhooks, Conventions, Access Control, Database Schema, Workflows) carries an "Awaiting decision" callout until then. `openapi.yaml` is unchanged.
+The API changes that implement the new model aren't applied yet. They're proposed in decision #39, and every affected page (Billing, Tenancy, Entitlements, Applications, Organizations, Webhooks, Conventions, Access Control, Database Schema, Workflows) carries an "Awaiting decision" callout until then. `openapi.yaml` is unchanged.
 
 **OpenAPI Specification.** A new top-level section for developers building against the API: [OpenAPI Specification](../openapi/) explains how to read, download, validate, and generate clients from `openapi.yaml`. The [Interactive Reference](../openapi/reference/) renders the document with Swagger UI, including "Try it out" against a local devserver.
 
@@ -62,7 +68,7 @@ The first implementation's contract tests validate every response against `opena
 - GET /organizations/{id}/entitlements: declared the filters its prose already promised ("same filters as GET /v1/entitlements": application_id, status, order_id, ends_before, include_inactive).
 - GET /tenants: declared owner_user_id and owner_organization_id, which Tenancy → GET /v1/tenants already listed for tenants.manage.
 
-Questions the build surfaced where the spec was silent or self-contradictory are recorded as [DECISIONS.md #32–#37](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#awaiting-a-decision).
+Questions the build surfaced where the spec was silent or self-contradictory are recorded as decision #32–#37.
 
 ## 2026-10-06 — Domain Model and API Reference review
 
@@ -103,11 +109,11 @@ A review of every Domain Model and API Reference page against each other, the da
 - **Removed the Decisions page.** Every resolved decision (#1–#15) now lives on the page an implementer would actually read, with its rationale, instead of on a separate log. For example, identity is in [Auth → Native auth and per-Organization SSO](../api-reference/auth/#native-auth-and-per-organization-sso), and billing ownership is in [Orders & Audit → Billing system of record](../domain-model/orders-and-audit/#billing-system-of-record). New sections were added where a page didn't yet carry the reasoning, among them [Trust Model → Applications are separately hosted](../trust-model/#applications-are-separately-hosted), [Tenancy → Tenant vs. Organization](../domain-model/tenancy/#tenant-vs-organization), [Settings → Schema validation](../domain-model/settings/#schema-validation), and [Pricing → How the subscription is charged](../pricing/#how-the-subscription-is-charged). Every link to the old page was repointed.
 - **Confirmed decisions #16–#30**, which the implementation-readiness pass below had written into the spec as proposals. The spec already implemented each one, so the change here is that their reasoning is now stated as settled on the page each one governs: app-token issuance ([Auth → Getting an app token](../api-reference/auth/#getting-an-app-token)), [app-confined API Key permissions](../api-reference/api-keys/#app-confined-permissions), concierge onboarding, derived `access.*` webhooks, `order_id` as a reference, typed settings via views and expression indexes, self-service Organization creation, seats/lapse/Stripe object model, the 7-day erasure grace period, the region list, Amazon SES, and test-mode isolation.
 - **Applied #29: renamed `GET /v1/users/{id}/applications/{appId}/effective-permissions` to `GET /v1/users/{id}/apps/{appId}/effective-permissions`** ([Roles & Permissions](../api-reference/roles-and-permissions/#get-v1usersidappsappideffective-permissions)), matching the per-user Profile and Settings paths. Free to rename now, since no endpoint is implemented yet. The `operationId` (`permissions.getEffective`) and MCP tool name are unchanged.
-- **Opened #31** in [`DECISIONS.md`](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md#31-published-prices-and-billing-options): confirming the [Pricing](../pricing/) dollar amounts, plus annual plans, a Team trial, and whether Starter requires a card on file. None blocks the build.
+- **Opened #31** in the decision log: confirming the [Pricing](../pricing/) dollar amounts, plus annual plans, a Team trial, and whether Starter requires a card on file. None blocks the build.
 
 ## 2026-10-05 — implementation-readiness pass
 
-A full review aimed at "can development start and finish against this spec without guessing". Every fix below is stated inline on the page it affects. The product calls this pass had to make are logged as **Decisions #16–#30, all 🟡 Proposed** (now in [`DECISIONS.md`](https://github.com/CompositeCode/substratalapps.com/blob/main/DECISIONS.md), each marked with an "Awaiting decision" callout on the page it affects). Each has a complete default written into the spec and a named alternative, so none blocks implementation, but each needs confirmation.
+A full review aimed at "can development start and finish against this spec without guessing". Every fix below is stated inline on the page it affects. The product calls this pass had to make are logged as **Decisions #16–#30, all 🟡 Proposed** (then in the repository's decision log, each marked with an "Awaiting decision" callout on the page it affects). Each has a complete default written into the spec and a named alternative, so none blocks implementation, but each needs confirmation.
 
 **Contradictions fixed**
 
