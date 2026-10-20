@@ -18,3 +18,4 @@ dist/
 infra/terraform/**/.terraform/
 infra/terraform/**/*.tfstate*
 infra/terraform/**/.terraform.lock.hcl.bak
+.claude/settings.local.json

@@ -227,7 +227,7 @@ resource "aws_iam_openid_connect_provider" "github" {
 }
 
 locals {
-  oidc_sub = "repo:${var.github_repository}"
+  oidc_sub = var.github_oidc_subject
 }
 
 # Read-only: terraform plan on pull requests into main.
