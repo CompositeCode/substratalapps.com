@@ -81,11 +81,12 @@ Every value `action` can take. It's mirrored exactly by the `AuditAction` enum i
 | Action | Fires when | `target.type` |
 |---|---|---|
 | `user.created` | `POST /v1/users`, `POST /v1/auth/signup`, or an invite via org membership | `user` |
-| `user.updated` | `users.manage` activates an `invited` User without a password (`PATCH status: active`). Suspension, reactivation, restore, email, and deletion each have their own action — **admin-only** | `user` |
+| `user.updated` | `users.manage` activates an `invited` User without a password (`PATCH status: active`), or changes a test-mode User's `expires_at`. Suspension, reactivation, restore, email, and deletion each have their own action — **admin-only** | `user` |
 | `user.email_changed` | An email change completes (self, after verification; or admin, immediately) | `user` |
 | `user.suspended` | `POST /v1/users/{id}/suspend`, or `PATCH status: suspended` — **admin-only** | `user` |
 | `user.reactivated` | `PATCH status: active` on a `suspended` User, or on a soft-deleted one (a restore) — **admin-only** | `user` |
 | `user.deleted` | `DELETE /v1/users/{id}`, or the soft-delete step of an erasure request | `user` |
+| `user.expired` | A test-mode User's `expires_at` passes; written by the expiry sweep (actor `system`). See [Auth → Test-mode Users → Lifetime](../../api-reference/auth/#lifetime) | `user` |
 | `user.erasure_requested` | `POST /v1/users/{id}/erasure-requests` | `user` |
 | `user.erasure_cancelled` | `DELETE /v1/users/{id}/erasure-requests/current` — **admin-only** | `user` |
 | `user.erased` | The hard-delete cascade completes (actor `system`) | `user` |

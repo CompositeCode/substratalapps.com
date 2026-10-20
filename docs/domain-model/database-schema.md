@@ -39,11 +39,13 @@ The entity pages describe *what* each field means to an API caller. This page is
 | `signup_application_id` | `text` | nullable, `references applications(id)` |
 | `stripe_customer_id` | `text` | nullable, `unique` — set at the User's first Checkout; internal, never returned by the API |
 | `test_mode` | `boolean` | not null, default `false` |
+| `expires_at` | `timestamptz` | nullable, `check ((expires_at is not null) = test_mode)`, `check (expires_at <= created_at + interval '30 days')` — set on every test-mode User, never on a live one |
+| `expired_processed_at` | `timestamptz` | nullable — internal, never returned. Set when the expiry sweep has revoked the User's sessions and fired its events; cleared when `expires_at` moves later |
 | `created_at`, `updated_at`, `last_login_at` | `timestamptz` | `last_login_at` nullable |
 | `version` | `integer` | not null, default `1` |
 | `deleted_at` | `timestamptz` | nullable — soft-delete |
 
-**Indexes:** `unique (email, test_mode) where deleted_at is null` (a deleted user's email should be reusable by a new signup, which a plain unique index would block, and test-mode signups mustn't collide with live ones); `(lower(email) text_pattern_ops)` for the `q` prefix search; `(status)` for admin filtering. No `organization_id` here — see `organization_memberships` below; a single column on `users` would cap a User at one Organization. No `auth`/password column here either — see `user_identities` below; a User can hold more than one login method, per [Auth → Native auth and per-Organization SSO](../../api-reference/auth/#native-auth-and-per-organization-sso).
+**Indexes:** `(expires_at) where test_mode and expired_processed_at is null` for the expiry sweep; `unique (email, test_mode) where deleted_at is null` (a deleted user's email should be reusable by a new signup, which a plain unique index would block, and test-mode signups mustn't collide with live ones); `(lower(email) text_pattern_ops)` for the `q` prefix search; `(status)` for admin filtering. No `organization_id` here — see `organization_memberships` below; a single column on `users` would cap a User at one Organization. No `auth`/password column here either — see `user_identities` below; a User can hold more than one login method, per [Auth → Native auth and per-Organization SSO](../../api-reference/auth/#native-auth-and-per-organization-sso).
 
 ## user_identities, sso_connections
 
@@ -520,7 +522,7 @@ devices (
   app_version text check (char_length(app_version) <= 50),
   status text not null default 'active' check (status in ('active','inactive')),
   inactive_reason text check (inactive_reason in
-    ('unregistered','session_revoked','user_suspended','user_deleted','stale','limit','credential_removed')),
+    ('unregistered','session_revoked','user_suspended','user_deleted','test_user_expired','stale','limit','credential_removed')),
   deactivated_at timestamptz,
   last_registered_at timestamptz not null default now(),
   last_delivery_at timestamptz,

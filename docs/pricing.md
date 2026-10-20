@@ -51,7 +51,7 @@ The count is **provisioned, not activity-based**. It counts who is covered, not 
 
 The count syncs to Stripe once a day with no mid-period proration. Each invoice charges for the count on the day before it's issued. Real-time sync with prorations was considered and not chosen: it's more accurate, but noisier for customers and means more Stripe API calls.
 
-A live subscription never counts test-mode Users, so integration tests can't consume paid seats. A test-mode subscription runs in Stripe test mode and counts only test-mode members.
+A live subscription never counts test-mode Users, so integration tests can't consume paid seats. A test-mode subscription runs in Stripe test mode and counts only test-mode members whose [`expires_at`](../api-reference/auth/#lifetime) hasn't passed. Test-mode Users last 24 hours by default and never more than 30 days, so test mode can't stand in for a free production tier.
 
 ## How access follows the tier
 

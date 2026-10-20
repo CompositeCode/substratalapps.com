@@ -183,6 +183,7 @@ Why the derived, per-user `access.granted`/`access.revoked` events exist, and wh
 - `org_grant_changed` (an org grant's status or `member_scope` changed)
 - `org_member_added`, `org_member_removed`
 - `user_suspended`, `user_reactivated`, `user_deleted`
+- `test_user_expired`, `test_user_extended` (a test-mode User's [`expires_at`](../auth/#lifetime) passed, or was moved later after it had)
 
 A change that doesn't flip someone's resolved access fires nothing for them. For example, an org grant is disabled, but the member also holds a personal Entitlement.
 
@@ -199,6 +200,7 @@ A change that doesn't flip someone's resolved access fires nothing for them. For
 | `entitlement.deleted` | Hard-deleted as an error correction. | `entitlement` (last state) |
 | `role.assigned` / `role.removed` | A Role assignment is created or deleted. | `user_id`, `role_id`, `application_id` |
 | `user.suspended` / `user.reactivated` / `user.deleted` | User status changes. | `user_id` |
+| `user.expired` | A test-mode User's [`expires_at`](../auth/#lifetime) passed. Only ever delivered to test-mode subscriptions. | `user_id`, `expires_at` |
 | `organization.member_added` / `organization.member_removed` | A membership becomes `active` (on acceptance, or a direct add), or an active membership is removed. Pending invitations don't fire either. | `organization_id`, `user_id`, `role` |
 | `application.review_status_changed` | The Application is approved, rejected, suspended, or reinstated. | `application_id`, `review_status`, `review_notes` |
 | `device.registered` / `device.deactivated` / `device.deleted` | A push [Device](../notifications/#devices) is registered or reactivated, becomes `inactive`, or is deleted. | `device` (never the token) |

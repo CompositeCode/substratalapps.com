@@ -45,6 +45,7 @@ Password, MFA, and session endpoints under `/v1/users/{id}/…` are specified on
   "mfa_enabled": false,
   "signup_application_id": "app_timetrack",
   "test_mode": false,
+  "expires_at": null,
   "created_at": "2026-01-14T18:02:11Z",
   "updated_at": "2026-09-20T14:12:00Z",
   "last_login_at": "2026-10-02T09:41:03Z"
@@ -57,6 +58,7 @@ Password, MFA, and session endpoints under `/v1/users/{id}/…` are specified on
 | `mfa_enabled` | `true` if any `password` identity has confirmed TOTP. Read-only here — see [Auth → MFA](../auth/#mfa-totp). |
 | `signup_application_id` | Which Application the User signed up through, if any. Read-only, informational; grants nothing. |
 | `test_mode` | `true` if created by a `satk_test_` key — see [Conventions → Authentication](../conventions/#authentication). |
+| `expires_at` | When a test-mode User stops working; `null` for every live User. Defaults to 24 hours after creation, at most 30 days. See [Auth → Test-mode Users → Lifetime](../auth/#lifetime). |
 
 ## `GET /v1/users`
 
@@ -113,6 +115,7 @@ GET /v1/users?status=active&email=jordan@example.com
 
 - `status` may be `invited` (default) or `active`. An `invited` user gets an invitation email (unless `send_invitation: false`) and activates via [`POST /v1/auth/invitations/accept`](../auth/#post-v1authinvitationsaccept). An `active` user created this way has no password; they sign in by using [`password/forgot`](../auth/#post-v1authpasswordforgot) (or SSO, once live). An admin can never set a user's password directly.
 - Creating a user also creates a default [Profile](../../domain-model/profiles/) (with `display_name` if given) and [Settings](../../domain-model/settings/), and assigns the `member` platform role — one transaction (see [Non-Functional Requirements → Transaction boundaries](../../non-functional-requirements/#transaction-boundaries)).
+- With a `satk_test_` key, the User is test-mode and may take `expires_at` (default 24 hours from now, at least 15 minutes from now, at most 30 days); see [Auth → Test-mode Users → Lifetime](../auth/#lifetime). A live credential sending `expires_at` gets `422 validation_failed`.
 - Writes Audit Event `user.created`.
 
 ## `GET /v1/users/{id}`
@@ -145,6 +148,8 @@ A User's Organization memberships aren't a field here — see `GET /v1/organizat
 | `→ invited` | Rejected. | — |
 
 Rejected transitions return `409 invalid_status_transition`. A self-service caller sending `status` gets `403 status_change_forbidden`.
+
+**`users.manage`** may also set a test-mode User's `expires_at`, within the same range as at creation: no earlier than 15 minutes from now, and no later than 30 days after `created_at`. Moving it later on a User that has already expired brings them back (until the 30-day purge): login works again, and `access.granted` fires for every Application they still have active access to. Moving it earlier doesn't end the account at once; to cut a test run off immediately, suspend the User. Writes `user.updated`. A self-service caller sending `expires_at` gets `403 status_change_forbidden`.
 
 ## `DELETE /v1/users/{id}`
 

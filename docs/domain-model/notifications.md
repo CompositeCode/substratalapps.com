@@ -37,7 +37,7 @@ One install of one Application, on one device, signed in as one User, with the p
 | `name`, `app_version` | string, nullable | Labels the client supplies, for the User's own device list and for support. |
 | `session_id` | string, nullable | The [Session](../users-and-organizations/#session) that registered the device. Revoking that session deactivates it. `null` when an app key registered it. |
 | `status` | enum | `active` \| `inactive`. Only `active` devices are sent to. |
-| `inactive_reason` | enum, nullable | Set exactly when `status` is `inactive`: `unregistered` (the provider reported the token gone), `session_revoked`, `user_suspended`, `user_deleted`, `stale` (not re-registered for 270 days), `limit` (displaced by a 21st device), or `credential_removed` (a `web_push` device whose VAPID key was deleted). |
+| `inactive_reason` | enum, nullable | Set exactly when `status` is `inactive`: `unregistered` (the provider reported the token gone), `session_revoked`, `user_suspended`, `user_deleted`, `test_user_expired` (a test-mode User's `expires_at` passed), `stale` (not re-registered for 270 days), `limit` (displaced by a 21st device), or `credential_removed` (a `web_push` device whose VAPID key was deleted). |
 | `last_registered_at` | timestamp | The latest registration or refresh. |
 | `last_delivery_at` | timestamp, nullable | The latest delivery a provider accepted. |
 | `test_mode` | boolean | |

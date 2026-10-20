@@ -12,6 +12,16 @@ What's changed in this specification over time. Every decision is written into t
 
 ---
 
+## 2026-10-20 — Test-mode Users are time-limited
+
+Test mode already never counted toward billing (decision #36, confirmed on 2026-10-18). Now every **test-mode User expires**, so a test account can't stand in for a free production account. See [Auth → Test-mode Users → Lifetime](../api-reference/auth/#lifetime).
+
+- **Users gain `expires_at`.** It's set on every test-mode User and is `null` on every live one. The default is **24 hours** after creation. `POST /v1/users` with a `satk_test_` key, and signup with `"test_mode": true`, accept `expires_at` for a shorter or longer run: at least 15 minutes away, and at most 30 days after creation, the existing test-data purge horizon. `users.manage` can move it with `PATCH /v1/users/{id}`, which also brings back an expired User that hasn't been purged yet.
+- **At expiry** sign-in, refresh, and app-token issuance return the new `403 test_user_expired`, and every token already issued stops working. No token's `exp` is ever later than the User's `expires_at`. The 5-minute entitlement-expiry sweep then revokes sessions and devices (reason `test_user_expired`), fires `access.revoked` (reason `test_user_expired`) and the new `user.expired` webhook, and writes the `user.expired` Audit Event. `status`, Entitlements, Roles, and memberships are unchanged. An expired test User isn't a covered member of a test-mode subscription.
+- Test-mode API Keys, Organizations, and Applications don't expire. The nightly 30-day purge is unchanged.
+
+Not yet built: until it is, test-mode Users last until the 30-day purge, as before. `openapi.yaml` gains `expires_at` in the same change as the code. The build steps are in the repository's `PLAN.md` → Test-mode User expiry.
+
 ## 2026-10-18 — Push notifications implemented
 
 [Push Notifications](../api-reference/notifications/) is built: all 17 operations work, and none returns `501` any more. Nothing about the API's shape changed. A few behaviors the spec left implicit are now stated:

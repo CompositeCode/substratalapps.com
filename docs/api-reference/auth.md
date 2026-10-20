@@ -136,7 +136,7 @@ The platform access token's claims:
 - Sends a verification email (token TTL 24 hours). An unverified User **can** log in; `email_verified` is carried in every token so an Application can decide for itself whether to gate anything on it.
 - `application_id` is optional and **grants nothing** — it records which Application the signup came from (`signup_application_id` on the User, used to brand the verification email with that app's `email_from_name`) and is otherwise informational. Access to an Application still requires an [Entitlement](../entitlements/), which the developer's own backend grants (see [Workflows → Purchase → access](../../workflows/#purchase--access)).
 - If the email belongs to an `invited` User, signup is **rejected** with `409 email_taken` (`details.reason: "invitation_pending"`), and a fresh invitation email is sent to that address (this counts against the same 3-per-email-per-hour limit as `email/verify/resend`). An invitation can only be completed with its `inv_` token, through [`invitations/accept`](#post-v1authinvitationsaccept), because whatever was already attached to the invited account (Entitlements, Roles, Organization memberships) must only go to someone who controls the mailbox. Completing it by signup would hand all of that to anyone who knew the address.
-- `test_mode` (optional, default `false`): `true` creates a test-mode User instead. See [Test-mode Users](#test-mode-users).
+- `test_mode` (optional, default `false`): `true` creates a test-mode User instead. A test-mode signup may also send `expires_at` to choose how long the account lasts (default 24 hours). See [Test-mode Users](#test-mode-users).
 - **Password policy:** 12–128 characters; rejected if it appears in the bundled breached-password list (top 100,000) or equals the email address. No composition rules. Stored as Argon2id (`m=19456 KiB, t=2, p=1`).
 
 | Error | Status | When |
@@ -172,6 +172,7 @@ Clients must branch on `mfa_required` before reading `access_token`. Add `"test_
 |---|---|---|
 | `invalid_credentials` | 401 | Unknown email, wrong password, an `invited` User with no password yet, or an SSO-only User (no `password` identity). Deliberately one code for all four — no account enumeration. |
 | `account_suspended` | 403 | Correct credentials, but `status: suspended`. |
+| `test_user_expired` | 403 | Correct credentials, but the test-mode User's `expires_at` has passed. See [Test-mode Users → Lifetime](#lifetime). |
 | `too_many_attempts` | 429 | 5 failed attempts against this account's `password` identity in 15 minutes locks that identity for 15 minutes; `Retry-After` is set. Successful login resets the counter. (The counter lives on the [UserIdentity](../../domain-model/users-and-organizations/#useridentity), so a lockout never blocks the same User's SSO login.) |
 
 Updates `last_login_at` on the User and `last_used_at` on the matching UserIdentity, when the session is actually issued (for an MFA login, at `mfa/verify`).
@@ -187,6 +188,18 @@ A User created by a test-mode API Key (or by signup with `"test_mode": true`) is
 | `POST /v1/auth/password/forgot`, `POST /v1/auth/email/verify/resend` | `test_mode` picks which account to email. |
 
 Endpoints that take a token (`mfa/verify`, `token/refresh`, `password/reset`, `email/verify`, `invitations/accept`, `oauth/token`) don't need it, because the token already belongs to exactly one account. Every token issued to a test-mode User carries `"test_mode": true`, and the API confines that token to test-mode rows exactly as it does a `satk_test_` key. Applications themselves are shared catalog rows, visible in both modes, so a test-mode User gets app tokens for the same Applications a live one does, as long as they hold a (test-mode) Entitlement to it.
+
+### Lifetime
+
+Every test-mode User is **time-limited**. Its `expires_at` is set when it's created, and at that moment the account stops working. Live Users never expire (`expires_at` is always `null`).
+
+- **Default: 24 hours** after creation. A caller creating a test-mode User, through [`POST /v1/users`](../users/#post-v1users) with a `satk_test_` key or through signup with `"test_mode": true`, may send `expires_at` to choose a different lifetime, to suit what's being tested: a short-lived account for one CI run, or one that lasts a week for a manual QA pass.
+- **Range:** at least 15 minutes from now, and no later than **30 days after the User's `created_at`**, which is when its test data is purged. Anything outside that range is `422 validation_failed` (`details.reason: "expires_at_out_of_range"`). Sending `expires_at` for a live User is `422 validation_failed` (`details.reason: "live_user"`).
+- **Changing it:** `users.manage` can move `expires_at` with [`PATCH /v1/users/{id}`](../users/#patch-v1usersid), within the same range, to extend a run, end it early, or bring back an expired User that hasn't been purged yet.
+- **At expiry:** login returns `403 test_user_expired`, and every token issued to the User stops working, whatever its own `exp`. That covers access, refresh, and app tokens. No token is issued with an `exp` later than the User's `expires_at`, so an Application that verifies app tokens locally against JWKS stops accepting them at the same moment. Within 5 minutes, the expiry sweep revokes the User's sessions (`revoked_reason: test_user_expired`), deactivates their push devices, fires `access.revoked` (reason `test_user_expired`) for every Application they had active access to, and writes the `user.expired` Audit Event. Like suspension, expiry leaves `status` and the User's Entitlements, Roles, and memberships unchanged, so an extension restores exactly what was there and fires `access.granted` again.
+- **Purge:** the nightly purge of test-mode rows older than 30 days is unchanged. The 30-day ceiling on `expires_at` means a test User has always expired before its data is purged.
+
+Test-mode **API Keys**, Organizations, and Applications don't expire. Only the accounts people or test suites sign in as do.
 
 ## `POST /v1/auth/mfa/verify`
 
@@ -256,6 +269,7 @@ Both paths produce the identical app token. Either way, issuance **fails** if th
 | `application_not_available` | 409 | The Application's `review_status` is `suspended`/`rejected`/`pending_review` — see [Applications → review lifecycle](../../domain-model/applications/#the-review-lifecycle). A state conflict, not a permission failure, so it's the same `409` wherever this code appears. |
 | `tenant_suspended` | 403 | The Application's Tenant is `suspended` by the platform. See [Tenancy](../../domain-model/tenancy/#fields). |
 | `account_suspended` | 403 | The User is suspended. |
+| `test_user_expired` | 403 | The test-mode User's `expires_at` has passed. See [Test-mode Users → Lifetime](#lifetime). |
 
 ### The app token
 
@@ -574,6 +588,7 @@ GET https://api.substratalapps.com/.well-known/jwks.json
 |---|---|---|
 | `invalid_credentials` | 401 | Login or password change with a wrong password/unknown email. |
 | `account_suspended` | 403 | The User is suspended. |
+| `test_user_expired` | 403 | A test-mode User whose `expires_at` has passed tried to sign in, refresh, or get an app token. |
 | `too_many_attempts` | 429 | Account lockout after repeated failures. |
 | `email_taken` | 409 | Signup with an email already in use. |
 | `weak_password` | 422 | Password fails the policy. |

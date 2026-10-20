@@ -12,6 +12,7 @@ See [README.md](README.md) for why this file — and the others alongside it —
 6. [Phase 3 — Marketplace & scale features](#phase-3--marketplace--scale-features)
 7. [Cross-cutting, build throughout](#cross-cutting-build-throughout)
 8. [Status](#status)
+9. [Test-mode User expiry](#test-mode-user-expiry)
 
 ---
 
@@ -104,3 +105,18 @@ Not a phase — these apply from Phase 0 onward and should never be "added later
 **Push notifications were added on 2026-10-17 and built on 2026-10-18** (Phase 2 item 9 above).
 
 **Pricing changed on 2026-10-17**: two tiers, Free and Standard ($6 per user per month), paid by the people using Substratal's apps, individually or through an Organization. **Subscriber billing was built on 2026-10-18**: Phase 2 item 7 now implements it, replacing the earlier developer-billed Starter/Team/Enterprise code. Billing is monthly in USD, with no annual plan and no Standard trial ([Pricing → Stripe catalog](https://compositecode.github.io/substratalapps.com/pricing/#stripe-catalog)). Either can be added later as Stripe configuration.
+
+## Test-mode User expiry
+
+Specified 2026-10-20 ([Auth → Test-mode Users → Lifetime](https://compositecode.github.io/substratalapps.com/api-reference/auth/#lifetime), [Changelog](https://compositecode.github.io/substratalapps.com/changelog/)); **not yet built**. Each step can land and be tested on its own, in this order:
+
+1. **Migration `0004_test_user_expiry`.** Add `users.expires_at` and `users.expired_processed_at`. Backfill existing test-mode Users with `created_at + interval '30 days'`, which is when the purge would have removed them anyway, so nothing changes for them. Then add `check ((expires_at is not null) = test_mode)` and `check (expires_at <= created_at + interval '30 days')`, and the partial index `(expires_at) where test_mode and expired_processed_at is null`. Add `test_user_expired` to the `sessions.revoked_reason` and `devices.inactive_reason` checks.
+2. **Creation** (`internal/core/users_create.go`, `createUser`). Test-mode Users get `expires_at` from the request, or now + 24 hours by default. Validate the range (≥ 15 minutes from now, ≤ `created_at` + 30 days) as `422 validation_failed` with `expires_at_out_of_range`, and reject it on a live create with `live_user`. This covers both `POST /v1/users` and test-mode signup.
+3. **Enforcement at the edge** (`internal/core/principal.go`, the per-request User lookup). Load `expires_at` alongside `status`, and reject an expired test-mode User's tokens the same way a suspended User's are. Login, `token/refresh`, `app-tokens`, `oauth/token`, and the `mfa/verify` step return `403 test_user_expired`. This is what makes expiry exact to the second. The sweep below only tidies up.
+4. **Token lifetimes** (`internal/core/auth_session.go`). Cap the access token's `exp`, the app token's `exp`, and the session's `absolute_expires_at` at the User's `expires_at`, so Applications that verify app tokens locally against JWKS stop accepting them on time without calling the API.
+5. **`PATCH /v1/users/{id}` `expires_at`** (`users.manage` only; self → `403 status_change_forbidden`). Same range check. Moving it later on an expired User clears `expired_processed_at` and fires `access.granted` (reason `test_user_extended`) for every Application they still have active access to. Writes `user.updated`.
+6. **Expiry sweep**, in the existing `entitlement-sweep` job (every 5 minutes, no new schedule). Select `test_mode and expires_at <= now() and expired_processed_at is null`. For each, in one transaction: revoke sessions (`test_user_expired`), deactivate devices, fire `access.revoked` (reason `test_user_expired`) per Application with active access, enqueue the `user.expired` webhook, write the `user.expired` Audit Event (actor `system`), and set `expired_processed_at`. Reuse the suspension path's revoke-and-notify code, with the reason passed in.
+7. **Subscriptions.** The test-mode covered-member count excludes expired Users (`internal/core/subscriptions.go`). Live counts are unaffected, because they never include test-mode Users.
+8. **OpenAPI.** Add `expires_at` to `User`, to the `POST /v1/users` and signup request bodies, and to `PATCH /v1/users/{id}`. Add `test_user_expired` to the error, revoke-reason, and device-reason enums, and `user.expired` to the webhook and audit enums. Bump `info.version`, then run `make gen`.
+9. **Tests.** Integration tests for each of these: the 24-hour default, the range errors, a token rejected after `expires_at` (with a test clock), `exp` capping, the sweep's events firing exactly once, extension restoring access, a live create rejecting `expires_at`, and the backfill leaving existing test Users working. Update the Quickstart acceptance test if it relies on a test User living longer than 24 hours.
+10. **Docs.** Remove the "Not yet built" line from the 2026-10-20 Changelog entry and add a short "built" entry, as was done for push notifications.

@@ -548,7 +548,7 @@ A device a User registers with their own token is tied to the session that regis
 |---|---|
 | Logout, or [revoking that session](../auth/#delete-v1usersidsessionssessionid) | Devices registered under that session become `inactive` (`session_revoked`). Logout from every session deactivates all of them. |
 | Password reset, refresh-token reuse, or MFA reset (each revokes sessions) | The same, after the [`security.*` alert](#platform-alerts) is raised. |
-| The User is suspended or soft-deleted | Every device they hold becomes `inactive` (`user_suspended` or `user_deleted`), including devices an app key registered. |
+| The User is suspended or soft-deleted, or a test-mode User expires | Every device they hold becomes `inactive` (`user_suspended`, `user_deleted`, or `test_user_expired`), including devices an app key registered. |
 | The User signs in again on the same install | The client re-registers its token, which reactivates the device under the new session. |
 | An app-key registration (`session_id: null`) | Not affected by logout, because the platform can't see the app's own sessions. The Application's backend should `DELETE` the device when its user signs out. |
 | No re-registration for 270 days | `inactive` (`stale`). Providers expire tokens from installs that are never opened, so a client should re-register on launch, at most once a day. |
