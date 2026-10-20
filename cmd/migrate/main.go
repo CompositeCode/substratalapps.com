@@ -3,6 +3,9 @@
 //	go run ./cmd/migrate                          # local Postgres (DATABASE_URL)
 //	DATABASE_BACKEND=dataapi go run ./cmd/migrate # Aurora via the Data API (deploy.yml)
 //	go run ./cmd/migrate -new add_widgets         # create the next numbered file
+//
+// With SUPERADMIN_EMAIL set, it then makes sure that account exists as the
+// protected superadmin (migration 0004), so every deploy re-asserts it.
 package main
 
 import (
@@ -65,5 +68,20 @@ func main() {
 	}
 	if len(done) == 0 {
 		fmt.Println("up to date")
+	}
+	if email := os.Getenv("SUPERADMIN_EMAIL"); email != "" {
+		base, err := wire.NewBase(ctx)
+		if err != nil {
+			log.Fatal(err)
+		}
+		id, created, err := base.Server(nil).EnsureProtectedSuperadmin(ctx, email)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if created {
+			fmt.Println("superadmin created", id, "(no password yet: run cmd/admin bootstrap or use password reset)")
+		} else {
+			fmt.Println("superadmin ensured", id)
+		}
 	}
 }

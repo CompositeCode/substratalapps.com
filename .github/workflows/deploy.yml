@@ -103,7 +103,8 @@ jobs:
           ARN=$(terraform output -raw db_cluster_arn 2>/dev/null || true)
           SECRET=$(terraform output -raw db_secret_arn 2>/dev/null || true)
           if [ -n "$ARN" ] && [ -n "$SECRET" ]; then
-            cd ../../.. && DATABASE_BACKEND=dataapi DB_CLUSTER_ARN="$ARN" DB_SECRET_ARN="$SECRET" go run ./cmd/migrate
+            cd ../../.. && DATABASE_BACKEND=dataapi DB_CLUSTER_ARN="$ARN" DB_SECRET_ARN="$SECRET" \
+              SUPERADMIN_EMAIL="${{ vars.SUPERADMIN_EMAIL }}" go run ./cmd/migrate
             echo "done=true" >> "$GITHUB_OUTPUT"
           else
             echo "done=false" >> "$GITHUB_OUTPUT"   # first deploy: the cluster doesn't exist yet
@@ -122,7 +123,8 @@ jobs:
         working-directory: infra/terraform/prod
         run: |
           ARN=$(terraform output -raw db_cluster_arn) SECRET=$(terraform output -raw db_secret_arn)
-          cd ../../.. && DATABASE_BACKEND=dataapi DB_CLUSTER_ARN="$ARN" DB_SECRET_ARN="$SECRET" go run ./cmd/migrate
+          cd ../../.. && DATABASE_BACKEND=dataapi DB_CLUSTER_ARN="$ARN" DB_SECRET_ARN="$SECRET" \
+            SUPERADMIN_EMAIL="${{ vars.SUPERADMIN_EMAIL }}" go run ./cmd/migrate
 
       - name: Smoke test
         if: steps.ready.outputs.ready == 'true'

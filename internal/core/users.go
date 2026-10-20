@@ -240,6 +240,11 @@ func (s *Server) UsersUpdate(w http.ResponseWriter, r *http.Request, id gen.User
 		if err := f.Err(); err != nil {
 			return err
 		}
+		if (newStatus != "" && newStatus != "active") || (newEmail != "" && !strings.EqualFold(newEmail, u.Email)) {
+			if err := c.guardProtected(u.ID); err != nil {
+				return err
+			}
+		}
 		if err := c.destructiveIf(newStatus == "suspended" && u.Status != "suspended"); err != nil {
 			return err
 		}
@@ -297,6 +302,22 @@ func (s *Server) UsersUpdate(w http.ResponseWriter, r *http.Request, id gen.User
 
 // transitionUser applies a users.manage status change (Users → PATCH
 // transition table), with its sessions, events, and audit.
+// guardProtected refuses any change that would lock out the protected
+// superadmin (migration 0004): suspend, delete, erase, re-address, or
+// demote it. The database enforces the same rule for every caller; this
+// turns it into a clear API error instead of a failed write.
+func (c *Call) guardProtected(userID string) error {
+	rows, err := c.q.Query(c.ctx, `select to_jsonb(true) from users where id = :u and protected`, db.Args{"u": userID})
+	if err != nil {
+		return err
+	}
+	if len(rows) > 0 {
+		return httpx.Conflict("user_protected",
+			"This User is the platform's protected superadmin; it can't be suspended, deleted, erased, re-addressed, or demoted.")
+	}
+	return nil
+}
+
 func (c *Call) transitionUser(u userRow, to, restoreEmail string) error {
 	bad := func() error {
 		return httpx.Conflict("invalid_status_transition", "The status change from "+u.Status+" to "+to+" isn't allowed.")
@@ -449,6 +470,9 @@ func (s *Server) UsersDelete(w http.ResponseWriter, r *http.Request, id gen.User
 		if u.Status == "deleted" {
 			return c.NoContent()
 		}
+		if err := c.guardProtected(u.ID); err != nil {
+			return err
+		}
 		if err := c.softDeleteUser(u); err != nil {
 			return err
 		}
@@ -478,6 +502,9 @@ func (s *Server) UsersSuspend(w http.ResponseWriter, r *http.Request, id gen.Use
 		}
 		u, err := c.visibleUser(uid)
 		if err != nil {
+			return err
+		}
+		if err := c.guardProtected(u.ID); err != nil {
 			return err
 		}
 		switch u.Status {
@@ -547,6 +574,9 @@ func (s *Server) UsersRequestErasure(w http.ResponseWriter, r *http.Request, id 
 		}
 		u, err := c.visibleUser(uid)
 		if err != nil {
+			return err
+		}
+		if err := c.guardProtected(u.ID); err != nil {
 			return err
 		}
 		var existing erasureRow

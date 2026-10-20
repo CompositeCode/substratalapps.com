@@ -2695,7 +2695,7 @@ components:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }
     Conflict:
-      description: "State conflict (version_conflict, idempotency_key_reused, entitlement_already_exists, entitlement_platform_managed, subscription_exists, invalid_status_transition, …)"
+      description: "State conflict (version_conflict, idempotency_key_reused, entitlement_already_exists, entitlement_platform_managed, subscription_exists, user_protected, invalid_status_transition, …)"
       content:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }

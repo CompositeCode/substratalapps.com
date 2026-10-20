@@ -42,8 +42,11 @@ The entity pages describe *what* each field means to an API caller. This page is
 | `created_at`, `updated_at`, `last_login_at` | `timestamptz` | `last_login_at` nullable |
 | `version` | `integer` | not null, default `1` |
 | `deleted_at` | `timestamptz` | nullable — soft-delete |
+| `protected` | `boolean` | not null, default `false` — the platform owner's account; see below |
 
 **Indexes:** `unique (email, test_mode) where deleted_at is null` (a deleted user's email should be reusable by a new signup, which a plain unique index would block, and test-mode signups mustn't collide with live ones); `(lower(email) text_pattern_ops)` for the `q` prefix search; `(status)` for admin filtering. No `organization_id` here — see `organization_memberships` below; a single column on `users` would cap a User at one Organization. No `auth`/password column here either — see `user_identities` below; a User can hold more than one login method, per [Auth → Native auth and per-Organization SSO](../../api-reference/auth/#native-auth-and-per-organization-sso).
+
+**Protected superadmin.** Triggers keep a `protected` User (the platform owner, re-asserted by every deploy) from being locked out, for every caller: an `UPDATE` that would clear `protected`, change `status` from `active`, set `deleted_at`, or change `email` or `test_mode` is rejected, as is a `DELETE`; `user_role_assignments` refuses to drop its `role_platform_superadmin` row; and `erasure_requests` refuses a scheduled erasure for it. Setting `app.protected_user_maintenance = 'on'` for one transaction lifts all three, for ops handing ownership to another account. See [Users → The protected superadmin](../../api-reference/users/#the-protected-superadmin).
 
 ## user_identities, sso_connections
 
