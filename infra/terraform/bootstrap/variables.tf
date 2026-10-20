@@ -3,10 +3,17 @@ variable "region" {
   default = "us-east-1"
 }
 
-variable "github_repository" {
-  description = "owner/name of the repository allowed to assume the CI roles"
+variable "github_oidc_subject" {
+  description = <<-EOT
+    The repository part of the GitHub OIDC `sub` claim the CI roles trust.
+    This repository uses GitHub's immutable subject claims, which embed the
+    owner and repository ids (owner@id/name@id), so a renamed or recreated
+    repository can't inherit the roles. Read the current value with
+    `gh api repos/<owner>/<repo>/actions/oidc/customization/sub`
+    (sub_claim_prefix).
+  EOT
   type        = string
-  default     = "CompositeCode/substratalapps.com"
+  default     = "repo:CompositeCode@38675098/substratalapps.com@1403762290"
 }
 
 variable "billing_email" {
