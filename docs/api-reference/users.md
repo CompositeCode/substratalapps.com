@@ -154,6 +154,16 @@ Rejected transitions return `409 invalid_status_transition`. A self-service call
 
 Soft-delete: sets `status: deleted` and `deleted_at`, revokes every session, deactivates every push [device](../notifications/#sessions-and-device-lifecycle), fires `access.revoked` (reason `user_deleted`) for every Application the user had active access to, and from then on `GET /v1/users/{id}` 404s for everyone but `users.manage`, who can still fetch, restore, or request erasure for the account. Self, or `users.manage`. Entitlements, Roles, Profile, and Settings are retained, not removed — hard deletion is the separate erasure process below. The email address becomes reusable by a new signup immediately. Writes `user.deleted`.
 
+## The protected superadmin
+
+The platform owner's account is **protected**. Every deploy makes sure it exists as an active, verified `superadmin` (the `SUPERADMIN_EMAIL` deploy variable), and nothing can lock it out:
+
+- `DELETE /v1/users/{id}`, `POST /v1/users/{id}/suspend`, a `PATCH` that changes `status` away from `active` or changes `email`, `POST /v1/users/{id}/erasure-requests`, and `DELETE /v1/users/{id}/roles/role_platform_superadmin` all return `409 user_protected`.
+- The database enforces the same rule for every caller, including a direct SQL session (see [Database Schema → users](../../domain-model/database-schema/#users)). Ops can lift it for one transaction to hand ownership to another account.
+- If the account is somehow missing, demoted, or unprotected, the next deploy restores it. Its password is never changed by a deploy.
+
+Everything else works normally: it can change its own password, profile, and settings, enable MFA, and sign out.
+
 ## `POST /v1/users/{id}/suspend`
 
 ```json
@@ -264,5 +274,6 @@ Calling this for an already-scheduled user returns the existing request (`202`, 
 | `invalid_status_transition` | 409 | A `status` change not in the table above, or an invitation re-send for a non-`invited` user. |
 | `erasure_not_scheduled` | 404 | Cancelling an erasure that isn't pending. |
 | `erasure_scheduled` | 409 | Restoring a soft-deleted User while their erasure request is still scheduled. |
+| `user_protected` | 409 | Suspending, deleting, erasing, re-addressing, or demoting the [protected superadmin](#the-protected-superadmin). |
 | `user_token_required` | 400 | `me` used with an API Key. |
 | `validation_failed` | 422 | Malformed email, or an unknown `status` value. |

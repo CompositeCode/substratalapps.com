@@ -646,6 +646,11 @@ func (s *Server) RolesRemove(w http.ResponseWriter, r *http.Request, id gen.User
 		if x.ID == "role_platform_member" {
 			return httpx.Conflict("member_role_required", "Every User holds the member platform Role.")
 		}
+		if x.ID == "role_platform_superadmin" {
+			if err := c.guardProtected(uid); err != nil {
+				return err
+			}
+		}
 		n, err := c.q.Exec(c.ctx, `delete from user_role_assignments where user_id = :u and role_id = :r`,
 			db.Args{"u": uid, "r": x.ID})
 		if err != nil {
