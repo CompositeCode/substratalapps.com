@@ -2,6 +2,10 @@
 # scripts/docs-build.rb on main's GitHub build; each entry has a frozen
 # static copy at <version>/ on this branch, served at /versions/<version>/.
 versions:
+- version: 1.5.1
+  released: '2026-10-20'
+  commit: 6e063b5537f187e8daf40d82dd1bdd0a85e8e8ee
+  summary: 'Merge pull request #14 from CompositeCode/feature/protected-superadmin'
 - version: 1.5.0
   released: '2026-10-19'
   commit: e3826b8cbc306f2a0bfc428d8e3a61a8f757dd3d
