@@ -46,7 +46,7 @@ resource "aws_rds_cluster" "main" {
   cluster_identifier          = "${local.prefix}-db"
   engine                      = "aurora-postgresql"
   engine_mode                 = "provisioned"
-  engine_version              = "16.6"
+  engine_version              = "16.15"
   database_name               = local.db_name
   master_username             = "substratal"
   manage_master_user_password = true # Secrets Manager–managed; the Data API authenticates with it
