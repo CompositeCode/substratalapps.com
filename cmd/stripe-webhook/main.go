@@ -1,6 +1,6 @@
 // Command stripe-webhook is the Lambda at /internal/stripe/webhook: the one
 // route whose caller isn't a Bearer holder at all, verified instead by
-// Stripe's own signature (DEPLOYMENT.md → Stripe Billing).
+// Stripe's own signature (infra/README.md → Stripe Billing).
 package main
 
 import (

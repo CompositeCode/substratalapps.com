@@ -1,4 +1,4 @@
-// Package jobs is every scheduled job (DEPLOYMENT.md → Build checklist,
+// Package jobs is every scheduled job (infra/README.md → Build checklist,
 // step 6), one entry point each. EventBridge Scheduler invokes the jobs
 // Lambda with {"job": "<name>"}; locally, `make job name=<name>` runs one.
 package jobs

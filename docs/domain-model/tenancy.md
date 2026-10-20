@@ -36,8 +36,8 @@ Every Application owner gets a Tenant automatically, the moment they register th
 | `owner_user_id` | string, nullable | Set iff `owner_type: user`. |
 | `owner_organization_id` | string, nullable | Set iff `owner_type: organization`. |
 | `tier` | enum | `shared` (default) \| `isolated` \| `dedicated_region`. See [Tiers](#tiers). **Infrastructure placement** — where the data lives. |
-| `region` | string | The AWS region the data lives in, always set: `us-east-1` for `shared` and `isolated` (same region as [Tier 0](https://github.com/CompositeCode/substratalapps.com/blob/main/DEPLOYMENT.md), with `isolated` just a dedicated cluster within it), and the chosen region for `dedicated_region`. Supported regions: `us-east-1`, `us-west-2`, `ca-central-1`, `eu-west-1`, `eu-central-1`, `ap-southeast-2`. |
-| `status` | enum | `active` \| `migrating` \| `suspended`. `migrating` is the transitional state during a tier-change maintenance window — see [Deployment Architecture → Tenancy tiers](https://github.com/CompositeCode/substratalapps.com/blob/main/DEPLOYMENT.md). |
+| `region` | string | The AWS region the data lives in, always set: `us-east-1` for `shared` and `isolated` (same region as [Tier 0](https://github.com/CompositeCode/substratalapps.com/blob/main/infra/README.md), with `isolated` just a dedicated cluster within it), and the chosen region for `dedicated_region`. Supported regions: `us-east-1`, `us-west-2`, `ca-central-1`, `eu-west-1`, `eu-central-1`, `ap-southeast-2`. |
+| `status` | enum | `active` \| `migrating` \| `suspended`. `migrating` is the transitional state during a tier-change maintenance window — see [Deployment Architecture → Tenancy tiers](https://github.com/CompositeCode/substratalapps.com/blob/main/infra/README.md). |
 | `application_count` | integer, read-only | Computed: how many Applications this Tenant owns. |
 | `created_at`, `updated_at` | timestamp | |
 
@@ -66,8 +66,8 @@ Every Application owner gets a Tenant automatically, the moment they register th
 
 | Tier | What changes physically | Cost | Who it's for |
 |---|---|---|---|
-| `shared` | Rows live in the shared Aurora Serverless v2 cluster from [Tier 0](https://github.com/CompositeCode/substratalapps.com/blob/main/DEPLOYMENT.md), logically isolated by `tenant_id`, enforced in the data-access layer (see [NFR → Multi-tenancy](../../non-functional-requirements/#multi-tenancy)). | $0 incremental — the default. | Every customer, from day one, with no action taken. |
-| `isolated` | A dedicated Aurora Serverless v2 cluster (own Secrets Manager secret), same AWS account and region as Tier 0 — stronger blast-radius and noisy-neighbor separation, same Lambda codebase routed by a tenant→cluster lookup. | A full extra Aurora floor (~$45–55/month, see [Deployment Architecture](https://github.com/CompositeCode/substratalapps.com/blob/main/DEPLOYMENT.md)) — priced by business and enterprise pricing, at least covering it. | A customer with a real compliance or isolation requirement, not just a preference. |
+| `shared` | Rows live in the shared Aurora Serverless v2 cluster from [Tier 0](https://github.com/CompositeCode/substratalapps.com/blob/main/infra/README.md), logically isolated by `tenant_id`, enforced in the data-access layer (see [NFR → Multi-tenancy](../../non-functional-requirements/#multi-tenancy)). | $0 incremental — the default. | Every customer, from day one, with no action taken. |
+| `isolated` | A dedicated Aurora Serverless v2 cluster (own Secrets Manager secret), same AWS account and region as Tier 0 — stronger blast-radius and noisy-neighbor separation, same Lambda codebase routed by a tenant→cluster lookup. | A full extra Aurora floor (~$45–55/month, see [Deployment Architecture](https://github.com/CompositeCode/substratalapps.com/blob/main/infra/README.md)) — priced by business and enterprise pricing, at least covering it. | A customer with a real compliance or isolation requirement, not just a preference. |
 | `dedicated_region` | Like `isolated`, but the dedicated cluster sits in the customer's chosen AWS region instead of the default one. | The `isolated` floor again, in a second region — the most expensive tier. | A customer with a genuine data-residency requirement (e.g. "our EU users' data must stay in the EU"). |
 
 This is a strict ladder — `dedicated_region` implies everything `isolated` provides, plus region choice; there's no "dedicated region, still logically shared" combination.
@@ -78,7 +78,7 @@ There is no self-service API for this. `tenants.manage` (support/superadmin only
 
 1. A customer asks (support is the intake, not a self-serve button) for a tier upgrade.
 2. Support calls `POST /v1/tenants/{id}/tier-change-requests` (see [API Reference → Tenancy](../../api-reference/tenancy/)), then moves the request through `pending → scheduled → in_progress → completed` (or `cancelled`) with `PATCH` as the work happens.
-3. Support schedules a brief maintenance window, flips `status` to `migrating`, and runs the snapshot/restore cutover into the new infrastructure (new cluster, and for `dedicated_region`, a new region) described in [Deployment Architecture → Tenancy tiers](https://github.com/CompositeCode/substratalapps.com/blob/main/DEPLOYMENT.md).
+3. Support schedules a brief maintenance window, flips `status` to `migrating`, and runs the snapshot/restore cutover into the new infrastructure (new cluster, and for `dedicated_region`, a new region) described in [Deployment Architecture → Tenancy tiers](https://github.com/CompositeCode/substratalapps.com/blob/main/infra/README.md).
 4. `tier`, `region`, and `status` are updated back to `active`; an [Audit Event](../orders-and-audit/#audit-event) (`tenant.tier_changed`) records the change.
 
 A brief, scheduled downtime window during step 3 is an accepted tradeoff. Tier changes are support-run and infrequent at current scale, so a snapshot/restore cutover is enough. Zero-downtime migration (logical replication) is a legitimate future upgrade once tier changes are self-serve and frequent, not a day-one requirement.

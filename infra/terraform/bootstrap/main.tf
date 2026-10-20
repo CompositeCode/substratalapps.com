@@ -1,6 +1,6 @@
 # Applied once, by hand, with admin credentials (README → One-time setup).
 # It's the only Terraform ever applied from a laptop. In order:
-#   1. Cost guardrails, before any other billable resource (DEPLOYMENT.md →
+#   1. Cost guardrails, before any other billable resource (infra/README.md →
 #      Cost guardrails: "a hard budget alarm exists before the first
 #      resource does").
 #   2. The Terraform state bucket and the artifacts bucket.

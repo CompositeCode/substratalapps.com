@@ -1,5 +1,5 @@
 // Package billing is the Stripe side of the Free/Standard subscription
-// (DEPLOYMENT.md → Stripe Billing): Customers for subscribing Users and
+// (infra/README.md → Stripe Billing): Customers for subscribing Users and
 // Organizations, Standard Checkout, the Customer Portal, the inbound
 // webhook, subscription sync, and the daily Organization quantity sync.
 // Third-party developers' own billing never touches it.

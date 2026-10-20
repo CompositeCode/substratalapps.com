@@ -25,7 +25,7 @@ The Free/Standard subscription: a User subscribing to Standard for themselves, o
 - **Access follows the subscription.** While a subscription covers someone, the platform keeps a `source: subscription` Entitlement for them to each standard Application. When it stops covering them, those Entitlements end. Applications hear about every change through the usual [`access.granted` / `access.revoked`](../webhooks/#event-types) webhooks.
 - **Business and Enterprise** plans aren't offered yet. Checkout for either returns `422 plan_requires_sales`.
 
-Stripe tells this API about every change through its webhook. This API never takes card data, and a subscription's `status` only changes in response to Stripe events. The handler is documented in [root `DEPLOYMENT.md` → Stripe Billing](https://github.com/CompositeCode/substratalapps.com/blob/main/DEPLOYMENT.md#stripe-billing).
+Stripe tells this API about every change through its webhook. This API never takes card data, and a subscription's `status` only changes in response to Stripe events. The handler is documented in [`infra/README.md` → Stripe Billing](https://github.com/CompositeCode/substratalapps.com/blob/main/infra/README.md#stripe-billing).
 
 ## Endpoints
 

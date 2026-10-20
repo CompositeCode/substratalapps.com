@@ -1,6 +1,6 @@
 # One Lambda function the way every Substratal function is built: Go on
 # provided.al2023 / arm64, its own execution role scoped to exactly what it
-# needs (DEPLOYMENT.md → Build checklist, step 4: no shared mega-role),
+# needs (infra/README.md → Build checklist, step 4: no shared mega-role),
 # explicit log retention, and a "live" alias that API Gateway, SQS, and
 # the scheduler always invoke. Each deploy publishes a new version and
 # moves live to it; rollback.yml moves it back.
@@ -70,7 +70,7 @@ resource "aws_iam_role_policy" "this" {
 }
 
 # Explicit retention: logs left at "never expire" are the classic growing
-# CloudWatch bill (DEPLOYMENT.md → Tier 0 components).
+# CloudWatch bill (infra/README.md → Tier 0 components).
 resource "aws_cloudwatch_log_group" "this" {
   name              = "/aws/lambda/${var.name}"
   retention_in_days = var.log_retention_days

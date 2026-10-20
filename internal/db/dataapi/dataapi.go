@@ -1,5 +1,5 @@
 // Package dataapi implements db.DB over the RDS Data API: IAM-signed HTTPS
-// to Aurora Serverless v2, with no VPC attachment (see DEPLOYMENT.md → Why
+// to Aurora Serverless v2, with no VPC attachment (see infra/README.md → Why
 // no VPC). It's what every Lambda runs in AWS.
 package dataapi
 
