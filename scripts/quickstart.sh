@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # The docs/quickstart.md walkthrough as a script, against a running API
 # (default: the local devserver). It's the Phase 1 acceptance test from
-# PLAN.md, so CI and `make quickstart` run it on every change.
+# plan-remaining.md, so CI and `make quickstart` run it on every change.
 #
 #   SUBSTRATAL_API=http://localhost:8080/v1 TOKEN=<superadmin token> scripts/quickstart.sh
 #

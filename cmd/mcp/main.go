@@ -1,7 +1,7 @@
 // Command mcp is the MCP server Lambda at /mcp. It holds no data-plane
 // permissions at all: every tool call is an HTTPS call to the API's own
 // /v1 routes on the same API Gateway, with the caller's credential
-// forwarded unchanged (DEPLOYMENT.md → MCP server).
+// forwarded unchanged (infra/README.md → MCP server).
 package main
 
 import (

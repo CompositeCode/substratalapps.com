@@ -1,4 +1,4 @@
-# Production: the Tier 0 stack from DEPLOYMENT.md → First deployment.
+# Production: the Tier 0 stack from infra/README.md → First deployment.
 # No VPC for Lambda and no NAT Gateway: every function reaches Aurora over
 # the RDS Data API (IAM-signed HTTPS), and the webhook worker gets outbound
 # internet access for free by staying outside a VPC.
@@ -13,7 +13,7 @@ locals {
 data "aws_caller_identity" "me" {}
 data "aws_route53_zone" "main" { name = var.hosted_zone }
 
-# ── Keys (DEPLOYMENT.md → Build checklist, step 3) ─────────────────────
+# ── Keys (infra/README.md → Build checklist, step 3) ─────────────────────
 
 # JWT signing: the private key never leaves KMS; JWKS publishes its public half.
 resource "aws_kms_key" "signing" {
@@ -462,7 +462,7 @@ resource "aws_scheduler_schedule" "job" {
   }
 }
 
-# ── Alarms (DEPLOYMENT.md → Build checklist, step 8) ───────────────────
+# ── Alarms (infra/README.md → Build checklist, step 8) ───────────────────
 
 resource "aws_sns_topic" "alarms" {
   name = "${local.prefix}-alarms"

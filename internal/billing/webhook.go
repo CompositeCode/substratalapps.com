@@ -14,7 +14,7 @@ import (
 	"github.com/CompositeCode/substratalapps.com/internal/core"
 )
 
-// Webhook is POST /internal/stripe/webhook (DEPLOYMENT.md → Webhook
+// Webhook is POST /internal/stripe/webhook (infra/README.md → Webhook
 // handling). It isn't Bearer-authenticated: it verifies Stripe-Signature
 // against the raw body. Every event id is recorded first (insert-or-skip),
 // so a duplicate returns 200 immediately; processing re-fetches the
