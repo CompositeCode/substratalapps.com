@@ -12,7 +12,7 @@ Work through these in order. The first four make the API usable; the rest make i
 4. [Confirm the alert emails](#4-confirm-the-alert-emails)
 5. [Get SES out of the sandbox](#5-get-ses-out-of-the-sandbox)
 6. [Set up Stripe](#6-set-up-stripe)
-7. [Merge push notifications and add push credentials](#7-merge-push-notifications-and-add-push-credentials)
+7. [Add push credentials](#7-add-push-credentials)
 8. [Register Substratal's Applications](#8-register-substratals-applications)
 9. [Fix the pull-request plan job](#9-fix-the-pull-request-plan-job)
 10. [Legal and compliance](#10-legal-and-compliance)
@@ -82,11 +82,11 @@ The billing code (Free and Standard at $6 per user per month) is built and deplo
 6. **Put the keys into the app secret** `substratal-prod/app` (Secrets Manager → `substratal-prod/app` → Retrieve secret value → Edit): set `stripe_secret_key` (a restricted key with Customers, Subscriptions, Checkout Sessions, Customer Portal, and Prices read access) and `stripe_webhook_secret`. Terraform never overwrites these. The Lambdas pick them up on their next cold start; re-running the deploy forces it.
 7. **Decide test or live.** Production holds one key. With a test key, the whole flow can be tried end to end with Stripe's test cards; with the live key, test-mode Users can't check out (`409 test_mode_billing_unavailable`, by design). Start with test, then switch to live.
 
-## 7. Merge push notifications and add push credentials
+## 7. Add push credentials
 
-Push notifications are built in PR #12 (`dev`), not yet on `main`; until it merges, the 17 push operations return `501` in production. Merging it runs migration `0003_push.sql`, which is independent of `0004_protected_superadmin.sql` that will already be applied.
+Push notifications are merged (PR #12) and ship with the next successful deploy, which also applies migration `0003_push.sql`. Migrations `0003_push` and `0004_protected_superadmin` touch different tables, so it doesn't matter that `0004` reached `main` first.
 
-After that, for each Application that sends pushes, its owner uploads credentials with `POST /v1/applications/{id}/push-credentials` (and rotates them with `PATCH …/push-credentials/{provider}`): an APNs key (`.p8`, key id, team id, bundle id), an FCM service account, or Web Push VAPID keys ([Push Notifications → Push credentials](https://compositecode.github.io/substratalapps.com/api-reference/notifications/#push-credentials)).
+For each Application that sends pushes, its owner uploads credentials with `POST /v1/applications/{id}/push-credentials` (and rotates them with `PATCH …/push-credentials/{provider}`): an APNs key (`.p8`, key id, team id, bundle id), an FCM service account, or Web Push VAPID keys ([Push Notifications → Push credentials](https://compositecode.github.io/substratalapps.com/api-reference/notifications/#push-credentials)).
 
 ## 8. Register Substratal's Applications
 
