@@ -8,7 +8,7 @@ nav_order: 8
 # Database Schema
 {: .no_toc }
 
-The entity pages describe *what* each field means to an API caller. This page is for an implementer: concrete Postgres types, constraints, and the indexes the documented query patterns actually need. See [Deployment Architecture](https://github.com/CompositeCode/substratalapps.com/blob/main/DEPLOYMENT.md) for why Postgres (Aurora Serverless v2) is the chosen engine.
+The entity pages describe *what* each field means to an API caller. This page is for an implementer: concrete Postgres types, constraints, and the indexes the documented query patterns actually need. See [Deployment Architecture](https://github.com/CompositeCode/substratalapps.com/blob/main/infra/README.md) for why Postgres (Aurora Serverless v2) is the chosen engine.
 {: .fs-6 .fw-300 }
 
 1. TOC
@@ -20,7 +20,7 @@ The entity pages describe *what* each field means to an API caller. This page is
 
 - Every table's primary key is the entity's own prefixed id (`usr_…`, `ent_…`, …) stored as `text`, not a surrogate `bigint` — the prefix convention in [Conventions → IDs](../../api-reference/conventions/#ids) *is* the primary key, not a display layer on top of one.
 - Every end-user-scoped table carries `organization_id text null references organizations(id)`, per [Non-Functional Requirements → Multi-tenancy](../../non-functional-requirements/#multi-tenancy), scoped in the data-access layer (see [Non-Functional Requirements → Multi-tenancy](../../non-functional-requirements/#multi-tenancy)) — not repeated per-table below. This is **team grouping**, not infrastructure placement.
-- Every table scoped to one Application also carries `tenant_id text not null references tenants(id)`, denormalized from `applications.tenant_id` at write time — a **second, independent** scoping dimension, enforced in the data-access layer and used to route a row to the right physical cluster (see [Tenancy](../tenancy/) and [Deployment Architecture → Tenancy tiers](https://github.com/CompositeCode/substratalapps.com/blob/main/DEPLOYMENT.md)). Don't conflate this with `organization_id` above — a row can carry both, either, or neither.
+- Every table scoped to one Application also carries `tenant_id text not null references tenants(id)`, denormalized from `applications.tenant_id` at write time — a **second, independent** scoping dimension, enforced in the data-access layer and used to route a row to the right physical cluster (see [Tenancy](../tenancy/) and [Deployment Architecture → Tenancy tiers](https://github.com/CompositeCode/substratalapps.com/blob/main/infra/README.md)). Don't conflate this with `organization_id` above — a row can carry both, either, or neither.
 - Every table carries `created_at timestamptz not null default now()` (the two pure join tables name it for what it means: `organization_memberships.invited_at` and `user_role_assignments.assigned_at`); tables with mutable fields also carry `updated_at timestamptz not null default now()`, maintained by a trigger, not application code (so it's correct even for a direct `UPDATE` run by a migration or a support script).
 - Soft-deletable tables carry `deleted_at timestamptz null` rather than a boolean — `null` means active, a timestamp means both *that* it's deleted and *when*, which a boolean throws away.
 - Every table with a `PATCH` endpoint carries `version integer not null default 1`, incremented by the same `updated_at` trigger. It's the source of the `ETag` (`W/"<version>"`) and the `If-Match` comparison. See [Conventions → Concurrency](../../api-reference/conventions/#concurrency-etag--if-match).
@@ -39,12 +39,14 @@ The entity pages describe *what* each field means to an API caller. This page is
 | `signup_application_id` | `text` | nullable, `references applications(id)` |
 | `stripe_customer_id` | `text` | nullable, `unique` — set at the User's first Checkout; internal, never returned by the API |
 | `test_mode` | `boolean` | not null, default `false` |
+| `expires_at` | `timestamptz` | nullable, `check ((expires_at is not null) = test_mode)`, `check (expires_at <= created_at + interval '30 days')` — set on every test-mode User, never on a live one |
+| `expired_processed_at` | `timestamptz` | nullable — internal, never returned. Set when the expiry sweep has revoked the User's sessions and fired its events; cleared when `expires_at` moves later |
 | `created_at`, `updated_at`, `last_login_at` | `timestamptz` | `last_login_at` nullable |
 | `version` | `integer` | not null, default `1` |
 | `deleted_at` | `timestamptz` | nullable — soft-delete |
 | `protected` | `boolean` | not null, default `false` — the platform owner's account; see below |
 
-**Indexes:** `unique (email, test_mode) where deleted_at is null` (a deleted user's email should be reusable by a new signup, which a plain unique index would block, and test-mode signups mustn't collide with live ones); `(lower(email) text_pattern_ops)` for the `q` prefix search; `(status)` for admin filtering. No `organization_id` here — see `organization_memberships` below; a single column on `users` would cap a User at one Organization. No `auth`/password column here either — see `user_identities` below; a User can hold more than one login method, per [Auth → Native auth and per-Organization SSO](../../api-reference/auth/#native-auth-and-per-organization-sso).
+**Indexes:** `(expires_at) where test_mode and expired_processed_at is null` for the expiry sweep; `unique (email, test_mode) where deleted_at is null` (a deleted user's email should be reusable by a new signup, which a plain unique index would block, and test-mode signups mustn't collide with live ones); `(lower(email) text_pattern_ops)` for the `q` prefix search; `(status)` for admin filtering. No `organization_id` here — see `organization_memberships` below; a single column on `users` would cap a User at one Organization. No `auth`/password column here either — see `user_identities` below; a User can hold more than one login method, per [Auth → Native auth and per-Organization SSO](../../api-reference/auth/#native-auth-and-per-organization-sso).
 
 **Protected superadmin.** Triggers keep a `protected` User (the platform owner, re-asserted by every deploy) from being locked out, for every caller: an `UPDATE` that would clear `protected`, change `status` from `active`, set `deleted_at`, or change `email` or `test_mode` is rejected, as is a `DELETE`; `user_role_assignments` refuses to drop its `role_platform_superadmin` row; and `erasure_requests` refuses a scheduled erasure for it. Setting `app.protected_user_maintenance = 'on'` for one transaction lifts all three, for ops handing ownership to another account. See [Users → The protected superadmin](../../api-reference/users/#the-protected-superadmin).
 
@@ -410,7 +412,7 @@ This only applies to fields an Application has declared. An arbitrary, undeclare
 | `test_mode` | `boolean` | not null, default `false` — copied from the change that produced it, so test traffic never shows in a live audit query |
 | `timestamp` | `timestamptz` | not null, default `now()` |
 
-No `updated_at`, no soft-delete column — this table is append-only by design (see [Non-Functional Requirements → Audit](../../non-functional-requirements/#audit)). A trigger (`audit_events_append_only`) rejects every `UPDATE` and `DELETE` unless the transaction has set `app.audit_maintenance = 'on'`, so neither an application bug nor a direct SQL session can violate the "never edited" guarantee. Only two scheduled jobs set it: the archival job (see [Non-Functional Requirements → Audit log lifecycle](../../non-functional-requirements/#audit-log-lifecycle) and [root `DEPLOYMENT.md` → Audit log archival](https://github.com/CompositeCode/substratalapps.com/blob/main/DEPLOYMENT.md#audit-log-archival)), which deletes rows it has already archived shape-only to cold storage, and the erasure cascade, which redacts `before`/`after` for an erased User. **Indexes:** `(target_user_id, timestamp desc)`, `(application_id, timestamp desc)`, `(actor_id, timestamp desc)`, `(target_type, target_id, timestamp desc)`, `(organization_id, timestamp desc)`, `(tenant_id, timestamp desc)` — one per documented filter in [API Reference → Audit](../../api-reference/audit/), the last one being what a tier-change migration (and the archival job itself) uses to pull "every event for this Tenant" without scanning the whole table.
+No `updated_at`, no soft-delete column — this table is append-only by design (see [Non-Functional Requirements → Audit](../../non-functional-requirements/#audit)). A trigger (`audit_events_append_only`) rejects every `UPDATE` and `DELETE` unless the transaction has set `app.audit_maintenance = 'on'`, so neither an application bug nor a direct SQL session can violate the "never edited" guarantee. Only two scheduled jobs set it: the archival job (see [Non-Functional Requirements → Audit log lifecycle](../../non-functional-requirements/#audit-log-lifecycle) and [`infra/README.md` → Audit log archival](https://github.com/CompositeCode/substratalapps.com/blob/main/infra/README.md#audit-log-archival)), which deletes rows it has already archived shape-only to cold storage, and the erasure cascade, which redacts `before`/`after` for an erased User. **Indexes:** `(target_user_id, timestamp desc)`, `(application_id, timestamp desc)`, `(actor_id, timestamp desc)`, `(target_type, target_id, timestamp desc)`, `(organization_id, timestamp desc)`, `(tenant_id, timestamp desc)` — one per documented filter in [API Reference → Audit](../../api-reference/audit/), the last one being what a tier-change migration (and the archival job itself) uses to pull "every event for this Tenant" without scanning the whole table.
 
 ## api_keys
 
@@ -483,7 +485,7 @@ webhook_deliveries (
 );
 ```
 
-A `webhook_events` row is inserted **in the same transaction** as the change it describes. A dispatcher (SQS-fed, see [DEPLOYMENT.md](https://github.com/CompositeCode/substratalapps.com/blob/main/DEPLOYMENT.md)) fans it out to matching subscriptions. That makes "every committed change produces its event" structural rather than best-effort. Events and deliveries are deleted after 30 days. **Indexes:** `(dispatched_at) where dispatched_at is null`; `(subscription_id, created_at desc)` and `(next_retry_at) where status = 'pending'` on deliveries.
+A `webhook_events` row is inserted **in the same transaction** as the change it describes. A dispatcher (SQS-fed, see [infra/README.md](https://github.com/CompositeCode/substratalapps.com/blob/main/infra/README.md)) fans it out to matching subscriptions. That makes "every committed change produces its event" structural rather than best-effort. Events and deliveries are deleted after 30 days. **Indexes:** `(dispatched_at) where dispatched_at is null`; `(subscription_id, created_at desc)` and `(next_retry_at) where status = 'pending'` on deliveries.
 
 ## push_credentials, devices, notifications, notification_deliveries
 
@@ -523,7 +525,7 @@ devices (
   app_version text check (char_length(app_version) <= 50),
   status text not null default 'active' check (status in ('active','inactive')),
   inactive_reason text check (inactive_reason in
-    ('unregistered','session_revoked','user_suspended','user_deleted','stale','limit','credential_removed')),
+    ('unregistered','session_revoked','user_suspended','user_deleted','test_user_expired','stale','limit','credential_removed')),
   deactivated_at timestamptz,
   last_registered_at timestamptz not null default now(),
   last_delivery_at timestamptz,
@@ -556,6 +558,9 @@ notifications (
   push_status text not null check (push_status in ('queued','sent','failed','skipped')),
   skip_reason text check (skip_reason in
     ('push_not_requested','push_disabled','no_devices','no_credentials','credential_failed','expired')),
+  push_devices_targeted integer not null default 0,  -- the push summary; kept here because deliveries
+  push_devices_sent integer not null default 0,      -- are deleted after 30 days and notifications
+  push_devices_failed integer not null default 0,    -- after 90
   sender_type text not null check (sender_type in ('api_key','user','system')),
   sender_id text not null,                     -- key_..., usr_..., or 'system'; not a foreign key, since it spans tables
   read_at timestamptz,
@@ -637,7 +642,7 @@ stripe_events (
 );
 ```
 
-Kept 90 days. See [root `DEPLOYMENT.md` → Stripe Billing](https://github.com/CompositeCode/substratalapps.com/blob/main/DEPLOYMENT.md#stripe-billing).
+Kept 90 days. See [`infra/README.md` → Stripe Billing](https://github.com/CompositeCode/substratalapps.com/blob/main/infra/README.md#stripe-billing).
 
 ## idempotency_keys
 
@@ -654,4 +659,4 @@ idempotency_keys (
 );
 ```
 
-Per [Conventions → Idempotency](../../api-reference/conventions/#idempotency)'s implementation note — a scheduled job (see [Deployment Architecture](https://github.com/CompositeCode/substratalapps.com/blob/main/DEPLOYMENT.md)) deletes expired rows rather than relying on unbounded table growth.
+Per [Conventions → Idempotency](../../api-reference/conventions/#idempotency)'s implementation note — a scheduled job (see [Deployment Architecture](https://github.com/CompositeCode/substratalapps.com/blob/main/infra/README.md)) deletes expired rows rather than relying on unbounded table growth.

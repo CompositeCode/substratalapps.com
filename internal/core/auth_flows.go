@@ -408,6 +408,10 @@ func (s *Server) AuthVerifyEmail(w http.ResponseWriter, r *http.Request) {
 				return err
 			}
 			after, _ := c.findUser("u.id = :id", db.Args{"id": u.ID})
+			if err := c.platformAlert(u.ID, "security.email_changed", "Your Substratal email address was changed",
+				strp("Your account's email address is now "+after.Email+". If this wasn't you, contact support."), nil); err != nil {
+				return err
+			}
 			if err := c.audit(Audit{Action: "user.email_changed", TargetType: "user", TargetID: u.ID,
 				TargetUserID: &u.ID, Before: map[string]any{"email": u.Email}, After: map[string]any{"email": after.Email},
 				ActorType: "user", ActorID: u.ID}); err != nil {
@@ -555,6 +559,10 @@ func (s *Server) AuthResetPassword(w http.ResponseWriter, r *http.Request) {
 		if _, err := c.q.Exec(c.ctx, `update users set email_verified = true where id = :u`, db.Args{"u": u.ID}); err != nil {
 			return err
 		}
+		if err := c.platformAlert(u.ID, "security.password_changed", "Your Substratal password was changed",
+			strp("Your password was reset and every session was signed out. If this wasn't you, contact support."), nil); err != nil {
+			return err
+		}
 		if err := c.revokeSessions(u.ID, "password_reset", ""); err != nil {
 			return err
 		}
@@ -603,6 +611,10 @@ func (s *Server) AuthChangePassword(w http.ResponseWriter, r *http.Request, id g
 			return err
 		}
 		if _, err := c.setPassword(uid, hash); err != nil {
+			return err
+		}
+		if err := c.platformAlert(uid, "security.password_changed", "Your Substratal password was changed",
+			strp("Your password was changed and your other sessions were signed out. If this wasn't you, reset it now."), nil); err != nil {
 			return err
 		}
 		if err := c.revokeSessions(uid, "password_changed", c.p.SessionID); err != nil {
@@ -839,6 +851,10 @@ func (s *Server) AuthDisableMfaTotp(w http.ResponseWriter, r *http.Request, id g
 		if err := c.clearMFA(ident.ID); err != nil {
 			return err
 		}
+		if err := c.platformAlert(uid, "security.mfa_disabled", "Two-step verification is off",
+			strp("Two-step verification was turned off on your Substratal account. If this wasn't you, change your password."), nil); err != nil {
+			return err
+		}
 		if err := c.audit(Audit{Action: "user.mfa_disabled", TargetType: "user", TargetID: uid, TargetUserID: &uid}); err != nil {
 			return err
 		}
@@ -879,6 +895,10 @@ func (s *Server) AuthResetMfaTotp(w http.ResponseWriter, r *http.Request, id gen
 			return httpx.Conflict("mfa_not_enabled", "TOTP isn't enabled.")
 		}
 		if err := c.clearMFA(ident.ID); err != nil {
+			return err
+		}
+		if err := c.platformAlert(uid, "security.mfa_disabled", "Two-step verification is off",
+			strp("Support reset two-step verification on your Substratal account and signed out every session."), nil); err != nil {
 			return err
 		}
 		if err := c.revokeSessions(uid, "admin", ""); err != nil {
@@ -955,12 +975,11 @@ func (s *Server) AuthRevokeSession(w http.ResponseWriter, r *http.Request, id ge
 			}
 			reason = "admin"
 		}
-		n, err := c.q.Exec(c.ctx, `update sessions set revoked_at = now(), revoked_reason = :r
-			where id = :s and user_id = :u and revoked_at is null`, db.Args{"r": reason, "s": sessionID, "u": uid})
+		revoked, err := c.revokeSession("id = :s and user_id = :u", db.Args{"s": sessionID, "u": uid}, reason)
 		if err != nil {
 			return err
 		}
-		if n == 0 {
+		if !revoked {
 			return httpx.NotFoundResource("session")
 		}
 		return c.NoContent()

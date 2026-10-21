@@ -42,6 +42,7 @@ import (
 	"github.com/CompositeCode/substratalapps.com/internal/db/pg"
 	"github.com/CompositeCode/substratalapps.com/internal/email"
 	"github.com/CompositeCode/substratalapps.com/internal/httpx"
+	"github.com/CompositeCode/substratalapps.com/internal/push"
 	"github.com/CompositeCode/substratalapps.com/internal/webhooks"
 	"github.com/CompositeCode/substratalapps.com/migrations"
 )
@@ -57,6 +58,7 @@ type Env struct {
 	DB        db.DB
 	Mail      *email.Capture
 	Deliverer *webhooks.Deliverer
+	Push      *push.Recorder // every push the API sends, instead of APNs/FCM/Web Push
 	Signer    *auth.LocalSigner
 	Admin     string // superadmin access token
 	AdminID   string
@@ -220,12 +222,13 @@ func NewWith(t testing.TB, opts Options) *Env {
 	core.AllowPrivateWebhookTargets = true
 	deliverer := webhooks.New(d, enc, mail, log)
 	deliverer.AllowPrivate = true
-	s := core.New(core.Deps{DB: d, Signer: signer(), Encrypter: enc, Email: mail,
+	recorder := &push.Recorder{}
+	s := core.New(core.Deps{DB: d, Signer: signer(), Encrypter: enc, Email: mail, Push: recorder,
 		Cursors: httpx.Cursors{Key: []byte("test-cursor-key")}, Log: log,
 		Issuer: "https://api.substratalapps.com", PublicBaseURL: "http://localhost", AuthorizeURL: "https://auth.substratalapps.com/authorize",
 		DashboardURL: "https://dashboard.test", DisableRateLimits: !opts.RateLimits, Billing: opts.Billing})
 	srv := httptest.NewServer(s.Handler())
-	e := &Env{T: t, Server: srv, Core: s, DB: d, Mail: mail, Deliverer: deliverer, Signer: signer(), Validate: true,
+	e := &Env{T: t, Server: srv, Core: s, DB: d, Mail: mail, Deliverer: deliverer, Push: recorder, Signer: signer(), Validate: true,
 		validator: specValidator(t)}
 	t.Cleanup(func() { srv.Close(); d.Close() })
 	adminEmail := "admin+" + Unique() + "@example.com"
@@ -481,6 +484,14 @@ func (e *Env) Deliver() {
 	e.T.Helper()
 	if err := e.Deliverer.Run(context.Background()); err != nil {
 		e.T.Fatalf("deliver: %v", err)
+	}
+}
+
+// DeliverPush runs the push delivery worker until nothing is due.
+func (e *Env) DeliverPush() {
+	e.T.Helper()
+	if err := e.Core.RunPush(context.Background()); err != nil {
+		e.T.Fatalf("deliver push: %v", err)
 	}
 }
 

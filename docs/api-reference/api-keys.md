@@ -148,7 +148,7 @@ The result: an agent integration is safer by default without being less capable 
 
 ## Test vs. live
 
-Uniqueness constraints include `test_mode` (e.g. `unique (email, test_mode) where deleted_at is null`), so a test signup can't collide with a live one. A test-mode credential sees only test-mode rows and a live credential only live rows, enforced by the same Row-Level Security mechanism as `tenant_id`. Test-mode rows older than 30 days are purged nightly.
+Uniqueness constraints include `test_mode` (e.g. `unique (email, test_mode) where deleted_at is null`), so a test signup can't collide with a live one. A test-mode credential sees only test-mode rows and a live credential only live rows, enforced by the same Row-Level Security mechanism as `tenant_id`. Test-mode rows older than 30 days are purged nightly. Test-mode **Users** are also time-limited: each stops working at its `expires_at`, 24 hours after creation unless the caller chooses otherwise (up to 30 days). See [Auth → Test-mode Users → Lifetime](../auth/#lifetime).
 
 `mode: "test"` produces a `satk_test_…` secret instead of `satk_live_…` — same permissions and scope, but every resource it creates (Users, Entitlements, anything) is tagged `test_mode: true`:
 
@@ -161,7 +161,7 @@ This is how an Application's developer integration-tests against the real API wi
 ### Walkthrough: a test run end to end
 
 1. **Create a test key** (as the Application's owner): `POST /v1/api-keys` with `"scope": "app_timetrack"`, `"mode": "test"`, `"permissions": ["entitlements.manage", "users.list"]`. The response's `secret` starts `satk_test_`. Applications are shared catalog rows, visible to test and live credentials alike (an Application's own `test_mode` flag only marks one created for testing, which is what allows `localhost` redirect URIs). Everything the test key *writes* is tagged `test_mode: true`.
-2. **Create a test User** with that key: `POST /v1/users` `{"email": "qa+1@example.com", "status": "active", "send_invitation": false}`. The response has `"test_mode": true`. A live User with the same email can exist alongside it without conflict.
+2. **Create a test User** with that key: `POST /v1/users` `{"email": "qa+1@example.com", "status": "active", "send_invitation": false}`. The response has `"test_mode": true` and an `expires_at` 24 hours away; add `"expires_at"` to the request for a shorter or longer run. A live User with the same email can exist alongside it without conflict.
 3. **Grant access**: `POST /v1/users/{id}/entitlements` with an `Idempotency-Key` and `{"application_id": "app_timetrack", "source": "trial", "ends_at": "…"}`. The Entitlement is `test_mode: true`, and the `entitlement.granted`/`access.granted` webhooks go only to subscriptions created with a test key.
 4. **Sign in as that User**: set a password through `POST /v1/auth/password/forgot` `{"email": "qa+1@example.com", "test_mode": true}`, then `POST /v1/auth/login` with `"test_mode": true` (see [Auth → Test-mode Users](../auth/#test-mode-users)). The access token and every app token carry `"test_mode": true`.
 5. **Check isolation**: `GET /v1/users?email=qa+1@example.com` with a *live* key returns an empty list. The test User doesn't exist as far as live credentials are concerned.

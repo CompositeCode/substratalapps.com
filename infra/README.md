@@ -1,6 +1,6 @@
 # Deployment Architecture
 
-Where the platform API actually runs, and how it's billed. This is a deployment/operations document, not part of the [API specification](https://compositecode.github.io/substratalapps.com/) — it lives here, in the project root, rather than on the docs site, because a prospective API consumer (a developer, or their AI agent) never needs to know how this is hosted to build against it. See [README.md](README.md) for why the project draws that line here.
+Where the platform API runs, as built, and how it's billed. This is a deployment and operations document, not part of the [API specification](https://compositecode.github.io/substratalapps.com/), so it lives next to the Terraform that implements it (`infra/terraform/`) rather than on the docs site: an API consumer never needs to know how this is hosted to build against it. Work that isn't built yet (scale-out, dedicated tenancy infrastructure, MCP streaming) is in [plan-remaining.md](../plan-remaining.md); one-time setup steps still to do by hand are in [remaining_manual_steps.md](../remaining_manual_steps.md).
 
 Chosen and configured around one constraint above all others: **predictable, capped cost, with no surprises.**
 
@@ -8,17 +8,14 @@ Chosen and configured around one constraint above all others: **predictable, cap
 2. [First deployment (Tier 0)](#first-deployment-tier-0)
 3. [AWS account & region](#aws-account--region)
 4. [Cost guardrails](#cost-guardrails)
-5. [Growth trajectory](#growth-trajectory)
-6. [Tenancy tiers & where they run](#tenancy-tiers--where-they-run)
-7. [MCP server](#mcp-server)
-8. [Stripe Billing](#stripe-billing)
-9. [Transactional email](#transactional-email)
-10. [Webhook dispatch](#webhook-dispatch)
-11. [Push delivery](#push-delivery)
-12. [Audit log archival](#audit-log-archival)
-13. [Scale-out](#scale-out)
-14. [Build checklist](#build-checklist)
-15. [Local development](#local-development)
+5. [Tenancy tiers & where they run](#tenancy-tiers--where-they-run)
+6. [MCP server](#mcp-server)
+7. [Stripe Billing](#stripe-billing)
+8. [Transactional email](#transactional-email)
+9. [Webhook dispatch](#webhook-dispatch)
+10. [Push delivery](#push-delivery)
+11. [Audit log archival](#audit-log-archival)
+12. [Local development](#local-development)
 
 ---
 
@@ -29,7 +26,7 @@ Four rules this architecture is built around, in priority order:
 1. **No resource bills by the hour regardless of traffic.** No always-on EC2 instance, no Fargate task, no NAT Gateway. If nobody's calling the API, the API costs close to nothing.
 2. **Every component with a cost has a known floor and a known ceiling.** "Serverless" isn't automatically cheaper — some AWS serverless products (Aurora Serverless v2's minimum capacity, for one) have a *higher* floor than the plain fixed-price alternative, and that trade is only worth it when something else about the product earns it back. See [Database engine: AWS options compared](#database-engine-aws-options-compared).
 3. **A hard budget alarm exists before the first resource does.** Guardrails are step one of the build checklist below, not a follow-up task.
-4. **Scale-out is a later, deliberate decision, not a default.** Nothing in Tier 0 auto-scales into real money without a human decision — see [Scale-out](#scale-out) for what actually triggers each upgrade.
+4. **Scale-out is a later, deliberate decision, not a default.** Nothing in Tier 0 auto-scales into real money without a human decision — see [Scale-out](../plan-remaining.md#scale-out) for what actually triggers each upgrade.
 
 ## First deployment (Tier 0)
 
@@ -62,7 +59,7 @@ flowchart LR
 | Stripe webhook compute | A **third, dedicated Lambda**, at `/internal/stripe/webhook` | Isolated from the API handlers' Lambda for the same reason the MCP Lambda is — plus a real security reason: it's the one route whose caller isn't an API-key/Bearer-token holder at all, verified instead by Stripe's own signature scheme (see [Stripe Billing](#stripe-billing)), so keeping it a separate function keeps that distinct trust boundary legible in the IAM/routing layer, not just in code. |
 | Database | **Aurora Serverless v2 (PostgreSQL)**, accessed via the **RDS Data API** | The domain model is relational (joins, foreign keys, the Audit log) — Postgres fits it directly. Data API means Lambda calls the database over signed HTTPS with **no VPC attachment** — which is what avoids a NAT Gateway entirely (see below), not a minor detail. |
 | Webhook delivery | **SQS** queue + a dedicated worker **Lambda** | Matches the retry/backoff schedule in the [Webhooks](https://compositecode.github.io/substratalapps.com/api-reference/webhooks/) spec — SQS visibility timeouts drive the delay between attempts for free, no extra scheduler needed for that part. |
-| Push delivery | A second **SQS** queue on the **same worker Lambda** | [Push notifications](https://compositecode.github.io/substratalapps.com/api-reference/notifications/) to APNs, FCM, and Web Push. The same outbox-and-queue shape as webhooks, so no new function. See [Push delivery](#push-delivery). |
+| Push delivery | The webhook **SQS** queue and **worker Lambda** | [Push notifications](https://compositecode.github.io/substratalapps.com/api-reference/notifications/) to APNs, FCM, and Web Push. The same outbox-and-nudge shape as webhooks, so no new queue or function. See [Push delivery](#push-delivery). |
 | Scheduled jobs | **EventBridge Scheduler** → **Lambda** | Trial-expiry checks, idempotency-key cleanup — pay-per-invocation, no cron server to run. |
 | Secrets | **Secrets Manager** — the Aurora master credential and the Stripe secret/webhook-signing keys | Everything else non-secret goes in Lambda environment variables rather than paying per-secret for config that isn't sensitive. |
 | DNS / TLS | **Route 53** + **ACM** (free) + API Gateway custom domain | Backs the `api.substratalapps.com` base URL from the [API spec's Conventions](https://compositecode.github.io/substratalapps.com/api-reference/conventions/#base-url). |
@@ -80,7 +77,7 @@ Postgres is the storage engine — the domain model is relational, and the schem
 | **Aurora Provisioned (PostgreSQL-compatible)**, smallest instance | ~$55–60/month single-AZ — Aurora's smallest instance class is larger than RDS's smallest | Pricier than Serverless v2's floor for a low-traffic start, with none of Serverless v2's scale-with-load benefit. Not competitive against either other option at Tier 0 volume. |
 | **Aurora Serverless v2 (PostgreSQL-compatible)**, 0.5 ACU minimum — **chosen** | ~$43/month floor, scales up with load | Costs more than bare RDS at idle. What it buys back: the **Data API**, which is why Tier 0 has no VPC at all (see [below](#why-no-vpc-and-specifically-no-nat-gateway)), and why [tenancy tiers](#tenancy-tiers--where-they-run) can route a request to any of several clusters — shared, or a specific customer's `isolated`/`dedicated_region` one — via one lookup-table value, with every tier using the identical connection mechanism. |
 
-**The ~$30/month gap between RDS and Aurora Serverless v2 is a real, named cost** — not hand-waved away — paid specifically for not having to build and maintain two different database-connection code paths (one VPC-bound for a cheap shared tier, one Data-API-based for dedicated tenants) or a NAT Gateway. At Tier 0's actual scale (see [Growth trajectory](#growth-trajectory)) that $30/month is a smaller cost than the engineering time either alternative would take to build and keep correct.
+**The ~$30/month gap between RDS and Aurora Serverless v2 is a real, named cost** — not hand-waved away — paid specifically for not having to build and maintain two different database-connection code paths (one VPC-bound for a cheap shared tier, one Data-API-based for dedicated tenants) or a NAT Gateway. At Tier 0's actual scale (see [Growth trajectory](../plan-remaining.md#growth-trajectory)) that $30/month is a smaller cost than the engineering time either alternative would take to build and keep correct.
 
 ### Why no VPC, and specifically no NAT Gateway
 
@@ -89,19 +86,24 @@ A NAT Gateway (~$32/month plus per-GB data processing, easy to forget it's runni
 - The API Lambda talks to Aurora via the **Data API** (HTTPS, IAM-signed) instead of a direct Postgres connection — so it never needs to be placed inside the VPC in the first place.
 - The webhook-delivery worker needs genuine outbound internet access (POSTing to arbitrary downstream URLs) — it gets that for free by **not** being placed in a VPC either; a Lambda outside a VPC has normal internet access by default, at no extra cost.
 
-Net effect: zero VPC, zero NAT, for the entire Tier 0 stack. This is revisited in [Scale-out](#scale-out) once throughput, not cost, becomes the binding constraint.
+Net effect: zero VPC, zero NAT, for the entire Tier 0 stack. This is revisited in [Scale-out](../plan-remaining.md#scale-out) once throughput, not cost, becomes the binding constraint.
 
 ## AWS account & region
 
 Resolved: a **dedicated AWS account**, in **`us-east-1`**.
 
-**Dedicated account**, under an AWS Organization rather than reusing an existing personal/other-project account, specifically so [Cost guardrails](#cost-guardrails) below — the Budgets, the Cost Anomaly Detection baseline, the billing alarm — are scoped to exactly this system's spend from day one. A shared account makes every one of those guardrails a cost-allocation-tag exercise instead of an account-level default; at the current team size (one person plus an AI assistant, per the product's own stated growth plan) that's avoidable overhead, not a safety net worth the complexity. AWS Organizations (free) is still the right wrapper even for a single member account — it's what makes adding a second account (the [Scale-out](#scale-out) trigger for a separate staging environment) a few-minutes operation later instead of a migration.
+**Dedicated account**, under an AWS Organization rather than reusing an existing personal/other-project account, specifically so [Cost guardrails](#cost-guardrails) below — the Budgets, the Cost Anomaly Detection baseline, the billing alarm — are scoped to exactly this system's spend from day one. A shared account makes every one of those guardrails a cost-allocation-tag exercise instead of an account-level default; at the current team size (one person plus an AI assistant, per the product's own stated growth plan) that's avoidable overhead, not a safety net worth the complexity. AWS Organizations (free) is still the right wrapper even for a single member account — it's what makes adding a second account (the [Scale-out](../plan-remaining.md#scale-out) trigger for a separate staging environment) a few-minutes operation later instead of a migration.
 
 **`us-east-1`**, over other candidates, for three concrete reasons rather than "it's the default":
 
 - **Service availability.** New AWS features — including, historically, Aurora Serverless v2 capability updates — land in `us-east-1` first and most reliably. For a Tier 0 build that wants to stay current with the cheapest/newest options as they ship, that matters more than it would for a mature, stable workload.
 - **Pricing.** `us-east-1` is at or near the lowest-cost tier for every service in the [Tier 0 component table](#first-deployment-tier-0) above (Lambda, Aurora Serverless v2, API Gateway, S3) — a handful of regions tie it, none meaningfully undercut it for this stack.
 - **No data-residency constraint pulling the other way.** Nothing in the [Compliance](https://compositecode.github.io/substratalapps.com/compliance/) posture or the current customer base requires EU or other non-US placement for the *shared* tier specifically — that requirement, when it exists, is what the `dedicated_region` [tenancy tier](#tenancy-tiers--where-they-run) is *for*, scoped to the one customer who needs it rather than forcing a region choice for everyone.
+
+**As built (2026-10-20):** production is the member account `substratal-prod` in an AWS Organization created through the AWS console's Projects experience, with a separate management account (billing and policies) and an Identity delegated-admin account. Two consequences worth knowing:
+
+- That Organization's region-restriction SCP (`AdvancedModeRegionRestrictionSecurityControlPolicy`) allows only global services in `us-east-1` by default. Its `UsEast1Partitional` statement carries an exception for `substratal-prod` (`StringNotEquals aws:PrincipalAccount`) so the stack can run there. The Projects feature might restore the original; if production calls suddenly fail with an explicit SCP deny, check that exception first.
+- Console and CLI access go through the Projects role (`AccountFullAccessRole`), and the CLI signs in with `aws login`. The account's identity source (AWS Builder ID) doesn't offer IAM Identity Center permission sets.
 
 This is a Tier 0 default, not a permanent commitment — nothing above prevents a `dedicated_region` Tenant from landing anywhere else, and nothing prevents revisiting the *shared* region later if a majority of the customer base ends up needing otherwise. Revisit if that happens; don't pre-build for it.
 
@@ -130,37 +132,17 @@ Rough, region-dependent, **not a quote**:
 | MCP Lambda, Stripe webhook Lambda, low call volume each | Low single digits combined, same free-tier coverage as the API handlers' Lambda |
 | **Floor total** | **~$45–55/month**, before any real traffic |
 
-## Growth trajectory
-
-The stated plan: dozens of users and a handful of Applications in the first 6–12 months, roughly 10x from there over the following 6–12 months, and another 10x (100x from today) beyond that.
-
-| Horizon | Rough scale | What this means for the architecture |
-|---|---|---|
-| 0–6/12 months | Dozens of users, a few Applications | **Tier 0 as specified, unchanged.** The floor cost table above is sized for exactly this. |
-| 6–12 months out (~10x) | Low hundreds of users | Watch rate-limit defaults and the Aurora ACU ceiling (not just the floor) — this is when the *first* [Scale-out](#scale-out) triggers are plausible, not guaranteed. Check real metrics rather than upgrading preemptively. |
-| 12+ months (~100x) | Low thousands of users | The horizon [Scale-out](#scale-out)'s read-replica, Provisioned Concurrency, and RDS Proxy rows are realistically aimed at. Also the point multi-tenancy query performance (the test/live Row-Level Security policy plus the `tenant_id` filters) is worth profiling specifically, not just trusting by design. |
-
 ## Tenancy tiers & where they run
+
+Only `shared` is built. Every Tenant lives in the Tier 0 cluster today; the `isolated` and `dedicated_region` rows below are the design, and their provisioning, request routing, and migration runbook are in [plan-remaining.md → Dedicated tenancy infrastructure](../plan-remaining.md#dedicated-tenancy-infrastructure).
 
 [Tenancy](https://compositecode.github.io/substratalapps.com/domain-model/tenancy/) is a second, independent scale-out axis — triggered by one customer's requirement, not by aggregate volume, and can happen on day one for a single large customer well before the traffic-driven triggers above are anywhere close.
 
 | Tier | Infrastructure | Relationship to Tier 0 above |
 |---|---|---|
-| `shared` | Exactly [Tier 0](#first-deployment-tier-0) as specified — the same Aurora cluster every other `shared`-tier Tenant uses, isolated by `tenant_id` in the data-access layer (see [NFR → Multi-tenancy](https://compositecode.github.io/substratalapps.com/non-functional-requirements/#multi-tenancy)). | Is Tier 0. No separate infrastructure exists for this tier. |
+| `shared` | **Built.** Exactly [Tier 0](#first-deployment-tier-0) as specified — the same Aurora cluster every other `shared`-tier Tenant uses, isolated by `tenant_id` in the data-access layer (see [NFR → Multi-tenancy](https://compositecode.github.io/substratalapps.com/non-functional-requirements/#multi-tenancy)). | Is Tier 0. No separate infrastructure exists for this tier. |
 | `isolated` | A second (third, fourth, …) Aurora Serverless v2 cluster, its own Secrets Manager secret, same AWS account and region as Tier 0. The API Lambda's Data API calls are routed to the right cluster via a small `tenants` lookup table kept in the primary/shared cluster — no new Lambda functions, no code fork. | One extra Aurora floor (~$45–55/month) per `isolated` Tenant — priced per [Pricing](https://compositecode.github.io/substratalapps.com/pricing/#business-and-enterprise). |
 | `dedicated_region` | Like `isolated`, but the dedicated cluster — and, if latency to that region matters, a regional API Gateway + Lambda deployment in front of it — sits in the customer's chosen AWS region. | The `isolated` floor again, in a second region. |
-
-### Migration mechanics
-
-A tier change (`shared → isolated`, or either `→ dedicated_region`) is support-run, during a brief scheduled maintenance window:
-
-1. Provision the destination cluster (new Aurora Serverless v2 cluster; for `dedicated_region`, in the target region) via the same [Build checklist](#build-checklist) steps used for Tier 0 itself.
-2. Set the source Tenant's `status` to `migrating` — the API layer treats this as read-only for that Tenant's rows specifically, not a global outage.
-3. Snapshot and restore (RDS snapshot copy, or `pg_dump`/`pg_restore` at this data volume) every row carrying that `tenant_id` into the destination cluster.
-4. Update the `tenants` lookup row's cluster endpoint, flip `tier`/`region`/`status` back to `active`, decommission the old rows once the cutover is confirmed.
-5. Record an Audit Event (`tenant.tier_changed`).
-
-Because Entitlement, AppProfile, and AppSettings rows all denormalize `tenant_id`, step 3 is a `WHERE tenant_id = ...` export per table — no cross-table join needed to find everything that has to move.
 
 ## MCP server
 
@@ -175,15 +157,6 @@ A dedicated Lambda (shown in the [Tier 0 diagram](#first-deployment-tier-0) abov
 3. Translates the REST response into the MCP result shape and returns a single, buffered JSON response.
 
 This Lambda never talks to Aurora, Secrets Manager, or SQS directly — it only ever calls the existing API handlers over HTTPS, so its IAM execution role needs no data-plane permissions at all. It's the cheapest possible shape for this component: pure compute, pay-per-call, the same free-tier coverage as the main API handlers' Lambda.
-
-### Scaling the MCP server
-
-| Trigger | Change |
-|---|---|
-| Sustained high-frequency tool-call traffic on hot tools | Provisioned Concurrency on the MCP Lambda specifically — same pattern and trigger as the [Scale-out](#scale-out) table's cold-start row. |
-| A real need for server-initiated push — mid-call progress notifications, or resumable streams | Move `/mcp` from a plain Lambda-behind-API-Gateway integration to a **Lambda Function URL with streaming responses enabled** (`InvokeMode: RESPONSE_STREAM`) — API Gateway's HTTP API integration buffers the full Lambda response, so it can't carry a chunked `text/event-stream`; a Function URL can. |
-| Session/stream-resumption state that no longer fits in a short-lived signed token | A small **DynamoDB** table, keyed by session ID, TTL'd like `idempotency_keys` — ephemeral, high-churn, single-key lookup: the textbook case Aurora is the wrong tool for and DynamoDB is the right one. |
-| More than a handful of concurrent agent integrations with genuinely different trust levels | Per-integration API Keys scoped as narrowly as each integration actually needs — an operational practice, not an infrastructure change. |
 
 ## Stripe Billing
 
@@ -259,14 +232,14 @@ Outbound webhooks use a **transactional outbox**. Every state-changing transacti
 
 [Push Notifications](https://compositecode.github.io/substratalapps.com/api-reference/notifications/) specifies the behavior. This is how it runs, on top of the webhook machinery above, with no new always-on component.
 
-- **Outbox.** A send inserts the `notifications` row and one `notification_deliveries` row per eligible device in the same transaction ([Database Schema](https://compositecode.github.io/substratalapps.com/domain-model/database-schema/#push_credentials-devices-notifications-notification_deliveries)). After commit, the API nudges a `push` SQS queue. The dispatcher's existing sweep also picks up any `pending` delivery older than a few seconds, so a lost nudge only delays a push.
-- **Worker.** The existing webhook worker Lambda takes the `push` queue as a second event source. It decrypts the Application's credential with the same symmetric KMS key used for webhook and TOTP secrets, and keeps a per-credential cache of provider auth across warm invocations: the APNs provider JWT (ES256, refreshed every 50 minutes, inside Apple's 20–60 minute window), the FCM OAuth 2.0 access token (refreshed before its one-hour expiry), and the VAPID JWT (ES256, at most 12 hours). APNs needs HTTP/2, which Go's standard client supports, and one connection per gateway (production, sandbox) is reused across deliveries in an invocation.
+- **Outbox.** A send inserts the `notifications` row and one `notification_deliveries` row per eligible device in the same transaction ([Database Schema](https://compositecode.github.io/substratalapps.com/domain-model/database-schema/#push_credentials-devices-notifications-notification_deliveries)). After commit, the API nudges the webhook SQS queue. A nudge carries no payload, so one queue serves both outboxes. The existing 1-minute `webhook-dispatch` sweep runs push delivery too, so a lost nudge only delays a push.
+- **Worker.** The existing webhook worker Lambda drains push deliveries first on every invocation, then webhooks, because a push outcome can emit webhook events (`device.deactivated`, `notification.push_failed`). Each delivery is claimed with a 2-minute lease, so no database transaction stays open across a provider call. The worker decrypts the Application's credential and the device token with the same symmetric KMS key used for webhook and TOTP secrets, and keeps a per-credential cache of provider auth across warm invocations: the APNs provider JWT (ES256, refreshed every 50 minutes, inside Apple's 20–60 minute window), the FCM OAuth 2.0 access token (refreshed before its one-hour expiry), and the VAPID JWT (ES256, at most 12 hours). APNs needs HTTP/2, which Go's standard client supports, and one connection per gateway (production, sandbox) is reused across deliveries in an invocation.
 - **No VPC, no NAT.** The worker already runs outside a VPC for outbound webhooks, so it reaches `api.push.apple.com`, `fcm.googleapis.com`, and browser push endpoints at no extra cost.
-- **Retries** use SQS delays (+30 seconds, +2 minutes, +10 minutes) within the notification's `ttl_seconds`. Provider responses that mean the token is gone deactivate the device, and ones that mean the credential is bad mark the credential `failed` and email the Application's owner, both in the worker's own transaction.
+- **Retries** are scheduled in the database (`next_attempt_at`: +30 seconds, +2 minutes, +10 minutes, within the notification's `ttl_seconds`) and picked up by the 1-minute sweep, so a retry runs up to a minute after it comes due. Provider responses that mean the token is gone deactivate the device, and ones that mean the credential is bad mark the credential `failed` and email the Application's owner, both in the worker's own transaction.
 - **Secrets.** Push credentials are per Application and live KMS-encrypted in Aurora, not in Secrets Manager, which would cost $0.40 a month per Application for no added safety. Device tokens are encrypted the same way.
-- **Scheduled jobs** (the existing jobs Lambda): the stale-device sweep (daily), deleting inactive devices 30 days after deactivation (daily), and purging notifications after 90 days and deliveries after 30 (nightly).
-- **Cost.** APNs, FCM, and Web Push charge nothing to send. At Tier 0 volume the queue, worker time, and KMS decrypts are a rounding error, and the decrypted-credential cache keeps KMS calls to one per credential per warm worker.
-- **Locally**, the devserver delivers in-process, the same as webhooks. A local provider backend that records pushes instead of sending them lets tests and the Quickstart run without real Apple or Google credentials.
+- **Scheduled jobs** (the existing jobs Lambda): `push-maintenance`, daily at 04:30 UTC, runs the 270-day stale-device sweep, deletes inactive devices 30 days after deactivation, and purges notifications after 90 days and delivery results after 30.
+- **Cost.** APNs, FCM, and Web Push charge nothing to send. At Tier 0 volume the worker time is a rounding error, and so is KMS: two decrypts per delivery (credential and token), at $0.03 per 10,000.
+- **`PUSH_BACKEND`** selects the sender: `live` (production's default) sends to the providers, and `log` (the local default) only logs each push. Locally, the devserver delivers in-process, the same as webhooks, so the whole flow works without real Apple or Google credentials. Tests use a recording fake.
 
 ## Audit log archival
 
@@ -282,38 +255,6 @@ Outbound webhooks use a **transactional outbox**. Every state-changing transacti
 
 Cost is negligible at Tier 0 volume (Glacier Deep Archive is priced for exactly this shape of rarely-read, kept-forever data) — this is about bounding Aurora's hot-table size and honoring the redaction-on-age guarantee, not about saving money on S3 itself.
 
-## Scale-out
-
-Nothing below is pre-built into Tier 0 — each is a deliberate upgrade, triggered by a specific, named condition, not a default growth path.
-
-| Trigger | Change |
-|---|---|
-| Sustained read load on `effective-permissions` / catalog reads | Add an Aurora read replica; consider API Gateway response caching for read-heavy, low-churn paths. |
-| Lambda cold-start latency becomes user-visible on hot paths | Provisioned Concurrency on the `effective-permissions` and entitlement-toggle handlers specifically — not a blanket setting. |
-| Sustained high-throughput DB access, where Data API's per-call overhead starts to matter | Move those paths from Data API to direct VPC connections through **RDS Proxy** — this is the point where a NAT Gateway (or a cheaper NAT instance) becomes worth its cost, because throughput now justifies it rather than convenience. |
-| Geographically distributed callers, latency-sensitive | CloudFront in front of API Gateway. |
-| Hub availability becomes a real incident risk for every downstream app, not a theoretical one | Multi-region active-passive — deliberately not a Tier 0/1 concern; premature multi-region is itself a cost and complexity risk. |
-| Webhook delivery volume grows enough to need isolation from the main API's blast radius | Split the worker Lambda's concurrency/alerting from the API handlers' (it already runs as a separate function). |
-| Push volume grows enough that APNs connection reuse, or isolation from webhook delivery, matters | Give push delivery its own worker function with reserved concurrency, so long-lived HTTP/2 connections to APNs survive between batches and a burst of pushes can't delay webhooks. |
-| More than one engineer shipping concurrently | A second AWS account (via AWS Organizations) for staging, separate from production — Tier 0 runs on a single account with a `dev`/`prod` naming convention, which is enough until this trigger. |
-| A specific customer requires dedicated or regional infrastructure | Run the [Tenancy tiers](#tenancy-tiers--where-they-run) migration for that one customer's Tenant — the one scale-out trigger in this table that's customer-specific rather than aggregate-volume-driven. |
-| Agent/MCP tool-call traffic needs server-push, resumable streams, or dedicated concurrency | See [MCP server → Scaling the MCP server](#scaling-the-mcp-server) — its own trigger table. |
-| Stripe billing volume or complexity outgrows a single webhook Lambda (e.g. real invoice-dunning logic, usage-based billing beyond simple per-seat metering) | Revisit as its own build, not folded into this table speculatively — nothing here is blocked on it. |
-
-## Build checklist
-
-The order this gets stood up in, once API implementation begins:
-
-1. AWS account (dedicated member account under Organizations, `us-east-1` — see [AWS account & region](#aws-account--region)) + billing contact + **Budgets and Cost Anomaly Detection from step 1**, before any other resource.
-2. Route 53 hosted zone + ACM certificate for the chosen API domain. SES domain identity for `mail.substratalapps.com` (DKIM/SPF/DMARC) and an SES production-access request, which takes about a day, so start it here.
-3. KMS keys: one asymmetric RSA-2048 signing key for JWTs (JWKS is published from its public half), and one symmetric key for encrypting TOTP and webhook secrets. Secrets Manager secrets: the Aurora master credential, and Stripe's secret key + webhook-signing secret (test-mode keys first — see [Stripe Billing](#stripe-billing)). Aurora Serverless v2 cluster with Data API enabled, minimum 0.5 / maximum capacity set deliberately.
-4. IAM: one execution role per Lambda function (API handlers, MCP server, Stripe webhook handler, webhook worker, scheduled-jobs), each scoped to only the resources it actually needs — no shared mega-role.
-5. API Gateway HTTP API + custom domain mapping; Lambda handlers deployed behind it, implementing the [API Reference](https://compositecode.github.io/substratalapps.com/api-reference/) / [openapi.yaml](https://compositecode.github.io/substratalapps.com/openapi.yaml) contract.
-6. SQS queues (webhook fan-out/delivery, push delivery, email, Stripe events) and their worker Lambdas; EventBridge Scheduler rules for the entitlement-expiry sweep (every 5 minutes), the webhook outbox dispatcher, the erasure cascade (hourly), the Organization quantity sync (daily 00:15 UTC), the subscription-access reconcile (hourly), test-mode purge, expired-token and idempotency-key cleanup (nightly), the push stale-device sweep (daily) and notification retention purge (nightly), and [audit log archival](#audit-log-archival). JWKS is served by the API with a 1-hour `Cache-Control`; CloudFront in front of the whole domain waits for the [Scale-out](#scale-out) trigger, since caching only that path would mean fronting the entire API.
-7. Stripe account: run the catalog sync script (test mode first), configure the Customer Portal (no plan switching), enable Stripe Tax, register the `/internal/stripe/webhook` endpoint for the events in [Webhook handling](#webhook-handling).
-8. CloudWatch Logs with explicit retention on every log group; a small set of alarms (error rate, Lambda throttling, Aurora ACU near max) in addition to the billing guardrails from step 1.
-9. CI/CD via OIDC federation (GitHub Actions → an AWS deploy role) — no long-lived IAM user access keys committed anywhere.
-
 ## Local development
 
 The RDS Data API choice that keeps Tier 0 NAT-free has a real cost: it doesn't have a clean open-source local emulator, so a developer can't just point the production data-access code at "Data API, but local" the way they could with a plain Postgres driver.
@@ -322,4 +263,4 @@ The fix is to not let that choice leak into the application code in the first pl
 
 Stripe's own test mode (plus the Stripe MCP server referenced in [Stripe Billing](#stripe-billing)) covers the equivalent problem on the billing side — no local Stripe emulator is needed, since Stripe's hosted test mode is free and already the standard way to develop against it.
 
-The full local setup (Docker Compose services, the devserver, `make` targets) and the `dev` → `main` → production deployment flow are in [README.md → Local development](README.md#local-development) and [README.md → Branches, CI, and deployment](README.md#branches-ci-and-deployment).
+The full local setup (Docker Compose services, the devserver, `make` targets) and the `dev` → `main` → production deployment flow are in [README.md → Local development](../README.md#local-development) and [README.md → Branches, CI, and deployment](../README.md#branches-ci-and-deployment).

@@ -62,9 +62,6 @@ Operations are grouped by tag, and each tag matches an API Reference page that e
 | Notifications | 17 | [Push Notifications](../api-reference/notifications/) |
 | API Keys | 6 | [API Keys](../api-reference/api-keys/) |
 
-{: .note }
-**Notifications are specified, not built yet.** The 17 operations under the Notifications tag are the target contract for [Push Notifications](../api-reference/notifications/). Until the reference implementation builds them, each one returns `501 not_implemented`, so build clients against the shapes, not against a live server.
-
 Some endpoints live outside `/v1` and aren't in the document's `paths`, because they follow external standards instead:
 
 - `GET /.well-known/jwks.json` and `GET /.well-known/openid-configuration`: signing keys and discovery, for verifying app tokens with any standard JWT library. See [Auth → Signing keys](../api-reference/auth/#signing-keys-jwks).

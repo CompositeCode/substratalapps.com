@@ -26,6 +26,7 @@ type application struct {
 	RedirectURIs        []string        `json:"redirect_uris"`
 	SupportURL          *string         `json:"support_url"`
 	EmailFromName       *string         `json:"email_from_name"`
+	ReceivesPlatform    bool            `json:"receives_platform_notifications"`
 	SettingsSchema      json.RawMessage `json:"settings_schema"`
 	SettingsSchemaStats map[string]any  `json:"settings_schema_stats"`
 	Permissions         []appPermission `json:"permissions"`
@@ -64,7 +65,7 @@ func (a appRow) full(stats map[string]int) application {
 	}
 	return application{ID: a.ID, Slug: a.Slug, Name: a.Name, Description: a.Description, IconURL: a.IconURL,
 		LaunchURL: a.LaunchURL, RedirectURIs: nonNil(a.RedirectURIs), SupportURL: a.SupportURL,
-		EmailFromName: a.EmailFromName, SettingsSchema: a.SettingsSchema,
+		EmailFromName: a.EmailFromName, ReceivesPlatform: a.ReceivesPlatform, SettingsSchema: a.SettingsSchema,
 		SettingsSchemaStats: map[string]any{"stale_override_counts": stats}, Permissions: perms,
 		AvailableAppRoles: nonNil(a.AvailableAppRoles), DefaultAppRole: a.DefaultAppRole, Visibility: a.Visibility,
 		AccessTier: a.AccessTier, OwnerUserID: a.OwnerUserID, OwnerOrganizationID: a.OwnerOrganizationID, ReviewStatus: a.ReviewStatus,
@@ -406,6 +407,7 @@ func (s *Server) ApplicationsCreate(w http.ResponseWriter, r *http.Request, para
 			RedirectURIs      []string        `json:"redirect_uris"`
 			SupportURL        *string         `json:"support_url"`
 			EmailFromName     *string         `json:"email_from_name"`
+			ReceivesPlatform  bool            `json:"receives_platform_notifications"`
 			SettingsSchema    json.RawMessage `json:"settings_schema"`
 			Permissions       []appPermission `json:"permissions"`
 			AvailableAppRoles []string        `json:"available_app_roles"`
@@ -467,14 +469,14 @@ func (s *Server) ApplicationsCreate(w http.ResponseWriter, r *http.Request, para
 		if _, err := c.q.Exec(c.ctx, `insert into applications (id, slug, name, description, icon_url, launch_url,
 				redirect_uris, support_url, email_from_name, settings_schema, permissions, available_app_roles,
 				default_app_role, visibility, access_tier, owner_user_id, owner_organization_id, review_status, review_notes,
-				tenant_id, test_mode)
+				tenant_id, test_mode, receives_platform_notifications)
 			values (:id, :slug, :name, :desc, :icon, :launch, :redir::text[], :support, :from, :schema::jsonb,
-				:perms::jsonb, :roles::text[], :defrole, :vis, :tier, :ou, :oo, :rs, :rn, :t, :tm)`,
+				:perms::jsonb, :roles::text[], :defrole, :vis, :tier, :ou, :oo, :rs, :rn, :t, :tm, :rpn)`,
 			db.Args{"id": id, "slug": slug, "name": in.Name, "desc": in.Description, "icon": in.IconURL,
 				"launch": in.LaunchURL, "redir": db.TextArray(in.RedirectURIs), "support": in.SupportURL,
 				"from": in.EmailFromName, "schema": string(in.SettingsSchema), "perms": db.JSON(perms),
 				"roles": db.TextArray(roles), "defrole": in.DefaultAppRole, "vis": visibility, "tier": accessTier, "ou": ownerUser,
-				"oo": ownerOrg, "rs": review, "rn": in.ReviewNotes, "t": t.ID, "tm": c.testMode()}); err != nil {
+				"oo": ownerOrg, "rs": review, "rn": in.ReviewNotes, "t": t.ID, "tm": c.testMode(), "rpn": in.ReceivesPlatform}); err != nil {
 			if _, ok := db.UniqueViolation(err); ok {
 				return httpx.Conflict("slug_taken", "An Application with this slug already exists.")
 			}
@@ -515,7 +517,8 @@ func (c *Call) seedAppRoles(appID string, names []string) error {
 // ── PATCH /v1/applications/{id} ────────────────────────────────────────
 
 var ownerFields = []string{"name", "description", "icon_url", "launch_url", "redirect_uris", "support_url",
-	"email_from_name", "settings_schema", "permissions", "available_app_roles", "default_app_role"}
+	"email_from_name", "settings_schema", "permissions", "available_app_roles", "default_app_role",
+	"receives_platform_notifications"}
 var moderationFields = []string{"visibility", "access_tier", "review_status", "review_notes", "owner_user_id", "owner_organization_id"}
 
 func (s *Server) ApplicationsUpdate(w http.ResponseWriter, r *http.Request, id string, params gen.ApplicationsUpdateParams) {
@@ -597,6 +600,13 @@ func (s *Server) ApplicationsUpdate(w http.ResponseWriter, r *http.Request, id s
 		}
 		if v, present := p.String("access_tier", &f); present && v != nil {
 			next.AccessTier = *v
+		}
+		if p.Has("receives_platform_notifications") {
+			if p.IsNull("receives_platform_notifications") {
+				f.Add("receives_platform_notifications", "required").Message = "this field isn't nullable"
+			} else {
+				p.Get("receives_platform_notifications", &next.ReceivesPlatform, &f)
+			}
 		}
 		ownerChange := p.Has("owner_user_id") || p.Has("owner_organization_id")
 		if ownerChange {
@@ -696,18 +706,18 @@ func (s *Server) ApplicationsUpdate(w http.ResponseWriter, r *http.Request, id s
 				launch_url = :launch, redirect_uris = :redir::text[], support_url = :support, email_from_name = :from,
 				settings_schema = :schema::jsonb, permissions = :perms::jsonb, available_app_roles = :roles::text[],
 				default_app_role = :defrole, visibility = :vis, access_tier = :tier, owner_user_id = :ou, owner_organization_id = :oo,
-				review_status = :rs, review_notes = :rn, tenant_id = :t
+				review_status = :rs, review_notes = :rn, tenant_id = :t, receives_platform_notifications = :rpn
 			where id = :id`,
 			db.Args{"name": next.Name, "desc": next.Description, "icon": next.IconURL, "launch": next.LaunchURL,
 				"redir": db.TextArray(next.RedirectURIs), "support": next.SupportURL, "from": next.EmailFromName,
 				"schema": string(next.SettingsSchema), "perms": db.JSON(next.Permissions),
 				"roles": db.TextArray(next.AvailableAppRoles), "defrole": next.DefaultAppRole, "vis": next.Visibility,
 				"tier": next.AccessTier, "ou": next.OwnerUserID, "oo": next.OwnerOrganizationID, "rs": next.ReviewStatus, "rn": next.ReviewNotes,
-				"t": newTenant, "id": a.ID}); err != nil {
+				"t": newTenant, "id": a.ID, "rpn": next.ReceivesPlatform}); err != nil {
 			return err
 		}
 		if newTenant != a.TenantID {
-			for _, table := range []string{"entitlements", "app_profiles", "app_settings"} {
+			for _, table := range []string{"entitlements", "app_profiles", "app_settings", "push_credentials", "devices", "notifications"} {
 				if _, err := c.q.Exec(c.ctx, `update `+table+` set tenant_id = :t where application_id = :a`,
 					db.Args{"t": newTenant, "a": a.ID}); err != nil {
 					return err

@@ -162,6 +162,9 @@ func (c *Call) flip(w *accessWatch, grantedReason, revokedReason string) error {
 		if a {
 			err = c.emit("access.granted", &app, map[string]any{
 				"user_id": p.User, "application_id": p.App, "reason": grantedReason, "entitlement_status": "active"})
+			if err == nil {
+				err = c.alertAccessGranted(p, after[p])
+			}
 		} else {
 			err = c.emit("access.revoked", &app, map[string]any{
 				"user_id": p.User, "application_id": p.App, "reason": revokedReason,

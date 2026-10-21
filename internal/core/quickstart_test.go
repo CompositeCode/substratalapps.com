@@ -14,7 +14,7 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-// TestQuickstart runs docs/quickstart.md end to end: PLAN.md's Phase 1
+// TestQuickstart runs docs/quickstart.md end to end: the Phase 1
 // acceptance test.
 func TestQuickstart(t *testing.T) {
 	e := testenv.New(t)

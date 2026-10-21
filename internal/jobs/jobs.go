@@ -1,4 +1,4 @@
-// Package jobs is every scheduled job (DEPLOYMENT.md → Build checklist,
+// Package jobs is every scheduled job (infra/README.md → Build checklist,
 // step 6), one entry point each. EventBridge Scheduler invokes the jobs
 // Lambda with {"job": "<name>"}; locally, `make job name=<name>` runs one.
 package jobs
@@ -47,10 +47,17 @@ func (r *Runner) Jobs() map[string]func(context.Context) error {
 			r.Base.Log.Info("entitlement sweep", "expired", exp, "started", started)
 			return err
 		},
-		// every minute: the safety net under SQS nudges
+		// every minute: the safety net under SQS nudges, for webhooks and
+		// push deliveries alike (push events can produce webhooks, so
+		// pushes go first)
 		"webhook-dispatch": func(ctx context.Context) error {
+			if err := r.Core.RunPush(ctx); err != nil {
+				return err
+			}
 			return r.Base.Deliverer().Run(ctx)
 		},
+		// daily: stale devices, inactive-device deletion, inbox retention
+		"push-maintenance": func(ctx context.Context) error { return r.Core.PushMaintenance(ctx) },
 		// hourly
 		"erasure-cascade": func(ctx context.Context) error {
 			n, err := r.Core.RunErasures(ctx)

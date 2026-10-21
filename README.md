@@ -11,14 +11,16 @@ This repository is split deliberately, by audience:
 | Audience | Lives | Why |
 |---|---|---|
 | **An API consumer** — a developer building an Application on this platform, or their AI coding agent | [`docs/`](docs/), published at [compositecode.github.io/substratalapps.com](https://compositecode.github.io/substratalapps.com/) | The API specification, and nothing else: domain model, access control, every endpoint and schema, workflows, the MCP server for agent callers, pricing. Everything a consumer needs to build *against* this API. |
-| **Whoever is building *this* API** | The project root (this file and its siblings) | Deployment/infrastructure, the implementation build order, and the internal decision log aren't things a consumer needs to use the API — they're how it gets built and run. Kept separate so the docs site stays focused, per its own [Home page](https://compositecode.github.io/substratalapps.com/#what-this-site-is). |
+| **Whoever is building *this* API** | The project root (this file and its siblings) | Deployment/infrastructure, the remaining build plan, and the manual setup steps aren't things a consumer needs to use the API — they're how it gets built and run. Kept separate so the docs site stays focused, per its own [Home page](https://compositecode.github.io/substratalapps.com/#what-this-site-is). |
 
 Root-level documents:
 
-- **[PLAN.md](PLAN.md)** — the build order: what to implement first, which spec page governs each piece, phase-by-phase exit criteria.
-- **[DEPLOYMENT.md](DEPLOYMENT.md)** — AWS infrastructure (cost-capped, Aurora Serverless v2, Lambda, no VPC/NAT at Tier 0), Stripe Billing implementation, the MCP servers recommended for building against AWS/Postgres/Stripe, and the scale-out triggers for when any of this needs to change.
+- **[plan-remaining.md](plan-remaining.md)** — everything specified but not built yet: test-mode User expiry, the first-party web pages, Phase 3, dedicated tenancy infrastructure, scale-out triggers, and the rules every change follows.
+- **[remaining_manual_steps.md](remaining_manual_steps.md)** — one-time setup still to do by hand to go live: the Lambda quota, the superadmin password, SES production access, Stripe, and legal.
+- **[infra/README.md](infra/README.md)** — the deployment architecture as built: AWS infrastructure (cost-capped, Aurora Serverless v2, Lambda, no VPC/NAT at Tier 0), the account setup, Stripe Billing, email, webhook and push delivery, audit archival, and local development.
 - **[LICENSE](LICENSE)** — MIT.
-- **[ORIGINAL-SPEC-DRAFT.md](ORIGINAL-SPEC-DRAFT.md)** — the original single-document draft this whole spec was elaborated from. Kept for history, moved here (out of `docs/`) specifically so it can't be mistaken for current spec — it contradicts several later decisions.
+
+The original single-document draft, the build plan, and the old deployment document were retired on 2026-10-20 once their content was built and documented where it belongs; they remain in git history.
 
 Not yet moved to the root, but should be, by the same reasoning above — tracked so this doesn't get silently forgotten:
 
@@ -37,18 +39,18 @@ Decided 2026-10-06. The API is written in **Go**, deployed to **AWS Lambda**, an
 
 | Layer | Choice | Why |
 |---|---|---|
-| Language | **Go** (latest stable release, pinned in `go.mod`) | Cold starts in the tens of milliseconds and small memory use on Lambda. That directly serves the p95 < 150 ms target for `effective-permissions`, `app-tokens`, and `oauth/token` in [Non-Functional Requirements](https://compositecode.github.io/substratalapps.com/non-functional-requirements/), and the cost-first rules in [DEPLOYMENT.md](DEPLOYMENT.md#cost-principles). Strongly typed, stable for years, and plain enough that a one-person team and an AI assistant can both read and change it safely. |
+| Language | **Go** (latest stable release, pinned in `go.mod`) | Cold starts in the tens of milliseconds and small memory use on Lambda. That directly serves the p95 < 150 ms target for `effective-permissions`, `app-tokens`, and `oauth/token` in [Non-Functional Requirements](https://compositecode.github.io/substratalapps.com/non-functional-requirements/), and the cost-first rules in [infra/README.md](infra/README.md#cost-principles). Strongly typed, stable for years, and plain enough that a one-person team and an AI assistant can both read and change it safely. |
 | Lambda runtime | `provided.al2023` on **arm64** (Graviton) | Go compiles to one static `bootstrap` binary. arm64 is cheaper per GB-second than x86 for the same work. |
 | HTTP layer | Standard library `net/http`. The route table, path/query/header binding, and the `ServerInterface` every operation must implement are **generated from [`docs/openapi.yaml`](docs/openapi.yaml)** by `oapi-codegen`. Request and response bodies are hand-written in `internal/core`. | The spec is the contract: an operation without a handler doesn't compile. The generated *body* models can't express explicit JSON `null`s or PATCH field presence, both of which Conventions requires, so bodies are hand-written and the contract tests validate every response against `openapi.yaml` instead. |
 | Lambda adapter | `aws-lambda-go`, plus a thin adapter that turns API Gateway HTTP API events into `http.Request`s | The **same** `http.Handler` serves requests on a laptop and in Lambda. Nothing in handler code knows which one it's running in. |
-| Database | **PostgreSQL 16**. In AWS: Aurora Serverless v2 through the **RDS Data API**. Locally and in CI: plain Postgres through **`pgx`**. | Both implement one small driver interface (`internal/db`), as [DEPLOYMENT.md → Local development](DEPLOYMENT.md#local-development) requires. See [The two database backends](#the-two-database-backends). |
+| Database | **PostgreSQL 16**. In AWS: Aurora Serverless v2 through the **RDS Data API**. Locally and in CI: plain Postgres through **`pgx`**. | Both implement one small driver interface (`internal/db`), as [infra/README.md → Local development](infra/README.md#local-development) requires. See [The two database backends](#the-two-database-backends). |
 | Migrations | Plain, numbered SQL files in `migrations/`, applied by an in-repo `cmd/migrate` tool | Same tool, same files, same tracking table (`schema_migrations`) in every environment. An in-repo runner is used instead of a third-party tool because the common Go migration tools need a `database/sql` driver, and the Data API has no first-party one. |
 | Crypto | `golang.org/x/crypto/argon2` (Argon2id), standard-library HMAC/RSA, AWS KMS for JWT signing and secret encryption | Matches [Non-Functional Requirements → Security](https://compositecode.github.io/substratalapps.com/non-functional-requirements/) exactly, with no native add-ons. |
 | AWS access | AWS SDK for Go v2 (Data API, KMS, SQS, Secrets Manager, S3, SES) | |
 | Billing | `stripe-go`, Stripe's official Go library | |
 | MCP server | Go, implementing the buffered-JSON subset of MCP Streamable HTTP directly (`internal/mcp`). Tools are generated from `openapi.yaml` by `cmd/mcpgen`. | The spec requires a stateless, signed `Mcp-Session-Id` and one invocation per call; the official SDK keeps sessions in memory, which doesn't fit a stateless Lambda. It only proxies HTTPS calls to `/v1`. |
 | Infrastructure | **Terraform**, remote state in S3 (native S3 state locking, no DynamoDB table) | Language-neutral and widely known, and `terraform plan` output can be reviewed on the pull request before it reaches production. Works with OpenTofu too. |
-| CI/CD | **GitHub Actions**, deploying to AWS through **OIDC federation** | No long-lived AWS keys anywhere, per [DEPLOYMENT.md → Build checklist](DEPLOYMENT.md#build-checklist) step 9. |
+| CI/CD | **GitHub Actions**, deploying to AWS through **OIDC federation** | No long-lived AWS keys anywhere, per [infra/README.md → Cost principles](infra/README.md#cost-principles). |
 | Local services | **Docker Compose**: Postgres 16, LocalStack (SQS, KMS, Secrets Manager, S3), Mailpit (captures outgoing email) | The whole API runs on a laptop with no AWS account and no internet beyond Stripe test mode. |
 
 Considered and not chosen: **TypeScript on Node.js** (fastest early development and the most mature MCP SDK, but slower cold starts, types that disappear at runtime, and more dependency churn over a long-lived project), and **Java** (mature, and SnapStart fixes cold starts, but heavier memory use and more framework machinery than Tier 0's small per-request Lambdas and a one-person team need). Revisit only if the deployment model changes, for example a move from Lambda to long-running containers.
@@ -120,7 +122,7 @@ Every push to `dev` (and to `feature/*`), and every pull request into `main`, ru
 3. **Unit tests**, including exhaustive tests of the Access Control resolution logic (every combination of entitlement status × platform role × app role), per [Testing strategy](https://compositecode.github.io/substratalapps.com/non-functional-requirements/#testing-strategy).
 4. **Integration tests** against real Postgres 16 and LocalStack running as GitHub Actions service containers, with every migration applied from zero. These run the pgx backend, including the Row-Level Security policies, which a mocked data layer would let pass while broken.
 5. **Contract tests.** The devserver starts, and every response is validated against `docs/openapi.yaml`.
-6. **Quickstart test.** The [Quickstart](https://compositecode.github.io/substratalapps.com/quickstart/) walkthrough runs as a script against the devserver. It's the Phase 1 acceptance test from [PLAN.md](PLAN.md#phase-1--mvp), so it runs on every change, not just at milestones.
+6. **Quickstart test.** The [Quickstart](https://compositecode.github.io/substratalapps.com/quickstart/) walkthrough runs as a script against the devserver. It's the Phase 1 acceptance test ([plan-remaining.md → Verify the build in production](plan-remaining.md#verify-the-build-in-production)), so it runs on every change, not just at milestones.
 7. **Build.** Every `cmd/*` function compiles for `linux/arm64` (`CGO_ENABLED=0`, `-tags lambda.norpc`) and is zipped as `bootstrap`, which proves the release artifacts can be built.
 8. **Docs build.** `jekyll build` of `docs/`, so a broken docs page is caught on `dev`, not on the release.
 
@@ -128,7 +130,7 @@ On a pull request into `main` only, one more step runs:
 
 9. **`terraform plan` against production**, using a **read-only** plan role through OIDC. The plan is posted as a PR comment. This is the one thing to read carefully before merging a release: it is exactly what the merge will change in AWS.
 
-There is deliberately **no deployed dev environment** at Tier 0. A second copy of the stack would roughly double the Aurora floor cost (~$43/month), and the local stack covers what it would be used for. Adding one, ideally in a separate AWS account, is the "more than one engineer shipping concurrently" trigger in [DEPLOYMENT.md → Scale-out](DEPLOYMENT.md#scale-out). When that happens, a push to `dev` gains a deploy to that account. Nothing else about this flow changes.
+There is deliberately **no deployed dev environment** at Tier 0. A second copy of the stack would roughly double the Aurora floor cost (~$43/month), and the local stack covers what it would be used for. Adding one, ideally in a separate AWS account, is the "more than one engineer shipping concurrently" trigger in [infra/README.md → Scale-out](plan-remaining.md#scale-out). When that happens, a push to `dev` gains a deploy to that account. Nothing else about this flow changes.
 
 ### What a merge into `main` does: `deploy.yml`
 
@@ -185,9 +187,9 @@ For an urgent fix while `dev` holds unreleased work:
 
 ### One-time setup (Phase 0)
 
-The steps above assume these exist. They're part of [PLAN.md → Phase 0](PLAN.md#phase-0--infrastructure-skeleton), done once, by hand:
+The steps above assume these exist. They're done once, by hand; what's still left of them is tracked in [remaining_manual_steps.md](remaining_manual_steps.md):
 
-1. A dedicated AWS account in `us-east-1` ([DEPLOYMENT.md → AWS account & region](DEPLOYMENT.md#aws-account--region)), with its default VPC in place (Aurora's subnets come from it; Lambda never joins a VPC), and a Route 53 hosted zone for `substratalapps.com`.
+1. A dedicated AWS account in `us-east-1` ([infra/README.md → AWS account & region](infra/README.md#aws-account--region)), with its default VPC in place (Aurora's subnets come from it; Lambda never joins a VPC), and a Route 53 hosted zone for `substratalapps.com`.
 2. From your own machine, with admin credentials: `cd infra/terraform/bootstrap && terraform init && terraform apply -var billing_email=you@example.com`. This creates the **cost guardrails first** (warn and hard budgets with a circuit-breaker action, Cost Anomaly Detection, a billing alarm), then the state and artifact buckets, the GitHub OIDC provider, and the read-only `plan` and `deploy` roles. It's the only Terraform ever applied from a laptop.
 3. In GitHub: create the `production` environment (deployments from `main` only), add the `main` ruleset, and set repository **variables** from the bootstrap outputs: `AWS_PLAN_ROLE_ARN`, `AWS_DEPLOY_ROLE_ARN`, `AWS_REGION`, `TF_STATE_BUCKET`, `ARTIFACT_BUCKET`, plus `API_DOMAIN` (`api.substratalapps.com`). None are secrets; OIDC needs no stored credentials.
 4. Merge into `main`. The first deploy creates the stack and then migrates the new cluster.
@@ -232,6 +234,7 @@ Then `make quickstart` runs the [Quickstart](https://compositecode.github.io/sub
 | REST API, `/mcp`, `/internal/stripe/webhook` | `cmd/devserver`: every route on `:8080`, the same handlers the Lambdas use | One Lambda per function behind API Gateway |
 | Database | Postgres 16 container on host port `55432` through pgx, connecting as the non-superuser `substratal` role so Row-Level Security applies | Aurora Serverless v2 through the Data API |
 | Webhook delivery | In-process: the devserver nudges its own worker after each commit and sweeps every 2 seconds. Set `WEBHOOKS_ALLOW_PRIVATE=true` (the default in `.env.example`) to deliver to `http://localhost` receivers. | SQS nudge → worker Lambda, plus a 1-minute sweep |
+| Push delivery | The same in-process worker, with `PUSH_BACKEND=log` (the default in `.env.example`): every push is logged, nothing is sent, and the notification still settles as sent. Set `PUSH_BACKEND=live` to send to APNs, FCM, and Web Push with an Application's real credentials. | The same queue, worker Lambda, and sweep as webhooks, with `PUSH_BACKEND=live` |
 | Scheduled jobs | The entitlement sweep runs in the devserver every 5 minutes; run any job on demand with `make job name=…` (`make jobs` lists them) | EventBridge Scheduler → `jobs` Lambda |
 | JWT signing, secret encryption | A local RSA-2048 key, generated into `.dev/signing-key.pem` on first run, and a fixed development AES key (set `KMS_*_KEY_ID` to use KMS instead, including LocalStack's) | AWS KMS |
 | Secrets | `.env` | Secrets Manager (`APP_SECRET_ARN`) |
@@ -243,7 +246,7 @@ Configuration is entirely environment variables, documented in `.env.example`. `
 
 ### The two database backends
 
-[DEPLOYMENT.md → Local development](DEPLOYMENT.md#local-development) explains why the Data API can't run locally. Here's how the code handles it:
+[infra/README.md → Local development](infra/README.md#local-development) explains why the Data API can't run locally. Here's how the code handles it:
 
 - Every database call goes through one small interface in `internal/db` (`Tx`, `Query`, `Exec`). Handlers never import `pgx` or the Data API client.
 - SQL is written once, with named parameters (`:user_id`). The pgx driver rewrites them to `$1` positional form; the Data API driver passes them as `SqlParameter`s. Parameters are only ever scalars; arrays and JSON travel as text with explicit casts (`::text[]`, `::jsonb`), because the Data API has no array parameters.

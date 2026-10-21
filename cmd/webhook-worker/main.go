@@ -1,6 +1,8 @@
 // Command webhook-worker is the SQS-triggered Lambda that delivers
-// outbound webhooks. A message only nudges it; it always drains the
-// outbox and every due retry, so a lost or duplicate message is harmless.
+// outbound webhooks and push notifications. A message only nudges it; it
+// always drains both outboxes and every due retry, so a lost or duplicate
+// message is harmless. Pushes go first, because their outcomes can emit
+// webhook events (device.deactivated, notification.push_failed).
 package main
 
 import (
@@ -20,7 +22,11 @@ func main() {
 		log.Fatal(err)
 	}
 	d := base.Deliverer()
+	api := base.Server(nil)
 	lambda.Start(func(ctx context.Context, ev events.SQSEvent) error {
+		if err := api.RunPush(ctx); err != nil {
+			return err
+		}
 		return d.Run(ctx)
 	})
 }

@@ -37,6 +37,7 @@ var PlatformPermissions = []PlatformPermission{
 	{"webhooks.manage", "platform", "Manage any webhook subscription, and create platform-scoped ones."},
 	{"api_keys.manage", "platform", "Create, rotate, and revoke any API Key."},
 	{"tenants.manage", "platform", "View any Tenant and request a tier change on a customer's behalf."},
+	{"notifications.send", "platform", "Send notifications to any User on behalf of any Application. On an app-scoped key, confined to that Application's own users."},
 }
 
 func isPlatformPermission(k string) bool {
@@ -48,9 +49,9 @@ func isPlatformPermission(k string) bool {
 	return false
 }
 
-// appConfinable are the four platform permissions an app-scoped key may
+// appConfinable are the five platform permissions an app-scoped key may
 // carry in confined form (API Keys → App-confined permissions).
-var appConfinable = []string{"entitlements.manage", "roles.manage", "users.list", "audit.view"}
+var appConfinable = []string{"entitlements.manage", "roles.manage", "users.list", "audit.view", "notifications.send"}
 
 // ── GET /v1/permissions ────────────────────────────────────────────────
 

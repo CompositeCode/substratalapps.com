@@ -22,6 +22,7 @@ import (
 	"github.com/CompositeCode/substratalapps.com/internal/email"
 	"github.com/CompositeCode/substratalapps.com/internal/httpx"
 	"github.com/CompositeCode/substratalapps.com/internal/ids"
+	"github.com/CompositeCode/substratalapps.com/internal/push"
 )
 
 // Notifier is told that a webhook outbox event committed, so delivery can
@@ -63,7 +64,8 @@ type Deps struct {
 	Encrypter auth.Encrypter
 	Email     email.Sender
 	Notifier  Notifier
-	Billing   Billing // nil disables checkout/portal (503 billing_unavailable)
+	Billing   Billing     // nil disables checkout/portal (503 billing_unavailable)
+	Push      push.Sender // nil logs pushes instead of sending them (PUSH_BACKEND=log)
 	Cursors   httpx.Cursors
 	Log       *slog.Logger
 

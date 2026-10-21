@@ -27,6 +27,7 @@ A person with an account on Substratal. One identity, used everywhere in the hub
 | `mfa_enabled` | boolean | Read-only, derived: `true` if any of the User's `password` [identities](#useridentity) has confirmed TOTP. |
 | `signup_application_id` | string, nullable | The Application the user signed up through, if any. Informational only; used for email branding. |
 | `test_mode` | boolean | Created by a test-mode key. |
+| `expires_at` | timestamp, nullable | Set on every test-mode User (default 24 hours after creation, at most 30 days) and never on a live one. The account stops working when it passes. See [Auth → Test-mode Users → Lifetime](../../api-reference/auth/#lifetime). |
 | `created_at`, `updated_at` | timestamp | |
 | `last_login_at` | timestamp, nullable | |
 
@@ -47,7 +48,7 @@ The database row also carries `version` (the source of the `ETag`) and `deleted_
                                               hard-deleted (cascade, `user.erased`)
 ```
 
-Signup (`POST /v1/auth/signup`) creates a User directly in `active`. An admin invite (`POST /v1/users`) or an org-membership invite by email creates an `invited` one. Suspension and deletion revoke every session, deactivate every push [Device](../notifications/#device), and fire `access.revoked` for every Application the user had active access to.
+Signup (`POST /v1/auth/signup`) creates a User directly in `active`. An admin invite (`POST /v1/users`) or an org-membership invite by email creates an `invited` one. Suspension and deletion revoke every session, deactivate every push [Device](../notifications/#device), and fire `access.revoked` for every Application the user had active access to. A test-mode User's expiry does the same, without changing `status`; see [Auth → Test-mode Users → Lifetime](../../api-reference/auth/#lifetime).
 
 An `invited` user has an account shell (so an Entitlement or Role can be assigned before they've logged in once) but can't authenticate until they complete signup. `suspended` blocks login but preserves every record — Entitlements, Roles, Profile, Settings — unlike `deleted`, which is the start of actual data removal. A soft-deleted User can still be **restored** by `users.manage` (`PATCH status: active`) as long as no erasure request is scheduled and their email hasn't been taken by a new signup; once the erasure cascade completes, there's nothing to restore. See [Users → `PATCH`](../../api-reference/users/#patch-v1usersid). See [Non-Functional Requirements → Data retention](../../non-functional-requirements/#data-retention).
 
@@ -100,7 +101,7 @@ One successful login. Refresh tokens, app refresh tokens, and app-token `sid` cl
 | `ip_address`, `user_agent` | string | Recorded at login. They're personal data: included in export, deleted by erasure. |
 | `created_at`, `last_seen_at` | timestamp | `last_seen_at` is updated at most once a minute. |
 | `idle_expires_at`, `absolute_expires_at` | timestamp | 30 days from last refresh; 90 days from creation. |
-| `revoked_at`, `revoked_reason` | timestamp/string, nullable | `logout`, `logout_all`, `password_reset`, `password_changed`, `user_suspended`, `user_deleted`, `mfa_reset`, `refresh_token_reused`, or `admin`. |
+| `revoked_at`, `revoked_reason` | timestamp/string, nullable | `logout`, `logout_all`, `password_reset`, `password_changed`, `user_suspended`, `user_deleted`, `test_user_expired`, `mfa_reset`, `refresh_token_reused`, or `admin`. |
 
 ### SSOConnection
 
@@ -123,7 +124,7 @@ This table is deliberately thin — scoped to *that* a User can authenticate via
 
 A domain/grouping object for Users — a company, or a group within a company (a department, a team) — used to organize who shares admin standing over a set of Users and which Applications a group is granted as a whole, rather than one admin re-granting access per person.
 
-Both individual and team/company end users are expected, so this isn't a someday-maybe feature. It's pulled forward to [Phase 2](../../roadmap/#phase-2) rather than [Phase 3](../../roadmap/#phase-3). It isn't in the MVP itself, because the first few dozen users are expected to be mostly individual early adopters. But it's needed well before the 10x/100x growth horizon in [Deployment Architecture → Growth trajectory](https://github.com/CompositeCode/substratalapps.com/blob/main/DEPLOYMENT.md), where team accounts are assumed to matter. Making `organization_id` load-bearing in the schema from day one (see [below](#why-it-matters-even-before-organizations-are-customer-facing-everywhere)) was never a hedge against a hypothetical.
+Both individual and team/company end users are expected, so this isn't a someday-maybe feature. It's pulled forward to [Phase 2](../../roadmap/#phase-2) rather than [Phase 3](../../roadmap/#phase-3). It isn't in the MVP itself, because the first few dozen users are expected to be mostly individual early adopters. But it's needed well before the 10x/100x growth horizon in [Deployment Architecture → Growth trajectory](https://github.com/CompositeCode/substratalapps.com/blob/main/infra/README.md), where team accounts are assumed to matter. Making `organization_id` load-bearing in the schema from day one (see [below](#why-it-matters-even-before-organizations-are-customer-facing-everywhere)) was never a hedge against a hypothetical.
 
 {: .note }
 Organization carries no infrastructure meaning. Where a group's data physically lives is [Tenant](../tenancy/)'s job, not this entity's — see [Tenancy → Tenant vs. Organization](../tenancy/#tenant-vs-organization) for why these are deliberately separate. An Organization can incidentally *own* a Tenant (if it also owns an Application — see [Applications](../applications/#fields)), but most Organizations, most of the time, don't own one at all.

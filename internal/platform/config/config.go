@@ -46,6 +46,10 @@ type Config struct {
 	// Empty = the devserver's in-process worker polls instead.
 	WebhookQueueURL string
 
+	// Push: "live" sends to APNs, FCM, and Web Push; "log" only logs
+	// (the local default, so no Apple or Google credentials are needed).
+	PushBackend string
+
 	// Stripe.
 	StripeSecretKey     string
 	StripeWebhookSecret string
@@ -92,6 +96,7 @@ func Load() (Config, error) {
 		SMTPAddr:            get("SMTP_ADDR", "localhost:51025"),
 		EmailFrom:           get("EMAIL_FROM", "Substratal <no-reply@mail.substratalapps.com>"),
 		WebhookQueueURL:     os.Getenv("WEBHOOK_QUEUE_URL"),
+		PushBackend:         get("PUSH_BACKEND", "log"),
 		StripeSecretKey:     os.Getenv("STRIPE_SECRET_KEY"),
 		StripeWebhookSecret: os.Getenv("STRIPE_WEBHOOK_SECRET"),
 		StripePrices: StripePrices{
@@ -106,6 +111,9 @@ func Load() (Config, error) {
 		}
 		if c.EmailBackend == "smtp" && os.Getenv("EMAIL_BACKEND") == "" {
 			c.EmailBackend = "ses"
+		}
+		if os.Getenv("PUSH_BACKEND") == "" {
+			c.PushBackend = "live"
 		}
 	}
 	return c, nil

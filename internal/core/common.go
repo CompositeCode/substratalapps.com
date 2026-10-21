@@ -228,6 +228,7 @@ type appRow struct {
 	RedirectURIs        []string        `json:"redirect_uris"`
 	SupportURL          *string         `json:"support_url"`
 	EmailFromName       *string         `json:"email_from_name"`
+	ReceivesPlatform    bool            `json:"receives_platform_notifications"`
 	SettingsSchema      json.RawMessage `json:"settings_schema"`
 	Permissions         []appPermission `json:"permissions"`
 	AvailableAppRoles   []string        `json:"available_app_roles"`

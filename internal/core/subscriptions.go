@@ -874,7 +874,7 @@ func (s *Server) BillingCreateOrganizationPortalSession(w http.ResponseWriter, r
 	})
 }
 
-// ── Stripe sync (DEPLOYMENT.md → Webhook handling) ─────────────────────
+// ── Stripe sync (infra/README.md → Webhook handling) ─────────────────────
 
 // StripeSubscription is the subscription state the sync applies, read
 // fresh from Stripe by the billing package.

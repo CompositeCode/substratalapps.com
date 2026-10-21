@@ -11,10 +11,12 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sync/atomic"
 	"syscall"
 	"time"
 
 	"github.com/CompositeCode/substratalapps.com/internal/billing"
+	"github.com/CompositeCode/substratalapps.com/internal/core"
 	"github.com/CompositeCode/substratalapps.com/internal/jobs"
 	"github.com/CompositeCode/substratalapps.com/internal/mcp"
 	"github.com/CompositeCode/substratalapps.com/internal/platform/wire"
@@ -28,9 +30,21 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	notifier := webhooks.NewLocal(ctx, base.Deliverer(), 2*time.Second)
-	api := base.Server(notifier)
-	apiHandler := api.Handler()
+	// One in-process worker for push and webhook delivery; pushes first,
+	// since their outcomes can emit webhook events.
+	var api atomic.Pointer[core.Server]
+	deliverer := base.Deliverer()
+	notifier := webhooks.NewLocalRunner(ctx, base.Log, 2*time.Second, func(ctx context.Context) error {
+		if s := api.Load(); s != nil {
+			if err := s.RunPush(ctx); err != nil {
+				return err
+			}
+		}
+		return deliverer.Run(ctx)
+	})
+	server := base.Server(notifier)
+	api.Store(server)
+	apiHandler := server.Handler()
 
 	mux := http.NewServeMux()
 	mux.Handle("/", apiHandler)
@@ -39,7 +53,7 @@ func main() {
 	if base.Config.StripeSecretKey != "" && base.Config.StripeWebhookSecret != "" {
 		stripe := billing.New(base.Config.StripeSecretKey, base.Config.StripePrices, base.Log)
 		mux.Handle("/internal/stripe/webhook", &billing.Webhook{Secret: base.Config.StripeWebhookSecret,
-			Stripe: stripe, Core: api, Log: base.Log})
+			Stripe: stripe, Core: server, Log: base.Log})
 	}
 
 	// The 5-minute entitlement sweep, in-process.

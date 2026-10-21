@@ -51,7 +51,7 @@ The count is **provisioned, not activity-based**. It counts who is covered, not 
 
 The count syncs to Stripe once a day with no mid-period proration. Each invoice charges for the count on the day before it's issued. Real-time sync with prorations was considered and not chosen: it's more accurate, but noisier for customers and means more Stripe API calls.
 
-A live subscription never counts test-mode Users, so integration tests can't consume paid seats. A test-mode subscription runs in Stripe test mode and counts only test-mode members.
+A live subscription never counts test-mode Users, so integration tests can't consume paid seats. A test-mode subscription runs in Stripe test mode and counts only test-mode members whose [`expires_at`](../api-reference/auth/#lifetime) hasn't passed. Test-mode Users last 24 hours by default and never more than 30 days, so test mode can't stand in for a free production tier.
 
 ## How access follows the tier
 
@@ -96,7 +96,7 @@ The Products and Prices configured in Stripe. Lookup keys are what the code refe
 
 ## Why two tiers
 
-- **Free is free, not just cheap.** The first horizon in [Growth trajectory](https://github.com/CompositeCode/substratalapps.com/blob/main/DEPLOYMENT.md#growth-trajectory) is dozens of users, and the shared-tier cost of serving free Applications is near zero against the infrastructure floor that's paid regardless. Charging for it would tax exactly the adoption the product needs most right now.
+- **Free is free, not just cheap.** The first horizon in [Growth trajectory](https://github.com/CompositeCode/substratalapps.com/blob/main/plan-remaining.md#growth-trajectory) is dozens of users, and the shared-tier cost of serving free Applications is near zero against the infrastructure floor that's paid regardless. Charging for it would tax exactly the adoption the product needs most right now.
 - **One paid price, for the whole catalog.** A single per-user price is easy to understand and budget for, and works the same for one person or a whole Organization. Per-Application pricing would make every new Application a new purchasing decision.
 - **Infrastructure choice waits for business pricing.** `isolated` and `dedicated_region` tenancy carry a real, named infrastructure cost, driven by a customer's own compliance or data-residency requirement. That's what business and enterprise pricing is for, so neither is offered on Free or Standard.
 
@@ -104,7 +104,7 @@ The Products and Prices configured in Stripe. Lookup keys are what the code refe
 
 The subscription is processed through **Stripe Billing**. Card data never touches this API, and Stripe is PCI-DSS Level 1, which keeps PCI scope minimal (see [Compliance](../compliance/#what-this-doesnt-cover)). Stripe is one of the platform's two sub-processors, alongside AWS (see [Compliance → GDPR (and CCPA)](../compliance/#gdpr-and-ccpa--build-for-it-now)).
 
-The implementation (object mapping, webhook event handling, the daily quantity sync) is specified in [root `DEPLOYMENT.md` → Stripe Billing](https://github.com/CompositeCode/substratalapps.com/blob/main/DEPLOYMENT.md#stripe-billing). It's a build and operations concern, not part of the API Applications call.
+The implementation (object mapping, webhook event handling, the daily quantity sync) is specified in [`infra/README.md` → Stripe Billing](https://github.com/CompositeCode/substratalapps.com/blob/main/infra/README.md#stripe-billing). It's a build and operations concern, not part of the API Applications call.
 
 ## Keeping these numbers honest
 
