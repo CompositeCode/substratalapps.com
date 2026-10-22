@@ -12,6 +12,11 @@ What's changed in this specification over time. Every decision is written into t
 
 ---
 
+## 2026-10-22 — Version header declared in `openapi.yaml`; 405 for a wrong method
+
+- **`openapi.yaml` declares `Substratal-Version`.** Every versioned operation now carries the shared `ApiVersion` header parameter (`Substratal-Version`, enum `1`) and documents its `400` (`api_version_required`, `unsupported_api_version`). Generated clients learn the header from the spec instead of needing it configured by hand. `GET /health` and `POST /auth/oauth/token` don't declare it, because they're exempt. Nothing changes on the wire: the API already required the header ([Conventions → Versioning](../api-reference/conventions/#versioning)).
+- **`405 method_not_allowed`.** Calling a path that exists with a method it doesn't support (for example `PUT /health`) now returns `405` with an `Allow` header and `details.allowed`, instead of the catch-all `404 not_found`. See [Conventions → Errors](../api-reference/conventions/#errors).
+
 ## 2026-10-21 — SCIM provisioning
 
 An Organization's identity provider can invite and remove its members with SCIM 2.0. See [API Reference → SCIM](../api-reference/scim/). `openapi.yaml` is now at `1.0.0-draft.5`, with 121 operations.
