@@ -140,7 +140,7 @@ func weakPassword(err error) error {
 	return httpx.E(422, "weak_password", "The password doesn't meet the password policy.").With("reason", reason)
 }
 
-// ── POST /v1/auth/signup ───────────────────────────────────────────────
+// ── POST /auth/signup ──────────────────────────────────────────────────
 
 func (s *Server) AuthSignup(w http.ResponseWriter, r *http.Request) {
 	s.serve(w, r, opts{op: "auth.signup", public: true, idem: idemOptional}, func(c *Call) error {
@@ -236,7 +236,7 @@ func boolStr(b bool) string {
 	return "live"
 }
 
-// ── POST /v1/auth/login ────────────────────────────────────────────────
+// ── POST /auth/login ───────────────────────────────────────────────────
 
 type identityRow struct {
 	ID               string     `json:"id"`
@@ -358,7 +358,7 @@ func (c *Call) recordLoginFailure(ident identityRow) error {
 	return invalidCredentials()
 }
 
-// ── POST /v1/auth/mfa/verify ───────────────────────────────────────────
+// ── POST /auth/mfa/verify ──────────────────────────────────────────────
 
 type authTokenRow struct {
 	TokenHash  string         `json:"token_hash"`
@@ -498,7 +498,7 @@ func (s *Server) AuthVerifyMfa(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// ── POST /v1/auth/token/refresh ────────────────────────────────────────
+// ── POST /auth/token/refresh ───────────────────────────────────────────
 
 type refreshRow struct {
 	TokenHash     string     `json:"token_hash"`
@@ -609,7 +609,7 @@ func (s *Server) AuthRefreshToken(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// ── POST /v1/auth/logout ───────────────────────────────────────────────
+// ── POST /auth/logout ──────────────────────────────────────────────────
 
 func (s *Server) AuthLogout(w http.ResponseWriter, r *http.Request) {
 	s.serve(w, r, opts{op: "auth.logout", userOnly: true}, func(c *Call) error {

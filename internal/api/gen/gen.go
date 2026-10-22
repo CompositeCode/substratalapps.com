@@ -2521,7 +2521,7 @@ type AuditExportFormat string
 // AuditExportStatus defines model for AuditExport.Status.
 type AuditExportStatus string
 
-// AuditExportRequest The same filters as GET /v1/audit-events, as body fields, plus format.
+// AuditExportRequest The same filters as GET /audit-events, as body fields, plus format.
 type AuditExportRequest struct {
 	Action         *[]AuditAction               `json:"action,omitempty"`
 	ActorId        *string                      `json:"actor_id,omitempty"`

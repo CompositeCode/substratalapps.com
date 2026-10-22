@@ -57,6 +57,12 @@ var (
 	ErrIdempotencyRequired = func() *Error {
 		return E(400, "idempotency_key_required", "This request requires an Idempotency-Key header.")
 	}
+	ErrAPIVersionRequired = func(supported []string) *Error {
+		return E(400, "api_version_required", "This request requires a Substratal-Version header.").With("supported", supported)
+	}
+	ErrUnsupportedAPIVersion = func(supported []string) *Error {
+		return E(400, "unsupported_api_version", "The Substratal-Version header names a version this API doesn't serve.").With("supported", supported)
+	}
 	ErrUnauthenticated = func() *Error { return E(401, "unauthenticated", "Missing, malformed, or expired credentials.") }
 	ErrSessionRevoked  = func() *Error { return E(401, "session_revoked", "This session has been logged out or revoked.") }
 	ErrNotFound        = func() *Error { return E(404, "not_found", "No route matches this path.") }

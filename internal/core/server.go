@@ -13,6 +13,7 @@ import (
 	"log/slog"
 	"net/http"
 	"runtime/debug"
+	"slices"
 	"strings"
 	"time"
 
@@ -107,14 +108,28 @@ type noopNotifier struct{}
 
 func (noopNotifier) EventCommitted(context.Context, string) {}
 
-// Handler returns the full HTTP surface: /v1 (generated routes), the
-// well-known endpoints at the host root, and a JSON 404 for everything
-// else. /mcp and /internal/stripe/webhook are separate Lambdas and mounted
-// by the devserver alongside this handler.
+// APIVersionHeader carries the API version on every request and response
+// (Conventions → Versioning).
+const APIVersionHeader = "Substratal-Version"
+
+// APIVersions are the versions this API serves, oldest first.
+var APIVersions = []string{"1"}
+
+// unversioned are the generated routes callers can't be expected to send
+// Substratal-Version to: uptime checks, and the OAuth token endpoint that
+// standard OAuth libraries call (Conventions → Versioning).
+var unversioned = map[string]bool{
+	"GET /health":            true,
+	"POST /auth/oauth/token": true,
+}
+
+// Handler returns the full HTTP surface: the generated routes and the
+// well-known endpoints, all at the host root, and a JSON 404 for
+// everything else. /mcp and /internal/stripe/webhook are separate Lambdas
+// and mounted by the devserver alongside this handler.
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	gen.HandlerWithOptions(s, gen.StdHTTPServerOptions{
-		BaseURL:          "/v1",
 		BaseRouter:       mux,
 		ErrorHandlerFunc: s.paramError,
 	})
@@ -123,7 +138,32 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteError(w, httpx.ErrNotFound())
 	})
-	return s.middleware(mux)
+	return s.middleware(versioned(mux))
+}
+
+// versioned requires Substratal-Version on every generated route before it
+// runs, so a missing version is reported ahead of any parameter or body
+// error. Unmatched paths, the well-known endpoints, and the unversioned
+// routes pass through.
+func versioned(mux *http.ServeMux) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, pattern := mux.Handler(r)
+		if pattern == "" || pattern == "/" || strings.HasPrefix(pattern, "GET /.well-known/") || unversioned[pattern] {
+			mux.ServeHTTP(w, r)
+			return
+		}
+		v := r.Header.Get(APIVersionHeader)
+		switch {
+		case v == "":
+			httpx.WriteError(w, httpx.ErrAPIVersionRequired(APIVersions))
+			return
+		case !slices.Contains(APIVersions, v):
+			httpx.WriteError(w, httpx.ErrUnsupportedAPIVersion(APIVersions))
+			return
+		}
+		w.Header().Set(APIVersionHeader, v)
+		mux.ServeHTTP(w, r)
+	})
 }
 
 // middleware wraps every request: request id, panic recovery, CORS,
@@ -169,10 +209,10 @@ func (s *Server) cors(w http.ResponseWriter, r *http.Request) bool {
 	}
 	w.Header().Set("Access-Control-Allow-Origin", origin)
 	w.Header().Set("Vary", "Origin")
-	w.Header().Set("Access-Control-Expose-Headers", "ETag, X-Request-Id, RateLimit-Limit, RateLimit-Remaining, RateLimit-Reset")
+	w.Header().Set("Access-Control-Expose-Headers", "ETag, X-Request-Id, RateLimit-Limit, RateLimit-Remaining, RateLimit-Reset, Substratal-Version")
 	if r.Method == http.MethodOptions {
 		w.Header().Set("Access-Control-Allow-Methods", "GET, PATCH, POST, DELETE")
-		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, If-Match, Idempotency-Key, X-Request-Id")
+		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, If-Match, Idempotency-Key, X-Request-Id, Substratal-Version")
 		w.Header().Set("Access-Control-Max-Age", "600")
 		w.WriteHeader(http.StatusNoContent)
 		return true
@@ -206,7 +246,7 @@ func (s *Server) paramError(w http.ResponseWriter, r *http.Request, err error) {
 	httpx.WriteError(w, httpx.Invalid("%s", err.Error()))
 }
 
-// HealthCheck is GET /v1/health: no auth, no database, always 200.
+// HealthCheck is GET /health: no auth, no database, always 200.
 func (s *Server) HealthCheck(w http.ResponseWriter, r *http.Request) {
 	httpx.JSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
@@ -222,7 +262,7 @@ func (s *Server) openIDConfiguration(w http.ResponseWriter, r *http.Request) {
 		"issuer":                                s.Issuer,
 		"jwks_uri":                              s.Issuer + "/.well-known/jwks.json",
 		"authorization_endpoint":                s.AuthorizeURL,
-		"token_endpoint":                        s.Issuer + "/v1/auth/oauth/token",
+		"token_endpoint":                        s.Issuer + "/auth/oauth/token",
 		"response_types_supported":              []string{"code"},
 		"grant_types_supported":                 []string{"authorization_code", "refresh_token"},
 		"code_challenge_methods_supported":      []string{"S256"},

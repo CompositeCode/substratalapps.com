@@ -14,15 +14,38 @@ What's changed in this specification over time. Every decision is written into t
 
 ## 2026-10-21 — Audit Event exports
 
-The audit log can be exported to a file. See [API Reference → Audit → Exporting](../api-reference/audit/#exporting). `openapi.yaml` is now at `1.0.0-draft.4`, with 120 operations.
+The audit log can be exported to a file. See [API Reference → Audit → Exporting](../api-reference/audit/#exporting). `openapi.yaml` is now at `1.0.0-draft.5`, with 120 operations.
 
-- **`POST /v1/audit-exports`** takes the same filters as `GET /v1/audit-events`, as body fields, plus `format` (`ndjson` or `csv`). It confines the caller to the same scope as the list, requires `Idempotency-Key`, and returns `202`. A job writes the file, usually within a minute. Limited to 20 per caller per day.
-- **`GET /v1/audit-exports/{id}`** shows the status, and once it's `ready`, a download link signed for 15 minutes. Only the requester and `audit.view` can see an export. Files and records are deleted after 7 days.
+- **`POST /audit-exports`** takes the same filters as `GET /audit-events`, as body fields, plus `format` (`ndjson` or `csv`). It confines the caller to the same scope as the list, requires `Idempotency-Key`, and returns `202`. A job writes the file, usually within a minute. Limited to 20 per caller per day.
+- **`GET /audit-exports/{id}`** shows the status, and once it's `ready`, a download link signed for 15 minutes. Only the requester and `audit.view` can see an export. Files and records are deleted after 7 days.
 - New audit action `audit.exported` (target type `audit_export`), written when the file is ready, with the requester as actor.
 - **Retention** needed no new code. It's already enforced: the one-year hot window, and the nightly archival of older events, shape-only, to indefinite cold storage ([Audit log lifecycle](../non-functional-requirements/#audit-log-lifecycle)).
 - Migration `0007_audit_exports`. Infrastructure: a private exports bucket with a 7-day lifecycle rule, and an `audit-exports` schedule every minute.
 
----
+## 2026-10-21 — Versioning rules spelled out
+
+Clarifications to the header-based versioning below; nothing about the API's behavior changed.
+
+- **What counts as breaking** is now listed in [Non-Functional Requirements → Versioning](../non-functional-requirements/#versioning): removing or renaming a field, endpoint, or parameter; changing a type or format; a new or newly required request field; a different status or error code for an existing condition; or a changed default or behavior.
+- **Retirement.** `Deprecation` (RFC 9745) and `Sunset` (RFC 8594) appear on responses to requests that name a deprecated version. After its `Sunset` date, requests naming it get `400 unsupported_api_version`.
+- **Two separate versions.** The `Substratal-Version` request header and a webhook subscription's payload `api_version` are independent, now stated on [Conventions](../api-reference/conventions/#versioning), [Webhooks](../api-reference/webhooks/#payload-versions), and in the [Glossary](../glossary/#api-version).
+- [OpenAPI Specification](../openapi/#versioning-and-change-policy) no longer describes versions as URL prefixes, and [Auth → `POST /auth/oauth/token`](../api-reference/auth/#post-authoauthtoken) notes it needs no version header.
+
+## 2026-10-21 — The API version moves from the URL to a header
+
+**Breaking.** The `/v1` path prefix is gone. Every endpoint is now at the host root, and every request names its API version in a header instead:
+
+```
+POST https://api.substratalapps.com/users
+Substratal-Version: 1
+```
+
+- **Paths drop `/v1`.** `POST /v1/users` is now `POST /users`, `GET /v1/health` is `GET /health`, and so on for every operation. `/v1/…` paths now return `404 not_found`; there's no alias or redirect. In `openapi.yaml`, the server URL is `https://api.substratalapps.com`, and the `paths` are unchanged. `openid-configuration`'s `token_endpoint` is `/auth/oauth/token`.
+- **`Substratal-Version` is required.** Versions are whole numbers, and `1` is the only one. A missing header is the new `400 api_version_required`, and an unknown value is the new `400 unsupported_api_version`. Both list the served versions in `details.supported`, and the check runs before authentication and every other validation. Every response echoes the version that served it, and the header is allowed and exposed for CORS.
+- **Exempt:** `GET /health` (for uptime monitors), `POST /auth/oauth/token` (standard OAuth libraries can't add the header), and `/.well-known/*`. MCP clients don't send it: the MCP server calls the API with the version its tools describe.
+- **Unchanged:** the deprecation policy (a breaking change is the next version, and the previous one keeps working for at least 6 months, with `Deprecation` and `Sunset` headers) and webhook payload versions (`api_version` dates, versioned independently). `/.well-known`, `/mcp`, and `/internal` are reserved and will never be resource names.
+
+See [Conventions → Versioning](../api-reference/conventions/#versioning). `openapi.yaml` is `1.0.0-draft.4`. Older entries below keep the `/v1/…` paths that were current when they were written.
 
 ## 2026-10-20 — Test-mode Users are time-limited
 
@@ -110,8 +133,8 @@ A review of every Domain Model and API Reference page against each other, the da
 
 **Security and correctness**
 
-- **Signup no longer completes an invitation.** Signing up with an `invited` User's email used to activate that account with no invitation token, handing whatever was pre-attached to it to anyone who knew the address. It now returns `409 email_taken` (`details.reason: "invitation_pending"`) and re-sends the invitation. See [Auth → Signup](../api-reference/auth/#post-v1authsignup).
-- **Organization invitations are now `pending` until accepted.** Since anyone can create an Organization, adding members by email used to reveal whether an address had an account, and that account's name. Adds by email now create a `pending` membership whose response looks the same either way. Adds by `user_id` are restricted to `organizations.manage`. A new [`POST /v1/organizations/{id}/members/me/accept`](../api-reference/organizations/#post-v1organizationsidmembersmeaccept) endpoint and audit action `organization.member_invited` support this.
+- **Signup no longer completes an invitation.** Signing up with an `invited` User's email used to activate that account with no invitation token, handing whatever was pre-attached to it to anyone who knew the address. It now returns `409 email_taken` (`details.reason: "invitation_pending"`) and re-sends the invitation. See [Auth → Signup](../api-reference/auth/#post-authsignup).
+- **Organization invitations are now `pending` until accepted.** Since anyone can create an Organization, adding members by email used to reveal whether an address had an account, and that account's name. Adds by email now create a `pending` membership whose response looks the same either way. Adds by `user_id` are restricted to `organizations.manage`. A new [`POST /v1/organizations/{id}/members/me/accept`](../api-reference/organizations/#post-organizationsidmembersmeaccept) endpoint and audit action `organization.member_invited` support this.
 - **Test-mode Users can sign in.** Uniqueness is per mode, so the email-keyed auth endpoints now take `test_mode` ([Auth → Test-mode Users](../api-reference/auth/#test-mode-users)). `include_test` is gone: test and live rows never cross, under any parameter.
 - **Role ids can't collide.** The slug now appears verbatim in Role ids (it never contains `_`), and `platform` is a reserved slug. Application ids are documented as `app_<slug>`, the second derived-id exception after Role.
 - **Typed-settings view and index names** are now built from hashes, so they always fit Postgres's 63-byte limit.
@@ -142,7 +165,7 @@ A review of every Domain Model and API Reference page against each other, the da
 
 - **Removed the Decisions page.** Every resolved decision (#1–#15) now lives on the page an implementer would actually read, with its rationale, instead of on a separate log. For example, identity is in [Auth → Native auth and per-Organization SSO](../api-reference/auth/#native-auth-and-per-organization-sso), and billing ownership is in [Orders & Audit → Billing system of record](../domain-model/orders-and-audit/#billing-system-of-record). New sections were added where a page didn't yet carry the reasoning, among them [Trust Model → Applications are separately hosted](../trust-model/#applications-are-separately-hosted), [Tenancy → Tenant vs. Organization](../domain-model/tenancy/#tenant-vs-organization), [Settings → Schema validation](../domain-model/settings/#schema-validation), and [Pricing → How the subscription is charged](../pricing/#how-the-subscription-is-charged). Every link to the old page was repointed.
 - **Confirmed decisions #16–#30**, which the implementation-readiness pass below had written into the spec as proposals. The spec already implemented each one, so the change here is that their reasoning is now stated as settled on the page each one governs: app-token issuance ([Auth → Getting an app token](../api-reference/auth/#getting-an-app-token)), [app-confined API Key permissions](../api-reference/api-keys/#app-confined-permissions), concierge onboarding, derived `access.*` webhooks, `order_id` as a reference, typed settings via views and expression indexes, self-service Organization creation, seats/lapse/Stripe object model, the 7-day erasure grace period, the region list, Amazon SES, and test-mode isolation.
-- **Applied #29: renamed `GET /v1/users/{id}/applications/{appId}/effective-permissions` to `GET /v1/users/{id}/apps/{appId}/effective-permissions`** ([Roles & Permissions](../api-reference/roles-and-permissions/#get-v1usersidappsappideffective-permissions)), matching the per-user Profile and Settings paths. Free to rename now, since no endpoint is implemented yet. The `operationId` (`permissions.getEffective`) and MCP tool name are unchanged.
+- **Applied #29: renamed `GET /v1/users/{id}/applications/{appId}/effective-permissions` to `GET /v1/users/{id}/apps/{appId}/effective-permissions`** ([Roles & Permissions](../api-reference/roles-and-permissions/#get-usersidappsappideffective-permissions)), matching the per-user Profile and Settings paths. Free to rename now, since no endpoint is implemented yet. The `operationId` (`permissions.getEffective`) and MCP tool name are unchanged.
 - **Opened #31** in the decision log: confirming the [Pricing](../pricing/) dollar amounts, plus annual plans, a Team trial, and whether Starter requires a card on file. None blocks the build.
 
 ## 2026-10-05 — implementation-readiness pass

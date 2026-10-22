@@ -1,5 +1,5 @@
 // Command devserver runs the whole API on one port for local development
-// (README → Local development): every /v1 route, /.well-known, /mcp, and
+// (README → Local development): every REST route, /.well-known, /mcp, and
 // /internal/stripe/webhook, with the webhook worker and the 5-minute sweep
 // running in-process instead of SQS and EventBridge.
 package main

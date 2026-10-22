@@ -20,15 +20,15 @@ How a downstream app reacts to an access change immediately instead of polling. 
 
 | Method | Path | Purpose |
 |---|---|---|
-| `GET` | `/v1/webhooks` | List subscriptions visible to the caller. |
-| `POST` | `/v1/webhooks` | Subscribe a URL to one or more event types. |
-| `GET` | `/v1/webhooks/{id}` | Fetch one subscription. |
-| `PATCH` | `/v1/webhooks/{id}` | Change `url`, `events`, or `description`, or re-enable a `disabled` subscription. |
-| `DELETE` | `/v1/webhooks/{id}` | Unsubscribe. |
-| `POST` | `/v1/webhooks/{id}/rotate-secret` | Issue a new signing secret, with a 24-hour overlap. |
-| `POST` | `/v1/webhooks/{id}/test` | Send a `webhook.test` event right now. |
-| `GET` | `/v1/webhooks/{id}/deliveries` | Recent delivery attempts (30-day log). |
-| `POST` | `/v1/webhooks/{id}/deliveries/{deliveryId}/redeliver` | Re-send one past event. |
+| `GET` | `/webhooks` | List subscriptions visible to the caller. |
+| `POST` | `/webhooks` | Subscribe a URL to one or more event types. |
+| `GET` | `/webhooks/{id}` | Fetch one subscription. |
+| `PATCH` | `/webhooks/{id}` | Change `url`, `events`, or `description`, or re-enable a `disabled` subscription. |
+| `DELETE` | `/webhooks/{id}` | Unsubscribe. |
+| `POST` | `/webhooks/{id}/rotate-secret` | Issue a new signing secret, with a 24-hour overlap. |
+| `POST` | `/webhooks/{id}/test` | Send a `webhook.test` event right now. |
+| `GET` | `/webhooks/{id}/deliveries` | Recent delivery attempts (30-day log). |
+| `POST` | `/webhooks/{id}/deliveries/{deliveryId}/redeliver` | Re-send one past event. |
 
 ## Who owns a subscription, and what it receives
 
@@ -44,7 +44,7 @@ The request's `scope` field picks it. An app-scoped key may omit `scope` (it def
 
 A subscription is managed by its scope's owners (the app's own keys, the app's owner) and by `webhooks.manage`. Anyone else gets `404`. Test-mode keys create test-mode subscriptions, which only ever receive test-mode events; live subscriptions never receive test traffic.
 
-## `POST /v1/webhooks`
+## `POST /webhooks`
 
 ```json
 // Request
@@ -83,7 +83,7 @@ A subscription is managed by its scope's owners (the app's own keys, the app's o
 {: .important }
 **Compliance minimum.** Every Application must subscribe to `access.revoked` and `role.removed` and end the affected local session as soon as one arrives. See [Trust Model → How fast does revocation need to land?](../../trust-model/#how-fast-does-revocation-need-to-land).
 
-## `GET /v1/webhooks`, `GET /v1/webhooks/{id}`
+## `GET /webhooks`, `GET /webhooks/{id}`
 
 Same object as above, minus `signing_secret`. `status` is one of:
 
@@ -91,7 +91,7 @@ Same object as above, minus `signing_secret`. `status` is one of:
 - `unhealthy`, after 3 consecutive deliveries that exhausted every retry. Delivery still continues.
 - `disabled`, after 5 consecutive days `unhealthy`. Delivery stops and the Application's owner is emailed. `PATCH {"status": "healthy"}` re-enables it and resets the counters. Events that occurred while it was disabled aren't backfilled. Use `redeliver`, or reconcile through the API.
 
-## `PATCH /v1/webhooks/{id}`
+## `PATCH /webhooks/{id}`
 
 ```json
 // Request
@@ -118,11 +118,11 @@ Writable: `url`, `events`, `description`, `api_version` (forward only, to a [pub
 }
 ```
 
-## `DELETE /v1/webhooks/{id}`
+## `DELETE /webhooks/{id}`
 
 `204`. Takes effect immediately: deliveries already in the retry queue are dropped, and nothing new is enqueued. Writes `webhook.deleted`.
 
-## `POST /v1/webhooks/{id}/rotate-secret`
+## `POST /webhooks/{id}/rotate-secret`
 
 ```json
 // Response — 200
@@ -131,13 +131,13 @@ Writable: `url`, `events`, `description`, `api_version` (forward only, to a [pub
 
 For 24 hours, every delivery is signed with **both** secrets (two `v1=` entries in the header), so a receiver can deploy the new secret with no window where verification fails. Writes `webhook.secret_rotated`.
 
-## `POST /v1/webhooks/{id}/test`
+## `POST /webhooks/{id}/test`
 
 Sends a synthetic `webhook.test` event (`data: {"message": "Test event from Substratal"}`) through the real signing and delivery path, and returns `202` with the delivery id. It's delivered whatever the subscription's `events` filter says (you asked for it), even to a `disabled` subscription, and it doesn't count toward health.
 
 ## Delivery log
 
-### `GET /v1/webhooks/{id}/deliveries`
+### `GET /webhooks/{id}/deliveries`
 
 ```json
 // Response — 200
@@ -162,7 +162,7 @@ Sends a synthetic `webhook.test` event (`data: {"message": "Test event from Subs
 
 `response_status` is `null` when no response arrived (a timeout or connection error). Filters: `event_id`, `status` (`succeeded`/`failed`/`pending`), and `since`. Retained for 30 days. Response bodies aren't stored; only the first 1 KB of an error body is kept.
 
-### `POST /v1/webhooks/{id}/deliveries/{deliveryId}/redeliver`
+### `POST /webhooks/{id}/deliveries/{deliveryId}/redeliver`
 
 `202`. Re-sends the same event (same `wev_` id, so receivers dedupe correctly) as a fresh attempt, outside the retry schedule. Allowed within the 30-day log window.
 
@@ -285,20 +285,20 @@ def verify_substratal(raw_body: bytes, header: str, secrets: list[str]) -> bool:
     return False
 ```
 
-During a [secret rotation](#post-v1webhooksidrotate-secret), deploy with both secrets in the list (new first). The sender signs with both for 24 hours, so either one matching is enough. Drop the old secret once `previous_secret_expires_at` has passed.
+During a [secret rotation](#post-webhooksidrotate-secret), deploy with both secrets in the list (new first). The sender signs with both for 24 hours, so either one matching is enough. Drop the old secret once `previous_secret_expires_at` has passed.
 
 ### Retries, ordering, and idempotency
 
 - **Success** is any `2xx` within 5 seconds. Redirects aren't followed and count as a failure.
 - **Retries:** attempt 1 is immediate. After a failure there are up to 5 more attempts, at +1 minute, +5 minutes, +30 minutes, +2 hours, and +12 hours, for **6 attempts** in total. Then that delivery is marked `failed` and counts toward `unhealthy`.
 - **A `410 Gone` response** disables the subscription immediately. That's the receiver's way to say "stop".
-- **No ordering guarantee.** Events are delivered independently, and a failing one doesn't block the next. Use `created_at`, and for entitlements `entitlement.updated_at`, to discard stale events. When it matters, re-read current state with [effective-permissions](../roles-and-permissions/#get-v1usersidappsappideffective-permissions) rather than trusting event order.
+- **No ordering guarantee.** Events are delivered independently, and a failing one doesn't block the next. Use `created_at`, and for entitlements `entitlement.updated_at`, to discard stale events. When it matters, re-read current state with [effective-permissions](../roles-and-permissions/#get-usersidappsappideffective-permissions) rather than trusting event order.
 - **At-least-once.** The same event can arrive more than once, after a retry or a redeliver. Dedupe on `Substratal-Event-Id` (the `id` in the body). It's stable across attempts.
 - **Latency target:** p95 under 10 seconds from the committing write to the first delivery attempt. Events are enqueued in the same transaction as the change (an outbox table), so a committed change can never fail to produce its event.
 
 ## Payload versions
 
-Each subscription's `api_version` fixes the shape of every payload it receives. Versions are dates, and a new one is published only for a breaking change to an existing event's payload. New event types and new optional fields in `data` are additive and ship to every version.
+Each subscription's `api_version` fixes the shape of every payload it receives. It's separate from the `Substratal-Version` request header ([Conventions → Versioning](../conventions/#versioning)): a request's API version doesn't change which payload version a subscription gets, and a new API version doesn't imply a new payload version. Payload versions are dates, and a new one is published only for a breaking change to an existing event's payload. New event types and new optional fields in `data` are additive and ship to every version.
 
 | `api_version` | Status | Changes from the previous version |
 |---|---|---|

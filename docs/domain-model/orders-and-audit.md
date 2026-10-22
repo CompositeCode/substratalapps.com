@@ -21,11 +21,11 @@ nav_order: 7
 
 | Field (on [Entitlement](../entitlements/#fields)) | Type | Notes |
 |---|---|---|
-| `order_id` | string, nullable, ≤ 255 characters | Opaque. Typically the developer's own Stripe subscription id (`sub_…`), invoice id, or internal order number. It isn't validated beyond its length, never dereferenced, and never used to drive state on its own. It's settable once, so it stays a stable reconciliation key, and it's filterable on `GET /v1/entitlements?order_id=…`. |
+| `order_id` | string, nullable, ≤ 255 characters | Opaque. Typically the developer's own Stripe subscription id (`sub_…`), invoice id, or internal order number. It isn't validated beyond its length, never dereferenced, and never used to drive state on its own. It's settable once, so it stays a stable reconciliation key, and it's filterable on `GET /entitlements?order_id=…`. |
 
-Its one behavioral effect: an Entitlement with `order_id` set can't be hard-deleted ([`entitlement_order_linked`](../../api-reference/entitlements/#delete-v1entitlementsid)), because it represents a real financial event rather than a mistake.
+Its one behavioral effect: an Entitlement with `order_id` set can't be hard-deleted ([`entitlement_order_linked`](../../api-reference/entitlements/#delete-entitlementsid)), because it represents a real financial event rather than a mistake.
 
-When the developer's billing changes, for example a refund or a lapsed subscription, **the developer's backend calls this API** to change the Entitlement: `PATCH /v1/entitlements/{id}` with `status: revoked`, or by setting `ends_at` so it lapses on schedule, using an app-scoped [API Key](../../api-reference/api-keys/#app-confined-permissions). This API never learns about the payment itself. See [Workflows → Purchase → access](../../workflows/#purchase--access).
+When the developer's billing changes, for example a refund or a lapsed subscription, **the developer's backend calls this API** to change the Entitlement: `PATCH /entitlements/{id}` with `status: revoked`, or by setting `ends_at` so it lapses on schedule, using an app-scoped [API Key](../../api-reference/api-keys/#app-confined-permissions). This API never learns about the payment itself. See [Workflows → Purchase → access](../../workflows/#purchase--access).
 
 ### Billing system of record
 
@@ -80,49 +80,49 @@ Every value `action` can take. It's mirrored exactly by the `AuditAction` enum i
 
 | Action | Fires when | `target.type` |
 |---|---|---|
-| `user.created` | `POST /v1/users`, `POST /v1/auth/signup`, or an invite via org membership | `user` |
+| `user.created` | `POST /users`, `POST /auth/signup`, or an invite via org membership | `user` |
 | `user.updated` | `users.manage` activates an `invited` User without a password (`PATCH status: active`), or changes a test-mode User's `expires_at`. Suspension, reactivation, restore, email, and deletion each have their own action — **admin-only** | `user` |
 | `user.email_changed` | An email change completes (self, after verification; or admin, immediately) | `user` |
-| `user.suspended` | `POST /v1/users/{id}/suspend`, or `PATCH status: suspended` — **admin-only** | `user` |
+| `user.suspended` | `POST /users/{id}/suspend`, or `PATCH status: suspended` — **admin-only** | `user` |
 | `user.reactivated` | `PATCH status: active` on a `suspended` User, or on a soft-deleted one (a restore) — **admin-only** | `user` |
-| `user.deleted` | `DELETE /v1/users/{id}`, or the soft-delete step of an erasure request | `user` |
+| `user.deleted` | `DELETE /users/{id}`, or the soft-delete step of an erasure request | `user` |
 | `user.expired` | A test-mode User's `expires_at` passes; written by the expiry sweep (actor `system`). See [Auth → Test-mode Users → Lifetime](../../api-reference/auth/#lifetime) | `user` |
-| `user.erasure_requested` | `POST /v1/users/{id}/erasure-requests` | `user` |
-| `user.erasure_cancelled` | `DELETE /v1/users/{id}/erasure-requests/current` — **admin-only** | `user` |
+| `user.erasure_requested` | `POST /users/{id}/erasure-requests` | `user` |
+| `user.erasure_cancelled` | `DELETE /users/{id}/erasure-requests/current` — **admin-only** | `user` |
 | `user.erased` | The hard-delete cascade completes (actor `system`) | `user` |
-| `user.password_changed` | `POST /v1/users/{id}/password` | `user` |
-| `user.password_reset` | `POST /v1/auth/password/reset` | `user` |
+| `user.password_changed` | `POST /users/{id}/password` | `user` |
+| `user.password_reset` | `POST /auth/password/reset` | `user` |
 | `user.mfa_enabled` / `user.mfa_disabled` | TOTP confirmed / disabled by the user | `user` |
-| `user.mfa_reset` | `DELETE /v1/users/{id}/mfa/totp` — **admin-only** | `user` |
+| `user.mfa_reset` | `DELETE /users/{id}/mfa/totp` — **admin-only** | `user` |
 | `entitlement.granted` | An Entitlement is created, or returns to `active`. Platform-managed `free` and `subscription` rows are granted with actor `system` | `entitlement` |
 | `entitlement.disabled` | `status` set to `disabled` | `entitlement` |
 | `entitlement.revoked` | `status` set to `revoked` | `entitlement` |
 | `entitlement.expired` | Automatic transition to `expired` (actor `system`) | `entitlement` |
 | `entitlement.updated` | `ends_at`, `source`, or `order_id` changes without a status change | `entitlement` |
 | `entitlement.member_scope_changed` | An org grant's `member_scope`/`member_overrides` changes — see [Entitlements → Org-wide entitlements](../entitlements/#org-wide-entitlements-scoping-members-in-or-out) | `entitlement` |
-| `entitlement.deleted` | `DELETE /v1/entitlements/{id}` (error correction) | `entitlement` |
+| `entitlement.deleted` | `DELETE /entitlements/{id}` (error correction) | `entitlement` |
 | `role.created` / `role.updated` / `role.deleted` | Role definition changes, including Roles seeded or removed via an Application's `available_app_roles` | `role` |
-| `role.assigned` / `role.removed` | `POST`/`DELETE /v1/users/{id}/roles/{roleId}` (only when something actually changed) | `role_assignment` |
+| `role.assigned` / `role.removed` | `POST`/`DELETE /users/{id}/roles/{roleId}` (only when something actually changed) | `role_assignment` |
 | `profile.updated` | An admin changes another user's Profile or AppProfile — **admin-only** | `user` |
 | `settings.updated` | An admin changes another user's Settings or AppSettings — **admin-only** | `user` |
-| `application.created` | `POST /v1/applications` | `application` |
-| `application.updated` | `PATCH /v1/applications/{id}` (configuration fields) | `application` |
+| `application.created` | `POST /applications` | `application` |
+| `application.updated` | `PATCH /applications/{id}` (configuration fields) | `application` |
 | `application.review_status_changed` | A reviewer approves, rejects, suspends, or reinstates; or a rejected app is resubmitted — see [Applications → The review lifecycle](../applications/#the-review-lifecycle) | `application` |
-| `organization.created` / `organization.updated` | `POST`/`PATCH /v1/organizations…` | `organization` |
+| `organization.created` / `organization.updated` | `POST`/`PATCH /organizations…` | `organization` |
 | `organization.member_invited` | A `pending` membership is created by email; the person hasn't accepted yet | `organization` |
 | `organization.member_added` / `organization.member_removed` | A membership becomes `active` (accepted, or added directly by `organizations.manage`), or is removed, including leaving and declining | `organization` |
-| `organization.member_role_changed` | `PATCH /v1/organizations/{id}/members/{userId}` | `organization` |
+| `organization.member_role_changed` | `PATCH /organizations/{id}/members/{userId}` | `organization` |
 | `subscription.created` | The first Checkout for a User or Organization creates its [Subscription](../../api-reference/billing/#the-subscription-object) (`status: incomplete`) | `subscription` |
 | `subscription.status_changed` | `status` changes via a Stripe sync (actor `system`) | `subscription` |
-| `subscription.members_changed` | An org admin changes which members an Organization's subscription covers (`PATCH /v1/organizations/{id}/subscription`) | `subscription` |
-| `tenant.tier_change_requested` | `POST /v1/tenants/{id}/tier-change-requests` — the request itself, not yet the migration | `tier_change_request` |
+| `subscription.members_changed` | An org admin changes which members an Organization's subscription covers (`PATCH /organizations/{id}/subscription`) | `subscription` |
+| `tenant.tier_change_requested` | `POST /tenants/{id}/tier-change-requests` — the request itself, not yet the migration | `tier_change_request` |
 | `tenant.tier_change_request_updated` | `PATCH` on a tier-change request (scheduled, started, cancelled) | `tier_change_request` |
 | `tenant.tier_changed` | A tier-change request reaches `completed`: `tier`/`region` change and `status` returns to `active` — see [Tenancy → How a tier change happens today](../tenancy/#how-a-tier-change-happens-today) | `tenant` |
 | `api_key.created` / `api_key.updated` / `api_key.rotated` / `api_key.revoked` | [API Key](../../api-reference/api-keys/) lifecycle | `api_key` |
 | `api_key.restrict_destructive_disabled` | `restrict_destructive` explicitly set to `false` on an `intended_use: "agent"` key (written *in addition to* `api_key.created`/`updated`) — see [API Keys → Agent keys](../../api-reference/api-keys/#agent-keys--restrict_destructive) | `api_key` |
 | `webhook.created` / `webhook.updated` / `webhook.deleted` / `webhook.secret_rotated` | [Webhook](../../api-reference/webhooks/) subscription lifecycle | `webhook` |
 | `push_credential.created` / `push_credential.updated` / `push_credential.deleted` | An Application's [push credential](../../api-reference/notifications/#push-credentials) is configured, changed, or removed. The platform marking one `failed` (or a change returning it to `active`) is `push_credential.updated` with actor `system`. Key material never appears in `before`/`after` | `push_credential` |
-| `device.deleted` | `users.manage` deletes another User's [Device](../../api-reference/notifications/#delete-v1usersiddevicesdeviceid) — **admin-only** | `device` |
+| `device.deleted` | `users.manage` deletes another User's [Device](../../api-reference/notifications/#delete-usersiddevicesdeviceid) — **admin-only** | `device` |
 | `audit.exported` | An [Audit Event export](../../api-reference/audit/#exporting) is written; actor is whoever requested it, with the filters, format, and row count in `after` | `audit_export` |
 
 This list is the authoritative source for `action` values. If an endpoint's page describes a write that isn't represented here, that's a spec bug; file it the same way as any other inconsistency.

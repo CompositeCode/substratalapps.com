@@ -87,7 +87,7 @@ func exportsUnavailable() error {
 	return httpx.E(503, "service_unavailable", "Audit exports aren't configured in this environment.")
 }
 
-// ── POST /v1/audit-exports ─────────────────────────────────────────────
+// ── POST /audit-exports ────────────────────────────────────────────────
 
 func (s *Server) AuditCreateExport(w http.ResponseWriter, r *http.Request, params gen.AuditCreateExportParams) {
 	s.serve(w, r, opts{op: "audit.createExport", idem: idemRequired}, func(c *Call) error {
@@ -158,7 +158,7 @@ func (s *Server) AuditCreateExport(w http.ResponseWriter, r *http.Request, param
 	})
 }
 
-// ── GET /v1/audit-exports/{id} ─────────────────────────────────────────
+// ── GET /audit-exports/{id} ────────────────────────────────────────────
 
 func (s *Server) AuditGetExport(w http.ResponseWriter, r *http.Request, id string) {
 	s.serve(w, r, opts{op: "audit.getExport"}, func(c *Call) error {

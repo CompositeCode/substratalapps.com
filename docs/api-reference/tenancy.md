@@ -27,14 +27,14 @@ A Tenant is owned by either a User or an Organization. "Owner" here means the `o
 
 | Method | Path | Requires | Purpose |
 |---|---|---|---|
-| `GET` | `/v1/tenants` | any User (own Tenants) or `tenants.manage` (all) | List Tenants. |
-| `GET` | `/v1/tenants/{id}` | owner, `tenants.manage`, or `billing.manage` | Fetch one Tenant. |
-| `POST` | `/v1/tenants/{id}/tier-change-requests` | `tenants.manage` | Open a tier-change request on a customer's behalf. |
-| `GET` | `/v1/tenants/{id}/tier-change-requests` | owner or `tenants.manage` | List a Tenant's tier-change requests. |
-| `GET` | `/v1/tenants/{id}/tier-change-requests/{requestId}` | owner or `tenants.manage` | Fetch one request. |
-| `PATCH` | `/v1/tenants/{id}/tier-change-requests/{requestId}` | `tenants.manage` | Schedule, start, complete, or cancel a request. |
+| `GET` | `/tenants` | any User (own Tenants) or `tenants.manage` (all) | List Tenants. |
+| `GET` | `/tenants/{id}` | owner, `tenants.manage`, or `billing.manage` | Fetch one Tenant. |
+| `POST` | `/tenants/{id}/tier-change-requests` | `tenants.manage` | Open a tier-change request on a customer's behalf. |
+| `GET` | `/tenants/{id}/tier-change-requests` | owner or `tenants.manage` | List a Tenant's tier-change requests. |
+| `GET` | `/tenants/{id}/tier-change-requests/{requestId}` | owner or `tenants.manage` | Fetch one request. |
+| `PATCH` | `/tenants/{id}/tier-change-requests/{requestId}` | `tenants.manage` | Schedule, start, complete, or cancel a request. |
 
-Tenants are never created or deleted directly. One is created automatically the first time its owner gets an Application (see [Applications → `POST`](../applications/#post-v1applications)), and it persists after that.
+Tenants are never created or deleted directly. One is created automatically the first time its owner gets an Application (see [Applications → `POST`](../applications/#post-applications)), and it persists after that.
 
 ## The Tenant object
 
@@ -56,15 +56,15 @@ Tenants are never created or deleted directly. One is created automatically the 
 - `region` is always set. It's `us-east-1` for `shared` and `isolated`, and the chosen region for `dedicated_region`. Earlier drafts used `null` for "the default region". Always returning a real value means a reader never has to know what the default is.
 - `status: migrating` holds for the duration of an `in_progress` tier change. While it does, reads keep working, and writes to that Tenant's data return `503 service_unavailable` with `Retry-After`.
 
-## `GET /v1/tenants`
+## `GET /tenants`
 
 A non-`tenants.manage` caller gets the Tenants they own: at most one owned personally, plus one per Organization where they're `org_admin` and the Organization owns a Tenant. This is how a developer finds their own `tenant_id` without knowing it in advance. `tenants.manage` holders see every Tenant and can filter by `tier`, `status`, `owner_user_id`, and `owner_organization_id`.
 
-## `GET /v1/tenants/{id}`
+## `GET /tenants/{id}`
 
 Returns the Tenant object above. `404 tenant_not_found` for a caller who isn't an owner and lacks `tenants.manage`/`billing.manage`.
 
-## `POST /v1/tenants/{id}/tier-change-requests`
+## `POST /tenants/{id}/tier-change-requests`
 
 The `dedicated_region` allow-list is `us-east-1`, `us-west-2`, `ca-central-1`, `eu-west-1`, `eu-central-1`, `ap-southeast-2`. Any other region returns `422 unsupported_region`. Adding a region is a support/ops decision and needs no API change.
 
@@ -105,7 +105,7 @@ Validation:
 
 Creating a request doesn't start a migration. It's the record and the queue entry. Writes `tenant.tier_change_requested`. Destructive (it leads to a maintenance window), so a `restrict_destructive` key can't call it.
 
-## `PATCH /v1/tenants/{id}/tier-change-requests/{requestId}`
+## `PATCH /tenants/{id}/tier-change-requests/{requestId}`
 
 ```json
 // Request — schedule the maintenance window

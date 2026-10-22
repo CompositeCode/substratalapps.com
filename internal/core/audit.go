@@ -79,7 +79,7 @@ func (c *Call) auditScope(targetUser, tenant *string) (auditForced, error) {
 	return auditForced{}, httpx.Forbidden("audit.view")
 }
 
-// auditFilters are GET /v1/audit-events' filters, and an export's.
+// auditFilters are GET /audit-events' filters, and an export's.
 type auditFilters struct {
 	TargetUserID   *string    `json:"target_user_id,omitempty"`
 	TargetType     *string    `json:"target_type,omitempty"`

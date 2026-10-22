@@ -20,14 +20,14 @@ See [Domain Model → Applications](../../domain-model/applications/) for the fu
 
 | Method | Path | Requires | Purpose |
 |---|---|---|---|
-| `GET` | `/v1/applications` | any authenticated caller | List the catalog, filtered by visibility rules. |
-| `GET` | `/v1/applications/{id}` | any caller who can see it | Fetch one Application. |
-| `POST` | `/v1/applications` | `applications.manage` | Register a new Application. Platform-admin only through Phase 2. |
-| `PATCH` | `/v1/applications/{id}` | the owner (configuration fields) or `applications.manage` (anything) | Update a catalog entry. |
+| `GET` | `/applications` | any authenticated caller | List the catalog, filtered by visibility rules. |
+| `GET` | `/applications/{id}` | any caller who can see it | Fetch one Application. |
+| `POST` | `/applications` | `applications.manage` | Register a new Application. Platform-admin only through Phase 2. |
+| `PATCH` | `/applications/{id}` | the owner (configuration fields) or `applications.manage` (anything) | Update a catalog entry. |
 
 ## Who can see an Application
 
-`visibility` decides who gets an Application from `GET /v1/applications` and `GET /v1/applications/{id}`. A caller who can't see one gets `404 application_not_found` on a direct fetch, so its existence isn't leaked.
+`visibility` decides who gets an Application from `GET /applications` and `GET /applications/{id}`. A caller who can't see one gets `404 application_not_found` on a direct fetch, so its existence isn't leaked.
 
 | `visibility` | Listed / fetchable by | Who can grant an Entitlement to it |
 |---|---|---|
@@ -88,18 +88,18 @@ Applications that aren't `approved` are visible only to their owner, their own k
 | `slug` | Matches `^[a-z][a-z0-9-]{1,63}$` (no `_`), isn't `platform` (reserved), is unique across live and test mode, and is **immutable** once set. It's embedded in the `id`, permission keys (`app.<slug>.*`), and Role ids (`role_<slug>_<name>`, verbatim). |
 | `name` | 1–100 characters. |
 | `launch_url` | `https` URL. Where the future dashboard sends a user to open the app. |
-| `redirect_uris` | 0–10 entries, each an exact-match string: an `https://` URL, or a private-use URI scheme for native apps (reverse-DNS, `com.example.app:/path`). `http://localhost` and `http://127.0.0.1` with any port are allowed for development only on a `test_mode` Application. Required (non-empty) before the hosted authorization-code flow will issue a code — see [Auth](../auth/#post-v1authoauthauthorization-codes). |
+| `redirect_uris` | 0–10 entries, each an exact-match string: an `https://` URL, or a private-use URI scheme for native apps (reverse-DNS, `com.example.app:/path`). `http://localhost` and `http://127.0.0.1` with any port are allowed for development only on a `test_mode` Application. Required (non-empty) before the hosted authorization-code flow will issue a code — see [Auth](../auth/#post-authoauthauthorization-codes). |
 | `support_url`, `email_from_name` | Optional. Used in transactional emails sent on behalf of this app. `email_from_name` is 1–50 characters; the sending address is always Substratal's own. |
-| `receives_platform_notifications` | Boolean, default `false`, writable by the owner. Whether this app's devices also get pushes for [platform alerts](../notifications/#platform-alerts). The app's push credentials are managed separately, under [`/v1/applications/{id}/push-credentials`](../notifications/#push-credentials). |
+| `receives_platform_notifications` | Boolean, default `false`, writable by the owner. Whether this app's devices also get pushes for [platform alerts](../notifications/#platform-alerts). The app's push credentials are managed separately, under [`/applications/{id}/push-credentials`](../notifications/#push-credentials). |
 | `settings_schema` | See [Domain Model → Settings → `settings_schema` rules](../../domain-model/settings/#settings_schema-rules). |
 | `settings_schema_stats` | Read-only. `stale_override_counts` is a key → count map of how many users hold overrides that no longer validate. |
-| `permissions` | The Application's own permission catalog, 0–100 entries. Each `key` must start with `app.<slug>.`, then match `[a-z0-9_.]{1,64}`. `description` is up to 255 characters. This is what `GET /v1/permissions` lists, and it's the only set an AppRole may draw from. |
+| `permissions` | The Application's own permission catalog, 0–100 entries. Each `key` must start with `app.<slug>.`, then match `[a-z0-9_.]{1,64}`. `description` is up to 255 characters. This is what `GET /permissions` lists, and it's the only set an AppRole may draw from. |
 | `available_app_roles` | The role-name vocabulary: 0–20 names, each matching `^[a-z][a-z0-9_]{1,40}$`. Every app-scoped [Role](../roles-and-permissions/) for this Application must use one of these names. |
 | `default_app_role` | `null`, or one of `available_app_roles`. If set, every user with active access to the app **implicitly** holds the app-scoped Role with that name (`role_<slug>_<name>`, always present because it's seeded with the name), without an assignment row. |
 | `access_tier` | `free` or `standard` (default). Which [Pricing](../../pricing/) tier unlocks the Application. Only `applications.manage` sets it. Setting or changing it grants or ends the matching [platform-managed Entitlements](../../domain-model/entitlements/#platform-managed-entitlements) in the same request. |
 | `tenant_id` | Read-only. Resolved from the owner's Tenant at creation, and the Tenant is created if needed. |
 
-## `GET /v1/applications`
+## `GET /applications`
 
 ```json
 // Response — 200
@@ -130,11 +130,11 @@ List responses return a trimmed view. They leave out `settings_schema`, `permiss
 | `owned=true` | Only Applications the caller owns (directly, or as `org_admin` of the owning Organization). |
 | `tenant_id`, `owner_user_id`, `owner_organization_id` | `applications.manage` or `tenants.manage`. |
 
-## `GET /v1/applications/{id}`
+## `GET /applications/{id}`
 
 Returns the full Application object above.
 
-## `POST /v1/applications`
+## `POST /applications`
 
 ```json
 // Request
@@ -188,11 +188,11 @@ The Roles `role_invoicer_admin` and `role_invoicer_member` now exist with no per
 - Requires `applications.manage`. Through Phase 2 this is how **every** Application comes to exist, including a paying customer's. Staff create it with the customer as owner, and the owner manages it from then on ("concierge onboarding").
 - `slug`, `name`, `launch_url`, and exactly one of `owner_user_id`/`owner_organization_id` are required. Everything else is optional.
 - Resolves the owner's [Tenant](../tenancy/), creating one if needed. A new Tenant gets `tier: shared`.
-- **Seeds the app's Roles.** For each name in `available_app_roles`, a Role `role_<slug>_<name>` is created with no permissions, and the owner then fills them in with `PATCH /v1/roles/{id}`.
+- **Seeds the app's Roles.** For each name in `available_app_roles`, a Role `role_<slug>_<name>` is created with no permissions, and the owner then fills them in with `PATCH /roles/{id}`.
 - Grants the [platform-managed Entitlements](../../domain-model/entitlements/#platform-managed-entitlements) its `access_tier` calls for: every User for a free Application, every covered subscriber for a standard one.
 - Writes `application.created`.
 
-## `PATCH /v1/applications/{id}`
+## `PATCH /applications/{id}`
 
 ```json
 // Request — owner adding a role name and a permission
@@ -272,7 +272,7 @@ Any other transition returns `409 invalid_review_transition`. A transition to `r
 Every rule in [The Application object](#the-application-object) table reports through `details.fields`, all failures at once:
 
 ```json
-// POST /v1/applications with a bad slug, an http launch_url, and too many role names
+// POST /applications with a bad slug, an http launch_url, and too many role names
 {
   "error": {
     "code": "validation_failed",
@@ -294,8 +294,8 @@ A reserved slug is `{ "field": "slug", "code": "unknown_value", "allowed": "anyt
 
 What an Application owner does after staff have created their Application (concierge onboarding), all with their own User token and no platform permission:
 
-1. **Find your Tenant:** `GET /v1/tenants` returns the one Tenant you own, with its `tier`. `GET /v1/applications?owned=true` lists your Applications.
-2. **Configure the app:** `PATCH /v1/applications/app_invoicer` with your `redirect_uris`, `settings_schema`, `permissions`, and `available_app_roles`. Then give each seeded Role its permissions with `PATCH /v1/roles/role_invoicer_admin` `{"permissions": ["app.invoicer.view", "app.invoicer.send"]}`.
-3. **Create your backend's key:** `POST /v1/api-keys` `{"name": "invoicer-backend", "scope": "app_invoicer", "permissions": ["entitlements.manage", "users.list"]}`. Store the `secret`; it's shown once. Create a `"mode": "test"` key too for integration tests.
-4. **Subscribe to revocations:** `POST /v1/webhooks` `{"scope": "app_invoicer", "url": "https://invoicer.example.com/hooks/substratal", "events": ["access.revoked", "role.removed"]}`. Store the `signing_secret`. This pair is the [compliance minimum](../webhooks/#post-v1webhooks).
-5. **Grant access as your billing says:** from your backend, with the app key, `POST /v1/users/{id}/entitlements` for a personal purchase, or `POST /v1/organizations/{id}/entitlements` for a team purchase. Both need an `Idempotency-Key`; key it on your own order id.
+1. **Find your Tenant:** `GET /tenants` returns the one Tenant you own, with its `tier`. `GET /applications?owned=true` lists your Applications.
+2. **Configure the app:** `PATCH /applications/app_invoicer` with your `redirect_uris`, `settings_schema`, `permissions`, and `available_app_roles`. Then give each seeded Role its permissions with `PATCH /roles/role_invoicer_admin` `{"permissions": ["app.invoicer.view", "app.invoicer.send"]}`.
+3. **Create your backend's key:** `POST /api-keys` `{"name": "invoicer-backend", "scope": "app_invoicer", "permissions": ["entitlements.manage", "users.list"]}`. Store the `secret`; it's shown once. Create a `"mode": "test"` key too for integration tests.
+4. **Subscribe to revocations:** `POST /webhooks` `{"scope": "app_invoicer", "url": "https://invoicer.example.com/hooks/substratal", "events": ["access.revoked", "role.removed"]}`. Store the `signing_secret`. This pair is the [compliance minimum](../webhooks/#post-webhooks).
+5. **Grant access as your billing says:** from your backend, with the app key, `POST /users/{id}/entitlements` for a personal purchase, or `POST /organizations/{id}/entitlements` for a team purchase. Both need an `Idempotency-Key`; key it on your own order id.

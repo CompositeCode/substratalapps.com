@@ -38,7 +38,7 @@ Browser requests to production are blocked by CORS on purpose. The production AP
     function render(spec) {
       // Offer the local devserver next to production, without changing the published document.
       spec.servers = (spec.servers || []).concat([
-        { url: "http://localhost:8080/v1", description: "Local devserver (make run)" }
+        { url: "http://localhost:8080", description: "Local devserver (make run)" }
       ]);
       SwaggerUIBundle({
         spec: spec,
@@ -50,7 +50,13 @@ Browser requests to production are blocked by CORS on purpose. The production AP
         displayRequestDuration: true,
         filter: true,
         persistAuthorization: true,
-        tryItOutEnabled: false
+        tryItOutEnabled: false,
+        // Every API request needs Substratal-Version (Conventions → Versioning);
+        // the document doesn't declare it per operation.
+        requestInterceptor: function (req) {
+          req.headers["Substratal-Version"] = "1";
+          return req;
+        }
       });
     }
 

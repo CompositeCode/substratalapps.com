@@ -20,14 +20,14 @@ See [Domain Model → Settings](../../domain-model/settings/) for the resolution
 
 | Method | Path | Requires | Purpose |
 |---|---|---|---|
-| `GET` | `/v1/users/{id}/settings` | self, or platform `users.list` | Fetch global Settings. |
-| `PATCH` | `/v1/users/{id}/settings` | self or `users.manage` | Update global Settings. |
-| `GET` | `/v1/users/{id}/apps/{appId}/settings` | self, the app's own key, or platform `users.list` | Fetch the fully resolved per-app settings. |
-| `PATCH` | `/v1/users/{id}/apps/{appId}/settings` | self, the app's own key, or `users.manage` | Write per-app overrides. |
+| `GET` | `/users/{id}/settings` | self, or platform `users.list` | Fetch global Settings. |
+| `PATCH` | `/users/{id}/settings` | self or `users.manage` | Update global Settings. |
+| `GET` | `/users/{id}/apps/{appId}/settings` | self, the app's own key, or platform `users.list` | Fetch the fully resolved per-app settings. |
+| `PATCH` | `/users/{id}/apps/{appId}/settings` | self, the app's own key, or `users.manage` | Write per-app overrides. |
 
 As on [Profiles](../profiles/), "the app's own key" means any app-scoped [API Key](../api-keys/) scoped to `{appId}`, with no extra permission needed. Self and app-key access to an Application's settings requires the user to have *active* access to that Application. Otherwise the call returns `403 entitlement_required`. Support bypasses that check for investigations: platform `users.list` (held by the `support` Role) can read regardless, and `users.manage` can read and write regardless.
 
-## `GET /v1/users/{id}/settings`
+## `GET /users/{id}/settings`
 
 ```json
 // Response — 200
@@ -41,7 +41,7 @@ As on [Profiles](../profiles/), "the app's own key" means any app-scoped [API Ke
 }
 ```
 
-## `PATCH /v1/users/{id}/settings`
+## `PATCH /users/{id}/settings`
 
 ```json
 // Request
@@ -87,7 +87,7 @@ A failed validation lists every field at once:
 }
 ```
 
-## `GET /v1/users/{id}/apps/{appId}/settings`
+## `GET /users/{id}/apps/{appId}/settings`
 
 Returns the resolved object, the override layer that produced it, and the source of each resolved value:
 
@@ -125,7 +125,7 @@ The exact rules are in [Domain Model → Settings → Resolution rules](../../do
 - **`stale_overrides`** lists override keys that no longer validate against the Application's *current* schema. This happens when the schema changed after the value was written: the property was removed, or its type changed. Stale values are skipped during resolution, so the default applies instead, and they stay in `overrides` until the next write to that key replaces or clears them.
 - If the user has no per-app record yet, `overrides` is `{}` and `updated_at` is `null`. Nothing is written on a read.
 
-## `PATCH /v1/users/{id}/apps/{appId}/settings`
+## `PATCH /users/{id}/apps/{appId}/settings`
 
 ```json
 // Request — set one override
@@ -141,7 +141,7 @@ The exact rules are in [Domain Model → Settings → Resolution rules](../../do
 
 Each key in `overrides` is validated on its own before anything is written:
 
-- A **reserved global key** must satisfy the same rules as on `PATCH /v1/users/{id}/settings`.
+- A **reserved global key** must satisfy the same rules as on `PATCH /users/{id}/settings`.
 - **Any other key** must be declared in the Application's `settings_schema`, and its value must validate against that property's schema.
 - `null` always means "clear this override" and is never validated.
 - The serialized `overrides` object is limited to 16 KB after the merge.

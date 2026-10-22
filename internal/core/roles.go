@@ -53,7 +53,7 @@ func isPlatformPermission(k string) bool {
 // carry in confined form (API Keys → App-confined permissions).
 var appConfinable = []string{"entitlements.manage", "roles.manage", "users.list", "audit.view", "notifications.send"}
 
-// ── GET /v1/permissions ────────────────────────────────────────────────
+// ── GET /permissions ───────────────────────────────────────────────────
 
 func (s *Server) PermissionsList(w http.ResponseWriter, r *http.Request, params gen.PermissionsListParams) {
 	s.serve(w, r, opts{op: "permissions.list"}, func(c *Call) error {
@@ -672,7 +672,7 @@ func (s *Server) RolesRemove(w http.ResponseWriter, r *http.Request, id gen.User
 	})
 }
 
-// ── GET /v1/users/{id}/apps/{appId}/effective-permissions ──────────────
+// ── GET /users/{id}/apps/{appId}/effective-permissions ─────────────────
 
 type accessPath struct {
 	Source         string     `json:"source"`

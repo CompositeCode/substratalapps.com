@@ -19,7 +19,7 @@ How a separately-hosted app verifies a user's identity and access without mainta
 
 Every Application is separately hosted software that Substratal doesn't host, and it isn't necessarily a web app. It can be an iOS, macOS, Windows, Linux, or web app, or run on any other platform. This API serves it purely as a backend: it authenticates users and reads/writes their settings and related data. It has no say in how or where the app itself runs. The alternative, apps as modules or iframes inside one deployment, is ruled out because a native iOS or desktop app can't be an iframe inside anything.
 
-This affects one thing: how the token is handed to the app. There are two paths, both fully specified in [Auth → Getting an app token](../api-reference/auth/#getting-an-app-token). **Embedded:** the app draws its own sign-in screen, calls `POST /v1/auth/login`, then `POST /v1/auth/app-tokens`. This is available now and is acceptable only while every Application is first-party. **Hosted:** the user signs in on Substratal's hosted page, which hands the app a one-time code; the app exchanges it with its PKCE verifier at `POST /v1/auth/oauth/token`. That's the standard flow for a public client with no safe place to hold a secret, with control returning via a custom URL scheme or app link. The hosted page ships with the dashboard and is required before any third-party Application goes live. The claims and verification model below stay the same for both: short-lived JWT, `effective_permissions`, introspection, webhooks.
+This affects one thing: how the token is handed to the app. There are two paths, both fully specified in [Auth → Getting an app token](../api-reference/auth/#getting-an-app-token). **Embedded:** the app draws its own sign-in screen, calls `POST /auth/login`, then `POST /auth/app-tokens`. This is available now and is acceptable only while every Application is first-party. **Hosted:** the user signs in on Substratal's hosted page, which hands the app a one-time code; the app exchanges it with its PKCE verifier at `POST /auth/oauth/token`. That's the standard flow for a public client with no safe place to hold a secret, with control returning via a custom URL scheme or app link. The hosted page ships with the dashboard and is required before any third-party Application goes live. The claims and verification model below stay the same for both: short-lived JWT, `effective_permissions`, introspection, webhooks.
 
 ## Why apps shouldn't own their own user table
 
@@ -57,12 +57,12 @@ Whenever a user enters an Application, the Application holds a signed **app toke
 - `effective_permissions` only ever contains this Application's own `app.<slug>.*` keys, never platform permissions like `users.manage`. See [Access Control → Step 2](../access-control/#step-2-effective-permissions).
 
 {: .note }
-Deliberately absent from this claim: anything about [Tenant](../domain-model/tenancy/) placement (`tier`/`region`). Tenancy is set once per Application by its owner, not computed per end-user per request — an app that wants to know its own placement reads it from `GET /v1/applications/{id}` or `GET /v1/tenants/{id}`, not from a launch token. See [Tenancy → What this does — and doesn't — isolate](../domain-model/tenancy/#what-this-does--and-doesnt--isolate).
+Deliberately absent from this claim: anything about [Tenant](../domain-model/tenancy/) placement (`tier`/`region`). Tenancy is set once per Application by its owner, not computed per end-user per request — an app that wants to know its own placement reads it from `GET /applications/{id}` or `GET /tenants/{id}`, not from a launch token. See [Tenancy → What this does — and doesn't — isolate](../domain-model/tenancy/#what-this-does--and-doesnt--isolate).
 
 ## 2. Live introspection
 
 ```
-GET /v1/users/{id}/apps/{appId}/effective-permissions
+GET /users/{id}/apps/{appId}/effective-permissions
 ```
 
 Returns the current, authoritative answer — same shape as the JWT claims, but computed fresh. Good fit for:

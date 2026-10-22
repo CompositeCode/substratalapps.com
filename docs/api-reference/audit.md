@@ -20,17 +20,17 @@ See [Domain Model → Audit Event](../../domain-model/orders-and-audit/#audit-ev
 
 | Method | Path | Requires | Purpose |
 |---|---|---|---|
-| `GET` | `/v1/audit-events` | `audit.view` (platform or app-confined); or self via `target_user_id=me`; or a Tenant owner via `tenant_id` | Query the audit log. |
-| `GET` | `/v1/audit-events/{id}` | same as above, for that event | Fetch one event. |
-| `POST` | `/v1/audit-exports` | same as `GET /v1/audit-events`, for the filters sent | Export matching events to a file. |
-| `GET` | `/v1/audit-exports/{id}` | the export's requester, or `audit.view` | Check an export, and get its download link. |
+| `GET` | `/audit-events` | `audit.view` (platform or app-confined); or self via `target_user_id=me`; or a Tenant owner via `tenant_id` | Query the audit log. |
+| `GET` | `/audit-events/{id}` | same as above, for that event | Fetch one event. |
+| `POST` | `/audit-exports` | same as `GET /audit-events`, for the filters sent | Export matching events to a file. |
+| `GET` | `/audit-exports/{id}` | the export's requester, or `audit.view` | Check an export, and get its download link. |
 
 There's deliberately no write endpoint for Audit Events. They're produced only as a side effect of other writes, never created directly, and never edited or deleted through the API. An export is a read: it copies events into a file and changes none of them.
 
-## `GET /v1/audit-events`
+## `GET /audit-events`
 
 ```
-GET /v1/audit-events?target_user_id=usr_01JAG3Z9X8QS3F6K2M4N5P6R7S&since=2026-09-01T00:00:00Z
+GET /audit-events?target_user_id=usr_01JAG3Z9X8QS3F6K2M4N5P6R7S&since=2026-09-01T00:00:00Z
 ```
 
 ```json
@@ -77,7 +77,7 @@ GET /v1/audit-events?target_user_id=usr_01JAG3Z9X8QS3F6K2M4N5P6R7S&since=2026-09
 
 **Hot window only.** The API returns only events still in hot storage, which is one year for every Tenant. Older events are archived in a shape-only form and are retrievable through support, not through this endpoint. A `since` earlier than the window is allowed and simply returns nothing older. The response header `Audit-Hot-Window-Start` gives the earliest timestamp available for the caller's scope. See [Non-Functional Requirements → Audit log lifecycle](../../non-functional-requirements/#audit-log-lifecycle).
 
-## `GET /v1/audit-events/{id}`
+## `GET /audit-events/{id}`
 
 Returns one event, same shape. `404 audit_event_not_found` if it doesn't exist, isn't visible to the caller, or has been archived.
 
@@ -86,7 +86,7 @@ Returns one event, same shape. `404 audit_event_not_found` if it doesn't exist, 
 For compliance evidence (a SOC 2 audit, a customer's request for their records) or offline analysis, export the log to a file instead of paging through it.
 
 ```json
-// POST /v1/audit-exports   (Idempotency-Key required)
+// POST /audit-exports   (Idempotency-Key required)
 { "format": "csv", "tenant_id": "tnt_01JAG1SYSTEM00000000000000", "since": "2026-01-01T00:00:00Z" }
 ```
 ```json
@@ -107,9 +107,9 @@ For compliance evidence (a SOC 2 audit, a customer's request for their records) 
 }
 ```
 
-- **Filters and scope** are exactly `GET /v1/audit-events`'s, as body fields: `action` is an array (up to 100), `target_user_id` may be `me`, and the caller is confined to the same scope as on the list. An app-confined key exports only its own Application's events, a User without `audit.view` only their own trail (`target_user_id: "me"`) or a Tenant they own. Hot window only, like the list.
+- **Filters and scope** are exactly `GET /audit-events`'s, as body fields: `action` is an array (up to 100), `target_user_id` may be `me`, and the caller is confined to the same scope as on the list. An app-confined key exports only its own Application's events, a User without `audit.view` only their own trail (`target_user_id: "me"`) or a Tenant they own. Hot window only, like the list.
 - **`format`** is `ndjson` (default), one Audit Event object per line, or `csv`, with the columns `id, timestamp, action, actor_type, actor_id, target_type, target_id, target_user_id, application_id, organization_id, tenant_id, request_id, before, after` (`before`/`after` as JSON text). Rows are oldest first.
-- **Asynchronous.** The request returns `202` at once, and a job writes the file, usually within a minute. Poll `GET /v1/audit-exports/{id}` until `status` is `ready` (or `failed`, with `error` saying why: `too_many_rows` over 1,000,000 events, so narrow the filters).
+- **Asynchronous.** The request returns `202` at once, and a job writes the file, usually within a minute. Poll `GET /audit-exports/{id}` until `status` is `ready` (or `failed`, with `error` saying why: `too_many_rows` over 1,000,000 events, so narrow the filters).
 - **Downloading.** Once `ready`, `download_url` is a signed link valid for 15 minutes (`download_url_expires_at`). Fetch the export again for a fresh one. The file and the record are deleted 7 days after the request (`expires_at`).
 - **Who can see it:** whoever requested it, and `audit.view`. Anyone else gets `404 audit_export_not_found`.
 - **It's audited.** When the file is ready, `audit.exported` is written with the requester as actor, the filters, the format, and the row count, in the export's own scope, so it appears in the same trail it exported from.

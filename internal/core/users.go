@@ -429,7 +429,7 @@ func (c *Call) reactivateUser(u userRow, action, newEmail string) error {
 		Before: map[string]any{"status": u.Status}, After: map[string]any{"status": "active"}})
 }
 
-// softDeleteUser is DELETE /v1/users/{id}'s effect, shared with erasure.
+// softDeleteUser is DELETE /users/{id}'s effect, shared with erasure.
 func (c *Call) softDeleteUser(u userRow) error {
 	pairs, err := c.userAppPairs(u.ID)
 	if err != nil {

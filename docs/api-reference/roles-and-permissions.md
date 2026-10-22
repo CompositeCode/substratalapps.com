@@ -20,18 +20,18 @@ See [Domain Model → Roles & Permissions](../../domain-model/roles-and-permissi
 
 | Method | Path | Requires | Purpose |
 |---|---|---|---|
-| `GET` | `/v1/permissions` | any authenticated caller | List every Permission key the caller can see. |
-| `GET` | `/v1/roles` | any authenticated caller (filtered) | List Roles. |
-| `POST` | `/v1/roles` | `roles.manage` (platform scope); owner or app-confined `roles.manage` (app scope) | Define a new Role. |
-| `GET` | `/v1/roles/{id}` | same visibility as list | Fetch one Role. |
-| `PATCH` | `/v1/roles/{id}` | same as `POST` for that scope | Change `permissions` or `description`. |
-| `DELETE` | `/v1/roles/{id}` | same as `POST` for that scope | Delete an unassigned, non-seed Role. |
-| `GET` | `/v1/users/{id}/roles` | self, `roles.manage`, `users.list`, or app-confined | List a user's Role assignments. |
-| `POST` | `/v1/users/{id}/roles/{roleId}` | see [Who may assign](#who-may-assign-what) | Assign a Role. |
-| `DELETE` | `/v1/users/{id}/roles/{roleId}` | see [Who may assign](#who-may-assign-what) | Remove a Role assignment. |
-| `GET` | `/v1/users/{id}/apps/{appId}/effective-permissions` | self, the app's own key, `users.list`, or `entitlements.manage` | **The live access check.** |
+| `GET` | `/permissions` | any authenticated caller | List every Permission key the caller can see. |
+| `GET` | `/roles` | any authenticated caller (filtered) | List Roles. |
+| `POST` | `/roles` | `roles.manage` (platform scope); owner or app-confined `roles.manage` (app scope) | Define a new Role. |
+| `GET` | `/roles/{id}` | same visibility as list | Fetch one Role. |
+| `PATCH` | `/roles/{id}` | same as `POST` for that scope | Change `permissions` or `description`. |
+| `DELETE` | `/roles/{id}` | same as `POST` for that scope | Delete an unassigned, non-seed Role. |
+| `GET` | `/users/{id}/roles` | self, `roles.manage`, `users.list`, or app-confined | List a user's Role assignments. |
+| `POST` | `/users/{id}/roles/{roleId}` | see [Who may assign](#who-may-assign-what) | Assign a Role. |
+| `DELETE` | `/users/{id}/roles/{roleId}` | see [Who may assign](#who-may-assign-what) | Remove a Role assignment. |
+| `GET` | `/users/{id}/apps/{appId}/effective-permissions` | self, the app's own key, `users.list`, or `entitlements.manage` | **The live access check.** |
 
-## `GET /v1/permissions`
+## `GET /permissions`
 
 Platform-scoped keys (fixed, built in, with descriptions summarized from the authoritative [Platform permission catalog](../../domain-model/roles-and-permissions/#platform-permission-catalog)), plus each visible Application's own declared keys (from its `permissions` field — see [Applications](../applications/#the-application-object)). See [Domain Model → Platform permission catalog](../../domain-model/roles-and-permissions/#platform-permission-catalog) for what each platform key grants.
 
@@ -82,7 +82,7 @@ Filter with `?scope=platform` or `?scope=app_timetrack`. An app-scoped key sees 
 - `seed: true` marks the four built-in platform Roles (`superadmin`, `support`, `billing_admin`, `member`). They can't be changed or deleted through the API.
 - `permissions` must be keys valid for the Role's own scope. A platform Role can hold only platform keys, and an app Role can hold only that Application's `app.<slug>.*` keys. Mixing them returns `422 unknown_permission`.
 
-## `GET /v1/roles`
+## `GET /roles`
 
 ```json
 // Response — 200
@@ -101,7 +101,7 @@ Filter by `?scope=platform` or `?scope=<application_id>`. What a caller sees:
 - Platform Roles are visible to any User with any platform permission.
 - An Application's Roles are visible to its owner, its own key, and `roles.manage` holders.
 
-## `POST /v1/roles`
+## `POST /roles`
 
 ```json
 // Request — a narrower platform role
@@ -117,7 +117,7 @@ Filter by `?scope=platform` or `?scope=<application_id>`. What a caller sees:
 - `409 role_name_taken` if the derived `id` already exists.
 - Writes `role.created`.
 
-## `PATCH /v1/roles/{id}`
+## `PATCH /roles/{id}`
 
 ```json
 // Request
@@ -143,11 +143,11 @@ Filter by `?scope=platform` or `?scope=<application_id>`. What a caller sees:
 {: .note }
 Changing a Role's permissions doesn't fire a webhook per holder. Apps learn of the change the next time they check (an app token is valid for at most 5 minutes, so they find out within 5 minutes). A permission *removed* from a Role is the one case that could matter for immediate revocation. If that's a concern, remove the Role assignment instead, which fires `role.removed`.
 
-## `DELETE /v1/roles/{id}`
+## `DELETE /roles/{id}`
 
 `204`. Only for a non-seed Role with zero assignments (`409 role_in_use`). For an app Role, it's simpler to remove the name from `available_app_roles`, which deletes the Role too. Writes `role.deleted`. Destructive.
 
-## `GET /v1/users/{id}/roles`
+## `GET /users/{id}/roles`
 
 ```json
 // Response — 200
@@ -170,7 +170,7 @@ Changing a Role's permissions doesn't fire a webhook per holder. Apps learn of t
 | Platform Role | Platform `roles.manage` **and** hold every permission the Role grants (`403 role_escalation_forbidden`). Assigning `superadmin` therefore requires being a `superadmin`. |
 | App Role | Platform `roles.manage`, **or** the Application's owner, **or** the Application's own key with `roles.manage`. An app key assigning another app's Role gets `403 role_scope_mismatch`. |
 
-## `POST /v1/users/{id}/roles/{roleId}`
+## `POST /users/{id}/roles/{roleId}`
 
 ```json
 // Request
@@ -190,7 +190,7 @@ Changing a Role's permissions doesn't fire a webhook per holder. Apps learn of t
 
 `application_id` is inherited from the Role's own `scope`, so you don't pass it. Assigning an app Role to a user with no Entitlement to that app is allowed. The assignment is harmless until they get access, but it grants nothing in practice (see [Access Control](../../access-control/#worked-example)). Writes `role.assigned` and emits `role.assigned`. Re-assigning a Role the user already holds returns `200` with the existing assignment, and no event fires.
 
-## `DELETE /v1/users/{id}/roles/{roleId}`
+## `DELETE /users/{id}/roles/{roleId}`
 
 ```json
 // Response — 204
@@ -198,7 +198,7 @@ Changing a Role's permissions doesn't fire a webhook per holder. Apps learn of t
 
 Idempotent: removing an assignment that's already gone also returns `204`, since the end state ("user doesn't hold this Role") is already true. Writes `role.removed` and emits `role.removed`, but only when something was actually removed. A user's last `member` platform Role can't be removed (`409 member_role_required`), because every User holds it. Destructive.
 
-## `GET /v1/users/{id}/apps/{appId}/effective-permissions`
+## `GET /users/{id}/apps/{appId}/effective-permissions`
 
 The live introspection check described throughout [Trust Model](../../trust-model/#2-live-introspection).
 

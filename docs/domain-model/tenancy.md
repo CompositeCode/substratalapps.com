@@ -77,7 +77,7 @@ This is a strict ladder — `dedicated_region` implies everything `isolated` pro
 There is no self-service API for this. `tenants.manage` (support/superadmin only) is required even to *request* a tier change, and no public API lets a customer trigger their own migration. The flow:
 
 1. A customer asks (support is the intake, not a self-serve button) for a tier upgrade.
-2. Support calls `POST /v1/tenants/{id}/tier-change-requests` (see [API Reference → Tenancy](../../api-reference/tenancy/)), then moves the request through `pending → scheduled → in_progress → completed` (or `cancelled`) with `PATCH` as the work happens.
+2. Support calls `POST /tenants/{id}/tier-change-requests` (see [API Reference → Tenancy](../../api-reference/tenancy/)), then moves the request through `pending → scheduled → in_progress → completed` (or `cancelled`) with `PATCH` as the work happens.
 3. Support schedules a brief maintenance window, flips `status` to `migrating`, and runs the snapshot/restore cutover into the new infrastructure (new cluster, and for `dedicated_region`, a new region) described in [Deployment Architecture → Tenancy tiers](https://github.com/CompositeCode/substratalapps.com/blob/main/infra/README.md).
 4. `tier`, `region`, and `status` are updated back to `active`; an [Audit Event](../orders-and-audit/#audit-event) (`tenant.tier_changed`) records the change.
 

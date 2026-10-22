@@ -21,6 +21,9 @@ Which [Pricing](../pricing/) tier unlocks an [Application](#application): `free`
 #### API Key
 A long-lived service credential (`satk_live_…`/`satk_test_…`), scoped to the platform or to one Application. An app-scoped key can only ever touch its own Application's rows. See [API Keys](../api-reference/api-keys/).
 
+#### API version
+The version of the REST API a request is written against, sent as a whole number in the required `Substratal-Version` header. `1` is the only one so far. Unrelated to a webhook [payload version](#payload-version). See [Conventions → Versioning](../api-reference/conventions/#versioning).
+
 #### App token
 The short-lived (5-minute) JWT an Application verifies locally, with `aud` set to that Application. Carries `entitlement_status` and `effective_permissions`. See [Auth → The app token](../api-reference/auth/#the-app-token).
 
@@ -65,6 +68,9 @@ A domain/grouping object for Users — a company, or a group within a company �
 
 #### OrganizationMembership
 The join record between a User and an Organization, carrying that User's standing *within* that one Organization (`org_admin` or `member`) and whether it's `pending` (invited, not yet accepted) or `active` — a User can hold this for any number of Organizations at once. See [Domain Model → Users & Organizations](../domain-model/users-and-organizations/#organizationmembership).
+
+#### Payload version
+The shape of a webhook's payloads, a date pinned on each subscription as `api_version` (currently `2026-10-05`) and moved forward only by its owner. Unrelated to the [API version](#api-version). See [Webhooks → Payload versions](../api-reference/webhooks/#payload-versions).
 
 #### Permission
 An atomic, checkable capability, written as a dotted key (`billing.manage`, `app.timetrack.export`). Never assigned directly to a user — always granted through a [Role](#role).
