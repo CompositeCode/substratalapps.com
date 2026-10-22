@@ -228,6 +228,8 @@ Native auth sends email: verification, password reset, invitations, MFA and pass
 
 Outbound webhooks use a **transactional outbox**. Every state-changing transaction inserts its `webhook_events` rows in the same commit (see [Database Schema](https://compositecode.github.io/substratalapps.com/domain-model/database-schema/#webhook_subscriptions-webhook_events-webhook_deliveries)). A dispatcher Lambda, triggered every few seconds by an EventBridge Scheduler rule and also invoked directly after commit as a fast path, fans each event out to matching subscriptions as SQS messages. Delivery workers POST with a 5-second timeout, and failed attempts are re-enqueued with SQS delay (up to 15 minutes) or EventBridge Scheduler one-shot schedules for the 2-hour and 12-hour retries. No always-on component, consistent with the [cost principles](#cost-principles).
 
+The delivery worker reserves 5 concurrent executions, so a burst of deliveries can't starve the API. A new AWS account's Lambda concurrency limit is only 10, and AWS requires 10 to stay unreserved, so Terraform reads the account's applied limit (Service Quotas, `L-B99A9384`) on every deploy and reserves the 5 only when the limit is at least 100. Until then, the worker shares the account's concurrency with everything else.
+
 ## Push delivery
 
 [Push Notifications](https://compositecode.github.io/substratalapps.com/api-reference/notifications/) specifies the behavior. This is how it runs, on top of the webhook machinery above, with no new always-on component.
