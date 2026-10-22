@@ -25,7 +25,7 @@ As of 2026-10-20, every operation in `openapi.yaml` is implemented, including su
 
 The phase exit criteria have only been checked against the local devserver. Once production is up, check them there:
 
-- **Phase 0:** `GET /health` returns `200` through the real Lambda and API Gateway path. (It returned `200` at the old `/v1/health` on 2026-10-20. Check `/health` again after the first deploy without the `/v1` prefix.)
+- **Phase 0:** `GET /health` returns `200` through the real Lambda and API Gateway path. (Done: it returned `200` at `/health` on 2026-10-22, after the move to header versioning; the old `/v1/health` now returns `404`.)
 - **Phase 1:** the [Quickstart](https://compositecode.github.io/substratalapps.com/quickstart/) runs end to end against production: create a user, grant an app, check access, turn it off. Run `scripts/quickstart.sh` with `SUBSTRATAL_API=https://api.substratalapps.com` and a test-mode key.
 - **Phase 2:** a third-party-shaped app signs a user in through the embedded flow, receives `access.revoked` and kills the session, calls introspection, has its `settings_schema` validated and typed on write, and receives a push sent through its app key. A test-mode User and a test-mode Organization subscribe to Standard through Checkout (needs a Stripe test-mode key in a non-production environment, or temporarily in production), gain the standard Applications, and lapse back to Free.
 
