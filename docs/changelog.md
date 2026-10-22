@@ -12,6 +12,15 @@ What's changed in this specification over time. Every decision is written into t
 
 ---
 
+## 2026-10-21 — Versioning rules spelled out
+
+Clarifications to the header-based versioning below; nothing about the API's behavior changed.
+
+- **What counts as breaking** is now listed in [Non-Functional Requirements → Versioning](../non-functional-requirements/#versioning): removing or renaming a field, endpoint, or parameter; changing a type or format; a new or newly required request field; a different status or error code for an existing condition; or a changed default or behavior.
+- **Retirement.** `Deprecation` (RFC 9745) and `Sunset` (RFC 8594) appear on responses to requests that name a deprecated version. After its `Sunset` date, requests naming it get `400 unsupported_api_version`.
+- **Two separate versions.** The `Substratal-Version` request header and a webhook subscription's payload `api_version` are independent, now stated on [Conventions](../api-reference/conventions/#versioning), [Webhooks](../api-reference/webhooks/#payload-versions), and in the [Glossary](../glossary/#api-version).
+- [OpenAPI Specification](../openapi/#versioning-and-change-policy) no longer describes versions as URL prefixes, and [Auth → `POST /auth/oauth/token`](../api-reference/auth/#post-authoauthtoken) notes it needs no version header.
+
 ## 2026-10-21 — The API version moves from the URL to a header
 
 **Breaking.** The `/v1` path prefix is gone. Every endpoint is now at the host root, and every request names its API version in a header instead:

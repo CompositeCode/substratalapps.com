@@ -356,7 +356,7 @@ Called by Substratal's hosted sign-in page (or the future dashboard's "Launch" b
 
 ### `POST /auth/oauth/token`
 
-Called by the Application. A public-client endpoint: there's no client secret, the PKCE verifier is the proof.
+Called by the Application. A public-client endpoint: there's no client secret, the PKCE verifier is the proof. It's the one Auth endpoint that doesn't need `Substratal-Version`, because standard OAuth libraries call it without custom headers (see [Conventions → Versioning](../conventions/#versioning)). Sending the header is fine.
 
 ```json
 // Request — exchange an authorization code
