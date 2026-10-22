@@ -298,7 +298,7 @@ During a [secret rotation](#post-webhooksidrotate-secret), deploy with both secr
 
 ## Payload versions
 
-Each subscription's `api_version` fixes the shape of every payload it receives. Versions are dates, and a new one is published only for a breaking change to an existing event's payload. New event types and new optional fields in `data` are additive and ship to every version.
+Each subscription's `api_version` fixes the shape of every payload it receives. It's separate from the `Substratal-Version` request header ([Conventions → Versioning](../conventions/#versioning)): a request's API version doesn't change which payload version a subscription gets, and a new API version doesn't imply a new payload version. Payload versions are dates, and a new one is published only for a breaking change to an existing event's payload. New event types and new optional fields in `data` are additive and ship to every version.
 
 | `api_version` | Status | Changes from the previous version |
 |---|---|---|

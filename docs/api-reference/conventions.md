@@ -329,7 +329,8 @@ Versions are whole numbers, and `1` is the only one today. The URL never carries
 - **Echoed.** Every response to a versioned request carries `Substratal-Version` set to the version that served it.
 - **Exempt:** `GET /health`, so uptime monitors can call it as is; `POST /auth/oauth/token`, which standard OAuth libraries call without custom headers; and the `/.well-known` endpoints. They behave the same in every version. [MCP](../../mcp-server/) clients don't send it either: the MCP server calls the API with the version its tools describe.
 - **Browsers:** `Substratal-Version` is allowed in CORS requests and exposed on CORS responses.
-- **Changes.** Additive changes (new optional fields, new endpoints, new enum values) ship within a version. A breaking change ships as the next number, and the previous version keeps working for a deprecation window, with `Deprecation` and `Sunset` headers on every response it serves. See [Non-Functional Requirements → Versioning](../../non-functional-requirements/#versioning).
+- **Changes.** Additive changes (new optional fields, new endpoints, new enum values) ship within a version. A breaking change ships as the next number, and the previous version keeps working for at least 6 months, with `Deprecation` and `Sunset` headers on every response to a request that names it. After its `Sunset` date it's retired, and requests naming it get `400 unsupported_api_version`. See [Non-Functional Requirements → Versioning](../../non-functional-requirements/#versioning) for what counts as breaking.
+- **Not the webhook version.** A webhook subscription's `api_version` (a date, such as `2026-10-05`) fixes the shape of the payloads it receives, and is versioned separately. See [Webhooks → Payload versions](../webhooks/#payload-versions).
 - **Generated clients:** `openapi.yaml` doesn't declare the header on each operation, so configure your client to send it as a default header.
 
 ## Timestamps

@@ -133,6 +133,6 @@ To explore by hand, import `openapi.yaml` into Postman, Insomnia, Bruno, or any 
 
 The API version is the `Substratal-Version` request header (currently `1`), not part of the base URL. The document doesn't declare it on each operation, so configure a generated client to send it as a default header; the Interactive Reference sends it for you. `info.version` in the document (currently a `1.0.0-draft` pre-release) is the version of the document itself.
 
-- **Additive changes** (new optional fields, new operations, new enum values) ship without a new prefix. Write clients to ignore fields they don't know, and to handle enum values they don't recognize.
-- **Breaking changes** get a new prefix and a deprecation window for the old one. See [Non-Functional Requirements → Versioning](../non-functional-requirements/#versioning).
+- **Additive changes** (new optional fields, new operations, new enum values) ship within the current version. Write clients to ignore fields they don't know, and to handle enum values they don't recognize.
+- **Breaking changes** ship as the next version number, and the previous version keeps working for at least 6 months. See [Non-Functional Requirements → Versioning](../non-functional-requirements/#versioning) for what counts as breaking.
 - Every change is recorded in the [Changelog](../changelog/).
