@@ -2,6 +2,10 @@
 # scripts/docs-build.rb on main's GitHub build; each entry has a frozen
 # static copy at <version>/ on this branch, served at /versions/<version>/.
 versions:
+- version: 1.7.5
+  released: '2026-10-22'
+  commit: 87741be7f3171fe5de6fa85008909c24f1532d18
+  summary: 'Merge pull request #60 from CompositeCode/feature/self-service-apps'
 - version: 1.7.4
   released: '2026-10-22'
   commit: db02d073871f3f45e2654f740714482871f54df1

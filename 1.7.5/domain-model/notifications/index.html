@@ -1,0 +1,734 @@
+
+
+<!DOCTYPE html>
+
+<html lang="en-US">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+
+  <link rel="stylesheet" href="/substratalapps.com/versions/1.7.5/assets/css/just-the-docs-default.css">
+
+  <link rel="stylesheet" href="/substratalapps.com/versions/1.7.5/assets/css/just-the-docs-head-nav.css" id="jtd-head-nav-stylesheet">
+
+  <style id="jtd-nav-activation">
+  
+
+    .site-nav > ul.nav-list:first-child > li > a,
+    
+    .site-nav > ul.nav-list:first-child > li > ul > li:not(:nth-child(8)) > a,
+    .site-nav > ul.nav-list:first-child > li > ul > li > ul > li a {
+      background-image: none;
+    }
+
+    .site-nav > ul.nav-list:not(:first-child) a,
+    .site-nav li.external a {
+      background-image: none;
+    }
+
+    .site-nav > ul.nav-list:first-child > li:nth-child(4) > ul > li:nth-child(8) > a {
+      font-weight: 600;
+      text-decoration: none;
+    }.site-nav > ul.nav-list:first-child > li:nth-child(4) > button svg,
+    .site-nav > ul.nav-list:first-child > li:nth-child(4) > ul > li:nth-child(8) > button svg {
+      transform: rotate(-90deg);
+    }.site-nav > ul.nav-list:first-child > li.nav-list-item:nth-child(4) > ul.nav-list,
+    .site-nav > ul.nav-list:first-child > li.nav-list-item:nth-child(4) > ul.nav-list > li.nav-list-item:nth-child(8) > ul.nav-list {
+      display: block;
+    }
+  </style>
+
+  
+
+  
+    <script src="/substratalapps.com/versions/1.7.5/assets/js/vendor/lunr.min.js"></script>
+  
+
+  <script src="/substratalapps.com/versions/1.7.5/assets/js/just-the-docs.js"></script>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+
+
+
+  <!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Notifications | Substratal Apps — Platform API</title>
+<meta name="generator" content="Jekyll v3.10.0" />
+<meta property="og:title" content="Notifications" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="The system of record for how Substratal manages users, roles, per-app access, profiles, and settings across every product in the Substratal Apps catalog. API-first specification and documentation." />
+<meta property="og:description" content="The system of record for how Substratal manages users, roles, per-app access, profiles, and settings across every product in the Substratal Apps catalog. API-first specification and documentation." />
+<link rel="canonical" href="https://compositecode.github.io/substratalapps.com/versions/1.7.5/domain-model/notifications/" />
+<meta property="og:url" content="https://compositecode.github.io/substratalapps.com/versions/1.7.5/domain-model/notifications/" />
+<meta property="og:site_name" content="Substratal Apps — Platform API" />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Notifications" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebPage","description":"The system of record for how Substratal manages users, roles, per-app access, profiles, and settings across every product in the Substratal Apps catalog. API-first specification and documentation.","headline":"Notifications","url":"https://compositecode.github.io/substratalapps.com/versions/1.7.5/domain-model/notifications/"}</script>
+<!-- End Jekyll SEO tag -->
+
+
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll("code.language-mermaid").forEach(function (codeEl) {
+      var pre = codeEl.closest("pre") || codeEl.parentElement;
+      var div = document.createElement("div");
+      div.className = "mermaid";
+      div.textContent = codeEl.textContent;
+      pre.replaceWith(div);
+    });
+    if (window.mermaid) {
+      mermaid.initialize({ startOnLoad: true, theme: "neutral" });
+      mermaid.run();
+    }
+  });
+</script>
+
+
+</head>
+
+<body>
+  <a class="skip-to-main" href="#main-content">Skip to main content</a>
+  <svg xmlns="http://www.w3.org/2000/svg" class="d-none">
+  <symbol id="svg-link" viewBox="0 0 24 24">
+  <title>Link</title>
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-link">
+    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+  </svg>
+</symbol>
+
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+  <title>Menu</title>
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-menu">
+    <line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line>
+  </svg>
+</symbol>
+
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+  <title>Expand</title>
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-right">
+    <polyline points="9 18 15 12 9 6"></polyline>
+  </svg>
+</symbol>
+
+  <!-- Feather. MIT License: https://github.com/feathericons/feather/blob/master/LICENSE -->
+<symbol id="svg-external-link" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-external-link">
+  <title id="svg-external-link-title">(external link)</title>
+  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line>
+</symbol>
+
+  
+    <symbol id="svg-doc" viewBox="0 0 24 24">
+  <title>Document</title>
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file">
+    <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline>
+  </svg>
+</symbol>
+
+    <symbol id="svg-search" viewBox="0 0 24 24">
+  <title>Search</title>
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search">
+    <circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+  </svg>
+</symbol>
+
+  
+  
+    <!-- Bootstrap Icons. MIT License: https://github.com/twbs/icons/blob/main/LICENSE.md -->
+<symbol id="svg-copy" viewBox="0 0 16 16">
+  <title>Copy</title>
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-clipboard" viewBox="0 0 16 16">
+    <path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"/>
+    <path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"/>
+  </svg>
+</symbol>
+<symbol id="svg-copied" viewBox="0 0 16 16">
+  <title>Copied</title>
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-clipboard-check-fill" viewBox="0 0 16 16">
+    <path d="M6.5 0A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3Zm3 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3Z"/>
+    <path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1A2.5 2.5 0 0 1 9.5 5h-3A2.5 2.5 0 0 1 4 2.5v-1Zm6.854 7.354-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 0 1 .708-.708L7.5 10.793l2.646-2.647a.5.5 0 0 1 .708.708Z"/>
+  </svg>
+</symbol>
+
+  
+</svg>
+
+  
+    <header class="side-bar">
+  <div class="site-header">
+    <a href="/substratalapps.com/versions/1.7.5/" class="site-title lh-tight">
+  Substratal Apps — Platform API
+
+</a>
+    <button id="menu-button" class="site-button btn-reset" aria-label="Menu" aria-expanded="false">
+      <svg viewBox="0 0 24 24" class="icon" aria-hidden="true"><use xlink:href="#svg-menu"></use></svg>
+    </button>
+  </div>
+
+  <nav aria-label="Main" id="site-nav" class="site-nav">
+  
+  
+    <ul class="nav-list"><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.5/" class="nav-list-link">Home</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.5/getting-started/" class="nav-list-link">Getting Started</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.5/quickstart/" class="nav-list-link">Quickstart</a></li><li class="nav-list-item"><button class="nav-list-expander btn-reset" aria-label="Domain Model submenu" aria-expanded="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><use xlink:href="#svg-arrow-right"></use></svg>
+      </button><a href="/substratalapps.com/versions/1.7.5/domain-model/" class="nav-list-link">Domain Model</a><ul class="nav-list"><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.5/domain-model/users-and-organizations/" class="nav-list-link">Users & Organizations</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.5/domain-model/applications/" class="nav-list-link">Applications</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.5/domain-model/roles-and-permissions/" class="nav-list-link">Roles & Permissions</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.5/domain-model/entitlements/" class="nav-list-link">Entitlements</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.5/domain-model/profiles/" class="nav-list-link">Profiles</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.5/domain-model/settings/" class="nav-list-link">Settings</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.5/domain-model/orders-and-audit/" class="nav-list-link">Orders & Audit</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.5/domain-model/notifications/" class="nav-list-link">Notifications</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.5/domain-model/database-schema/" class="nav-list-link">Database Schema</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.5/domain-model/tenancy/" class="nav-list-link">Tenancy</a></li></ul></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.5/access-control/" class="nav-list-link">Access Control</a></li><li class="nav-list-item"><button class="nav-list-expander btn-reset" aria-label="API Reference submenu" aria-expanded="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><use xlink:href="#svg-arrow-right"></use></svg>
+      </button><a href="/substratalapps.com/versions/1.7.5/api-reference/" class="nav-list-link">API Reference</a><ul class="nav-list"><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.5/api-reference/conventions/" class="nav-list-link">Conventions</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.5/api-reference/auth/" class="nav-list-link">Auth</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.5/api-reference/users/" class="nav-list-link">Users</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.5/api-reference/profiles/" class="nav-list-link">Profiles</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.5/api-reference/settings/" class="nav-list-link">Settings</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.5/api-reference/applications/" class="nav-list-link">Applications</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.5/api-reference/entitlements/" class="nav-list-link">Entitlements</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.5/api-reference/roles-and-permissions/" class="nav-list-link">Roles & Permissions</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.5/api-reference/organizations/" class="nav-list-link">Organizations</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.5/api-reference/scim/" class="nav-list-link">SCIM</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.5/api-reference/tenancy/" class="nav-list-link">Tenancy</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.5/api-reference/billing/" class="nav-list-link">Billing</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.5/api-reference/audit/" class="nav-list-link">Audit</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.5/api-reference/webhooks/" class="nav-list-link">Webhooks</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.5/api-reference/notifications/" class="nav-list-link">Push Notifications</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.5/api-reference/api-keys/" class="nav-list-link">API Keys</a></li></ul></li><li class="nav-list-item"><button class="nav-list-expander btn-reset" aria-label="OpenAPI Specification submenu" aria-expanded="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><use xlink:href="#svg-arrow-right"></use></svg>
+      </button><a href="/substratalapps.com/versions/1.7.5/openapi/" class="nav-list-link">OpenAPI Specification</a><ul class="nav-list"><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.5/openapi/reference/" class="nav-list-link">Interactive Reference</a></li></ul></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.5/workflows/" class="nav-list-link">Workflows</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.5/trust-model/" class="nav-list-link">Trust Model</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.5/mcp-server/" class="nav-list-link">MCP Server</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.5/non-functional-requirements/" class="nav-list-link">Non-Functional Requirements</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.5/compliance/" class="nav-list-link">Compliance & Data Protection</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.5/roadmap/" class="nav-list-link">Roadmap</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.5/pricing/" class="nav-list-link">Pricing</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.5/changelog/" class="nav-list-link">Changelog</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.5/glossary/" class="nav-list-link">Glossary</a></li></ul>
+  
+</nav>
+
+
+<div class="d-md-block d-none site-footer">
+  
+  
+    This site uses <a href="https://github.com/just-the-docs/just-the-docs">Just the Docs</a>, a documentation theme for Jekyll.
+  
+  </div>
+</header>
+
+  
+  <div class="main" id="top">
+    <div id="main-header" class="main-header">
+  
+    
+
+<div class="search" role="search">
+  <div class="search-input-wrap">
+    <input type="text" id="search-input" class="search-input" tabindex="0" placeholder="Search Substratal Apps — Platform API" autocomplete="off">
+    <label for="search-input" class="search-label">
+      <span class="sr-only">Search Substratal Apps — Platform API</span>
+      <svg viewBox="0 0 24 24" class="search-icon" aria-hidden="true"><use xlink:href="#svg-search"></use></svg>
+    </label>
+  </div>
+  <div id="search-results" class="search-results"></div>
+</div>
+
+  
+  <div class="docs-version docs-version--archived">
+    <span class="docs-version__badge" title="Archived snapshot, released 2026-10-22">v1.7.5 · archived</span>
+    <a class="docs-version__link" href="/substratalapps.com/">View latest →</a>
+    <a class="docs-version__link" href="/substratalapps.com/versions/">All versions</a>
+  </div>
+  
+</div>
+
+    <div class="main-content-wrap">
+      <nav aria-label="Breadcrumb" class="breadcrumb-nav">
+  <ol class="breadcrumb-nav-list">
+    <li class="breadcrumb-nav-list-item"><a href="/substratalapps.com/versions/1.7.5/domain-model/">Domain Model</a></li>
+    <li class="breadcrumb-nav-list-item"><span>Notifications</span></li>
+  </ol>
+</nav>
+
+
+      <div id="main-content" class="main-content">
+        <main>
+          
+            <h1 class="no_toc" id="notifications">
+  
+  
+    <a href="#notifications" class="anchor-heading" aria-labelledby="notifications"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> Notifications
+  
+  
+</h1>
+    
+
+<p class="fs-6 fw-300">The records behind push notifications and the notification inbox. See <a href="../../api-reference/notifications/">API Reference → Push Notifications</a> for the endpoints and the delivery rules.</p>
+
+<ol id="markdown-toc">
+  <li><a href="#why-these-live-in-the-hub" id="markdown-toc-why-these-live-in-the-hub">Why these live in the hub</a></li>
+  <li><a href="#device" id="markdown-toc-device">Device</a>    <ol>
+      <li><a href="#example" id="markdown-toc-example">Example</a></li>
+      <li><a href="#lifecycle" id="markdown-toc-lifecycle">Lifecycle</a></li>
+    </ol>
+  </li>
+  <li><a href="#pushcredential" id="markdown-toc-pushcredential">PushCredential</a></li>
+  <li><a href="#notification" id="markdown-toc-notification">Notification</a>    <ol>
+      <li><a href="#notificationdelivery" id="markdown-toc-notificationdelivery">NotificationDelivery</a></li>
+    </ol>
+  </li>
+  <li><a href="#how-they-relate" id="markdown-toc-how-they-relate">How they relate</a></li>
+  <li><a href="#privacy-and-retention" id="markdown-toc-privacy-and-retention">Privacy and retention</a></li>
+</ol><hr />
+<h2 id="why-these-live-in-the-hub">
+  
+  
+    <a href="#why-these-live-in-the-hub" class="anchor-heading" aria-labelledby="why-these-live-in-the-hub"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> Why these live in the hub
+  
+  
+</h2>
+    
+
+<p>Every Application needs to reach its users with alerts and updates, and every one would otherwise build the same machinery: a table of device tokens, the APNs and FCM integrations, token cleanup, retries, a “what did I miss” list, and per-user mute switches. The hub already knows who the User is, which Applications they can reach, which session each install belongs to, and what they’ve muted (the <code class="language-plaintext highlighter-rouge">push</code> channel in <a href="../settings/">Settings</a>). So the hub owns that machinery once, and an Application sends a notification with one API call.</p>
+
+<p>What stays with the Application is what has to: its own provider credentials, because Apple and Google deliver only for the app a token was issued to, and the decision about what to say and when.</p>
+<h2 id="device">
+  
+  
+    <a href="#device" class="anchor-heading" aria-labelledby="device"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> Device
+  
+  
+</h2>
+    
+
+<p>One install of one Application, on one device, signed in as one User, with the provider token that reaches it.</p>
+
+<div class="table-wrapper"><table>
+  <thead>
+    <tr>
+      <th>Field</th>
+      <th>Type</th>
+      <th>Notes</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">id</code></td>
+      <td>string</td>
+      <td><code class="language-plaintext highlighter-rouge">dvc_</code> prefix.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">user_id</code></td>
+      <td>string</td>
+      <td>The User signed in on the install.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">application_id</code></td>
+      <td>string</td>
+      <td>The Application the install belongs to. The same phone running two Applications is two Devices, because the OS issues each app its own token.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">provider</code></td>
+      <td>enum</td>
+      <td><code class="language-plaintext highlighter-rouge">apns</code> | <code class="language-plaintext highlighter-rouge">fcm</code> | <code class="language-plaintext highlighter-rouge">web_push</code>.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">environment</code></td>
+      <td>enum, nullable</td>
+      <td><code class="language-plaintext highlighter-rouge">production</code> | <code class="language-plaintext highlighter-rouge">sandbox</code>. Set only for <code class="language-plaintext highlighter-rouge">apns</code>, where it picks Apple’s production or development gateway.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">token_hint</code></td>
+      <td>string</td>
+      <td>The last four characters of the token. The token itself (or, for <code class="language-plaintext highlighter-rouge">web_push</code>, the whole <code class="language-plaintext highlighter-rouge">PushSubscription</code>) is stored KMS-encrypted and never returned.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">name</code>, <code class="language-plaintext highlighter-rouge">app_version</code></td>
+      <td>string, nullable</td>
+      <td>Labels the client supplies, for the User’s own device list and for support.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">session_id</code></td>
+      <td>string, nullable</td>
+      <td>The <a href="../users-and-organizations/#session">Session</a> that registered the device. Revoking that session deactivates it. <code class="language-plaintext highlighter-rouge">null</code> when an app key registered it.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">status</code></td>
+      <td>enum</td>
+      <td><code class="language-plaintext highlighter-rouge">active</code> | <code class="language-plaintext highlighter-rouge">inactive</code>. Only <code class="language-plaintext highlighter-rouge">active</code> devices are sent to.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">inactive_reason</code></td>
+      <td>enum, nullable</td>
+      <td>Set exactly when <code class="language-plaintext highlighter-rouge">status</code> is <code class="language-plaintext highlighter-rouge">inactive</code>: <code class="language-plaintext highlighter-rouge">unregistered</code> (the provider reported the token gone), <code class="language-plaintext highlighter-rouge">session_revoked</code>, <code class="language-plaintext highlighter-rouge">user_suspended</code>, <code class="language-plaintext highlighter-rouge">user_deleted</code>, <code class="language-plaintext highlighter-rouge">test_user_expired</code> (a test-mode User’s <code class="language-plaintext highlighter-rouge">expires_at</code> passed), <code class="language-plaintext highlighter-rouge">stale</code> (not re-registered for 270 days), <code class="language-plaintext highlighter-rouge">limit</code> (displaced by a 21st device), or <code class="language-plaintext highlighter-rouge">credential_removed</code> (a <code class="language-plaintext highlighter-rouge">web_push</code> device whose VAPID key was deleted).</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">last_registered_at</code></td>
+      <td>timestamp</td>
+      <td>The latest registration or refresh.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">last_delivery_at</code></td>
+      <td>timestamp, nullable</td>
+      <td>The latest delivery a provider accepted.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">test_mode</code></td>
+      <td>boolean</td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">created_at</code>, <code class="language-plaintext highlighter-rouge">updated_at</code></td>
+      <td>timestamp</td>
+      <td> </td>
+    </tr>
+  </tbody>
+</table></div>
+
+<p>A Device is identified by its token, not by anything the client chooses: one Device per (Application, provider, token) and mode. Registering a token again refreshes the same Device. Registering it as a different User replaces the Device, so one User’s device history never passes to the next person to sign in on that install.</p>
+<h3 id="example">
+  
+  
+    <a href="#example" class="anchor-heading" aria-labelledby="example"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> Example
+  
+  
+</h3>
+    
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"dvc_01JAH2B3C4D5E6F7G8H9J0K1M2"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"user_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"usr_01JAG3Z9X8QS3F6K2M4N5P6R7S"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"application_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"app_timetrack"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"provider"</span><span class="p">:</span><span class="w"> </span><span class="s2">"apns"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"environment"</span><span class="p">:</span><span class="w"> </span><span class="s2">"production"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"token_hint"</span><span class="p">:</span><span class="w"> </span><span class="s2">"…9f3a"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Jordan's iPhone"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"app_version"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2.4.0"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"session_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ses_01JAG8K4Q9R0S1T2V3V4W5X6Y8"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"status"</span><span class="p">:</span><span class="w"> </span><span class="s2">"active"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"inactive_reason"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"last_registered_at"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2026-10-17T15:05:00Z"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"last_delivery_at"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2026-10-17T15:10:02Z"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"test_mode"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"created_at"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2026-10-17T15:05:00Z"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"updated_at"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2026-10-17T15:10:02Z"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+<h3 id="lifecycle">
+  
+  
+    <a href="#lifecycle" class="anchor-heading" aria-labelledby="lifecycle"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> Lifecycle
+  
+  
+</h3>
+    
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> register (POST) ──► active ──── logout / session revoked ──────────► inactive
+                       ▲    ├─── provider reports token gone ──────►    │
+                       │    ├─── user suspended or deleted ────────►    │
+                       │    ├─── 270 days without re-registering ──►    │
+                       │    └─── displaced by a 21st device ───────►    │
+                       │                                                │
+                       └──────── re-register the same token ◄───────────┤
+                                                                        ▼
+                                          deleted: DELETE, the token registered by another User,
+                                          or 30 days after deactivation
+</code></pre></div></div>
+<h2 id="pushcredential">
+  
+  
+    <a href="#pushcredential" class="anchor-heading" aria-labelledby="pushcredential"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> PushCredential
+  
+  
+</h2>
+    
+
+<p>An Application’s credential for one push provider. Configuration, not per-user data: like the <a href="../applications/">Application</a> row it belongs to, it’s shared by test and live mode.</p>
+
+<div class="table-wrapper"><table>
+  <thead>
+    <tr>
+      <th>Field</th>
+      <th>Type</th>
+      <th>Notes</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">id</code></td>
+      <td>string</td>
+      <td><code class="language-plaintext highlighter-rouge">pcr_</code> prefix. Addressed in the API by <code class="language-plaintext highlighter-rouge">provider</code> (<code class="language-plaintext highlighter-rouge">/applications/{id}/push-credentials/{provider}</code>), since there’s at most one per provider. The id is what Audit Events reference.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">application_id</code></td>
+      <td>string</td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">provider</code></td>
+      <td>enum</td>
+      <td><code class="language-plaintext highlighter-rouge">apns</code> | <code class="language-plaintext highlighter-rouge">fcm</code> | <code class="language-plaintext highlighter-rouge">web_push</code>. Unique per Application.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">team_id</code>, <code class="language-plaintext highlighter-rouge">key_id</code>, <code class="language-plaintext highlighter-rouge">topic</code></td>
+      <td>string</td>
+      <td>APNs only. <code class="language-plaintext highlighter-rouge">topic</code> is the app’s bundle id.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">project_id</code>, <code class="language-plaintext highlighter-rouge">client_email</code></td>
+      <td>string</td>
+      <td>FCM only, read from the service account.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">subject</code>, <code class="language-plaintext highlighter-rouge">vapid_public_key</code></td>
+      <td>string</td>
+      <td>Web Push only. The platform generates the VAPID key pair. The public key is what a web client subscribes with.</td>
+    </tr>
+    <tr>
+      <td><em>(secret)</em></td>
+      <td>write-only</td>
+      <td>The APNs <code class="language-plaintext highlighter-rouge">.p8</code> key, the FCM service-account JSON, or the VAPID private key. KMS-encrypted at rest, never returned, never in an Audit Event.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">status</code></td>
+      <td>enum</td>
+      <td><code class="language-plaintext highlighter-rouge">active</code> | <code class="language-plaintext highlighter-rouge">failed</code>. <code class="language-plaintext highlighter-rouge">failed</code> when the provider rejects the credential itself. Sends to that provider skip until it’s fixed.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">failure_reason</code>, <code class="language-plaintext highlighter-rouge">failed_at</code></td>
+      <td>string / timestamp, nullable</td>
+      <td>The provider’s reason code and when it failed.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">last_used_at</code></td>
+      <td>timestamp, nullable</td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">created_at</code>, <code class="language-plaintext highlighter-rouge">updated_at</code></td>
+      <td>timestamp</td>
+      <td> </td>
+    </tr>
+  </tbody>
+</table></div>
+
+<p>Managed only by a person (the Application’s owner, or <code class="language-plaintext highlighter-rouge">applications.manage</code>), never by an API Key, the same rule as <a href="../../api-reference/api-keys/#endpoints">API Keys</a>: it’s a credential, and credentials are managed by people. Every create, change, and removal is audited.</p>
+<h2 id="notification">
+  
+  
+    <a href="#notification" class="anchor-heading" aria-labelledby="notification"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> Notification
+  
+  
+</h2>
+    
+
+<p>One message to one User, from one Application or from the platform. It’s both the unit of sending and the inbox item.</p>
+
+<div class="table-wrapper"><table>
+  <thead>
+    <tr>
+      <th>Field</th>
+      <th>Type</th>
+      <th>Notes</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">id</code></td>
+      <td>string</td>
+      <td><code class="language-plaintext highlighter-rouge">ntf_</code> prefix.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">user_id</code></td>
+      <td>string</td>
+      <td>The recipient.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">application_id</code></td>
+      <td>string, nullable</td>
+      <td>The sending Application. <code class="language-plaintext highlighter-rouge">null</code> for a platform alert.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">source</code></td>
+      <td>enum</td>
+      <td><code class="language-plaintext highlighter-rouge">application</code> | <code class="language-plaintext highlighter-rouge">platform</code>. <code class="language-plaintext highlighter-rouge">platform</code> exactly when <code class="language-plaintext highlighter-rouge">application_id</code> is <code class="language-plaintext highlighter-rouge">null</code>.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">category</code></td>
+      <td>string</td>
+      <td>What kind of notification it is, in the sender’s own vocabulary (<code class="language-plaintext highlighter-rouge">timesheet.reminder</code>). <code class="language-plaintext highlighter-rouge">security.</code>, <code class="language-plaintext highlighter-rouge">account.</code>, and <code class="language-plaintext highlighter-rouge">billing.</code> are reserved for the <a href="../../api-reference/notifications/#platform-alerts">platform catalog</a>.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">priority</code></td>
+      <td>enum</td>
+      <td><code class="language-plaintext highlighter-rouge">normal</code> | <code class="language-plaintext highlighter-rouge">high</code>.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">title</code>, <code class="language-plaintext highlighter-rouge">body</code></td>
+      <td>string</td>
+      <td><code class="language-plaintext highlighter-rouge">body</code> is nullable.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">data</code></td>
+      <td>object</td>
+      <td>Up to 20 string → string pairs, delivered with the push and kept with the inbox item.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">action_url</code></td>
+      <td>string, nullable</td>
+      <td>Where opening it takes the User.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">badge</code>, <code class="language-plaintext highlighter-rouge">sound</code>, <code class="language-plaintext highlighter-rouge">collapse_key</code>, <code class="language-plaintext highlighter-rouge">ttl_seconds</code></td>
+      <td> </td>
+      <td>Push presentation and delivery hints. See <a href="../../api-reference/notifications/#post-usersidnotifications">Sending a notification</a>.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">push</code></td>
+      <td>object</td>
+      <td><code class="language-plaintext highlighter-rouge">requested</code>, <code class="language-plaintext highlighter-rouge">status</code> (<code class="language-plaintext highlighter-rouge">queued</code> | <code class="language-plaintext highlighter-rouge">sent</code> | <code class="language-plaintext highlighter-rouge">failed</code> | <code class="language-plaintext highlighter-rouge">skipped</code>), <code class="language-plaintext highlighter-rouge">devices_targeted</code>, <code class="language-plaintext highlighter-rouge">devices_sent</code>, <code class="language-plaintext highlighter-rouge">devices_failed</code>, and <code class="language-plaintext highlighter-rouge">skip_reason</code>. A summary of the deliveries below.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">state</code></td>
+      <td>enum</td>
+      <td><code class="language-plaintext highlighter-rouge">unread</code> | <code class="language-plaintext highlighter-rouge">read</code> | <code class="language-plaintext highlighter-rouge">archived</code>, derived from <code class="language-plaintext highlighter-rouge">read_at</code> and <code class="language-plaintext highlighter-rouge">archived_at</code>.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">read_at</code>, <code class="language-plaintext highlighter-rouge">archived_at</code></td>
+      <td>timestamp, nullable</td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">sender</code></td>
+      <td>object</td>
+      <td><code class="language-plaintext highlighter-rouge">{ "type": "api_key" \| "user" \| "system", "id": … }</code>, the same actor shape as an <a href="../orders-and-audit/#audit-event">Audit Event</a>.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">test_mode</code></td>
+      <td>boolean</td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">created_at</code>, <code class="language-plaintext highlighter-rouge">updated_at</code></td>
+      <td>timestamp</td>
+      <td> </td>
+    </tr>
+  </tbody>
+</table></div>
+
+<p>Kept for <strong>90 days</strong>, then deleted by a nightly job, whatever its state. The inbox is a recent-activity list, not an archive. Sending a notification is not an Audit Event: it changes no access, and the Notification row, with its <code class="language-plaintext highlighter-rouge">sender</code>, is already the record of who sent what.</p>
+<h3 id="notificationdelivery">
+  
+  
+    <a href="#notificationdelivery" class="anchor-heading" aria-labelledby="notificationdelivery"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> NotificationDelivery
+  
+  
+</h3>
+    
+
+<p>One attempt to reach one Device with one Notification: the outbox row a worker picks up, and the per-device result afterwards.</p>
+
+<div class="table-wrapper"><table>
+  <thead>
+    <tr>
+      <th>Field</th>
+      <th>Type</th>
+      <th>Notes</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">id</code></td>
+      <td>string</td>
+      <td><code class="language-plaintext highlighter-rouge">ndl_</code> prefix.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">notification_id</code></td>
+      <td>string</td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">device_id</code></td>
+      <td>string, nullable</td>
+      <td><code class="language-plaintext highlighter-rouge">null</code> once the Device is deleted.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">provider</code></td>
+      <td>enum</td>
+      <td>Copied from the Device when the delivery is created.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">status</code></td>
+      <td>enum</td>
+      <td><code class="language-plaintext highlighter-rouge">pending</code> | <code class="language-plaintext highlighter-rouge">sent</code> | <code class="language-plaintext highlighter-rouge">failed</code> | <code class="language-plaintext highlighter-rouge">skipped</code>.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">attempts</code></td>
+      <td>integer</td>
+      <td>0–4.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">error</code></td>
+      <td>string, nullable</td>
+      <td>The provider’s reason code (<code class="language-plaintext highlighter-rouge">BadDeviceToken</code>, <code class="language-plaintext highlighter-rouge">UNREGISTERED</code>, …) or <code class="language-plaintext highlighter-rouge">timeout</code>.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">sent_at</code></td>
+      <td>timestamp, nullable</td>
+      <td>When the provider accepted it.</td>
+    </tr>
+  </tbody>
+</table></div>
+
+<p>Deliveries are written in the same transaction as their Notification, one per Device eligible at that moment, so a committed send can’t lose its push. They’re kept for 30 days.</p>
+<h2 id="how-they-relate">
+  
+  
+    <a href="#how-they-relate" class="anchor-heading" aria-labelledby="how-they-relate"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> How they relate
+  
+  
+</h2>
+    
+
+<pre><code class="language-mermaid">erDiagram
+    USER ||--o{ DEVICE : "signs in on"
+    APPLICATION ||--o{ DEVICE : "installed as"
+    SESSION |o--o{ DEVICE : "registered"
+    APPLICATION ||--o{ PUSH_CREDENTIAL : "configures (≤ 1 per provider)"
+    USER ||--o{ NOTIFICATION : receives
+    APPLICATION |o--o{ NOTIFICATION : "sends (null = platform)"
+    NOTIFICATION ||--o{ NOTIFICATION_DELIVERY : "fans out to"
+    DEVICE |o--o{ NOTIFICATION_DELIVERY : "targeted by"
+</code></pre>
+<h2 id="privacy-and-retention">
+  
+  
+    <a href="#privacy-and-retention" class="anchor-heading" aria-labelledby="privacy-and-retention"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> Privacy and retention
+  
+  
+</h2>
+    
+
+<p>Device tokens, notification content, and delivery results are personal data:</p>
+
+<ul>
+  <li><a href="../../api-reference/users/#get-usersidexport"><code class="language-plaintext highlighter-rouge">GET /users/{id}/export</code></a> includes the User’s devices (without tokens) and their notifications.</li>
+  <li>The <a href="../../non-functional-requirements/#hard-delete-cascade">hard-delete cascade</a> deletes every Device, Notification, and NotificationDelivery of the User.</li>
+  <li>A soft-delete or suspension deactivates the User’s devices right away, so nothing is pushed to a closed or suspended account.</li>
+</ul>
+
+<p>The payload of every push passes through Apple, Google, or a browser vendor’s push service, which is why <a href="../../compliance/#gdpr-and-ccpa--build-for-it-now">Compliance</a> lists them as sub-processors, and why senders should keep sensitive content out of the title, body, and data.</p>
+
+<p>Building the tables? See <a href="../database-schema/#push_credentials-devices-notifications-notification_deliveries">Database Schema → Push notifications</a>.</p>
+
+          
+
+          
+            
+          
+        </main>
+        
+<hr>
+<footer>
+  
+    <p><a href="#top" id="back-to-top">Back to top</a></p>
+  
+
+  <p class="text-small mb-0">Substratal Apps Platform API — living specification. This site is the system of record; see git history for how it has changed over time.</p>
+
+  <div class="d-md-none mt-4 fs-2">
+    
+    
+      This site uses <a href="https://github.com/just-the-docs/just-the-docs">Just the Docs</a>, a documentation theme for Jekyll.
+    
+  </div>
+</footer>
+
+      </div>
+    </div>
+    
+      
+
+<div class="search-overlay"></div>
+
+    
+  </div>
+
+  
+</body>
+</html>
+
