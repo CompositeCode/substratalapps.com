@@ -120,10 +120,11 @@ func (s *Server) UsersCreate(w http.ResponseWriter, r *http.Request, params gen.
 			return err
 		}
 		var in struct {
-			Email          string  `json:"email"`
-			DisplayName    *string `json:"display_name"`
-			Status         *string `json:"status"`
-			SendInvitation *bool   `json:"send_invitation"`
+			Email          string     `json:"email"`
+			DisplayName    *string    `json:"display_name"`
+			Status         *string    `json:"status"`
+			SendInvitation *bool      `json:"send_invitation"`
+			ExpiresAt      *time.Time `json:"expires_at"`
 		}
 		if err := c.Decode(&in); err != nil {
 			return err
@@ -145,6 +146,9 @@ func (s *Server) UsersCreate(w http.ResponseWriter, r *http.Request, params gen.
 		if in.DisplayName != nil && len([]rune(*in.DisplayName)) > 100 {
 			f.Max("display_name", "too_long", 100)
 		}
+		if in.ExpiresAt != nil {
+			c.checkExpiresAt(&f, *in.ExpiresAt, c.testMode(), c.now)
+		}
 		if err := f.Err(); err != nil {
 			return err
 		}
@@ -153,7 +157,8 @@ func (s *Server) UsersCreate(w http.ResponseWriter, r *http.Request, params gen.
 		} else if taken {
 			return httpx.Conflict("email_taken", "A user with this email already exists.")
 		}
-		u, err := c.createUser(newUser{Email: addr, Status: status, DisplayName: deref(in.DisplayName)})
+		u, err := c.createUser(newUser{Email: addr, Status: status, DisplayName: deref(in.DisplayName),
+			ExpiresAt: in.ExpiresAt})
 		if err != nil {
 			return err
 		}
@@ -213,8 +218,9 @@ func (s *Server) UsersUpdate(w http.ResponseWriter, r *http.Request, id gen.User
 			return err
 		}
 		var f httpx.Fields
-		p.RequireNonNull(&f, "email", "status")
+		p.RequireNonNull(&f, "email", "status", "expires_at")
 		var newEmail, newStatus string
+		var newExpires *time.Time
 		if p.Has("email") && !p.IsNull("email") {
 			var e string
 			if p.Get("email", &e, &f) {
@@ -235,6 +241,16 @@ func (s *Server) UsersUpdate(w http.ResponseWriter, r *http.Request, id gen.User
 				default:
 					f.Enum("status", "active", "invited", "suspended", "deleted")
 				}
+			}
+		}
+		if p.Has("expires_at") && !p.IsNull("expires_at") {
+			if !admin {
+				return httpx.E(403, "status_change_forbidden", "Only users.manage can change a User's expires_at.")
+			}
+			var t time.Time
+			if p.Get("expires_at", &t, &f) {
+				c.checkExpiresAt(&f, t, u.TestMode, u.CreatedAt)
+				newExpires = &t
 			}
 		}
 		if err := f.Err(); err != nil {
@@ -295,6 +311,11 @@ func (s *Server) UsersUpdate(w http.ResponseWriter, r *http.Request, id gen.User
 					"A change of your account's email address to "+newEmail+" was requested. If this wasn't you, contact support.")
 			}
 		}
+		if newExpires != nil && !newExpires.Equal(*u.ExpiresAt) {
+			if err := c.setUserExpiry(u, *newExpires); err != nil {
+				return err
+			}
+		}
 		after, err := c.findUser("u.id = :id", db.Args{"id": u.ID})
 		if err != nil {
 			return err
@@ -302,6 +323,36 @@ func (s *Server) UsersUpdate(w http.ResponseWriter, r *http.Request, id gen.User
 		c.Versioned(after.Version)
 		return c.OK(after)
 	})
+}
+
+// setUserExpiry moves a test-mode User's expires_at (already range-checked).
+// The new value is always in the future, so a User the expiry sweep has
+// already processed is brought back: access.granted fires for every
+// Application they still have active access to (Auth → Test-mode Users →
+// Lifetime). One that expired but wasn't swept yet never saw
+// access.revoked, so it gets no access.granted either.
+func (c *Call) setUserExpiry(u userRow, t time.Time) error {
+	var watch *accessWatch
+	if u.ExpiredProcessedAt != nil {
+		pairs, err := c.userAppPairs(u.ID)
+		if err != nil {
+			return err
+		}
+		if watch, err = c.watchAccess(pairs); err != nil {
+			return err
+		}
+	}
+	if _, err := c.q.Exec(c.ctx, `update users set expires_at = :t::timestamptz, expired_processed_at = null where id = :u`,
+		db.Args{"u": u.ID, "t": db.Time(t)}); err != nil {
+		return err
+	}
+	if watch != nil {
+		if err := c.flip(watch, "test_user_extended", "test_user_expired"); err != nil {
+			return err
+		}
+	}
+	return c.audit(Audit{Action: "user.updated", TargetType: "user", TargetID: u.ID, TargetUserID: &u.ID,
+		Before: map[string]any{"expires_at": u.ExpiresAt}, After: map[string]any{"expires_at": t}})
 }
 
 // transitionUser applies a users.manage status change (Users → PATCH

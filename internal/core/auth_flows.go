@@ -68,6 +68,9 @@ func (c *Call) mintAppToken(u userRow, sessionID string, a appRow, orgID *string
 	if u.Status == "suspended" {
 		return "", httpx.E(403, "account_suspended", "This account is suspended.")
 	}
+	if u.expired(c.now) {
+		return "", testUserExpired()
+	}
 	if a.ReviewStatus != "approved" {
 		return "", httpx.Conflict("application_not_available", "This Application isn't available.").
 			With("review_status", a.ReviewStatus)
@@ -108,7 +111,7 @@ func (c *Call) mintAppToken(u userRow, sessionID string, a appRow, orgID *string
 	return auth.SignJWT(c.ctx, c.s.Signer, appTokenClaims{
 		Iss: c.s.Issuer, Aud: a.ID, Sub: u.ID, Sid: sessionID, OrgID: attributed, Email: u.Email,
 		EmailVerified: u.EmailVerified, EntitlementStatus: "active", EffectivePermissions: perms,
-		TestMode: u.TestMode, Iat: c.now.Unix(), Exp: c.now.Add(appTokenTTL).Unix(), Jti: ids.New(ids.AppTokenJTI),
+		TestMode: u.TestMode, Iat: c.now.Unix(), Exp: c.now.Add(c.tokenTTL(u, appTokenTTL)).Unix(), Jti: ids.New(ids.AppTokenJTI),
 	})
 }
 
@@ -145,7 +148,7 @@ func (s *Server) AuthCreateAppToken(w http.ResponseWriter, r *http.Request) {
 			return err
 		}
 		return c.OK(map[string]any{"token_type": "Bearer", "app_token": tok,
-			"expires_in": int(appTokenTTL.Seconds()), "application_id": a.ID})
+			"expires_in": int(c.tokenTTL(u, appTokenTTL).Seconds()), "application_id": a.ID})
 	})
 }
 
@@ -328,7 +331,7 @@ func (s *Server) AuthExchangeOAuthToken(w http.ResponseWriter, r *http.Request) 
 			if err != nil {
 				return err
 			}
-			return c.OK(oauthTokenResponse(tok, next, a.ID))
+			return c.OK(oauthTokenResponse(tok, next, a.ID, c.tokenTTL(u, appTokenTTL)))
 		}
 		tok, err := c.mintAppToken(u, sessionID, a, nil)
 		if err != nil {
@@ -339,12 +342,12 @@ func (s *Server) AuthExchangeOAuthToken(w http.ResponseWriter, r *http.Request) 
 			db.Args{"h": ids.Hash(rtk), "s": sessionID, "a": a.ID}); err != nil {
 			return err
 		}
-		return c.OK(oauthTokenResponse(tok, rtk, a.ID))
+		return c.OK(oauthTokenResponse(tok, rtk, a.ID, c.tokenTTL(u, appTokenTTL)))
 	})
 }
 
-func oauthTokenResponse(tok, refresh, appID string) map[string]any {
-	return map[string]any{"token_type": "Bearer", "app_token": tok, "expires_in": int(appTokenTTL.Seconds()),
+func oauthTokenResponse(tok, refresh, appID string, ttl time.Duration) map[string]any {
+	return map[string]any{"token_type": "Bearer", "app_token": tok, "expires_in": int(ttl.Seconds()),
 		"refresh_token": refresh, "refresh_token_expires_in": int(sessionIdleTTL.Seconds()), "application_id": appID}
 }
 

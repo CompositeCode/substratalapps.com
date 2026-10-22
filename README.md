@@ -15,7 +15,7 @@ This repository is split deliberately, by audience:
 
 Root-level documents:
 
-- **[plan-remaining.md](plan-remaining.md)** — everything specified but not built yet: test-mode User expiry, the first-party web pages, Phase 3, dedicated tenancy infrastructure, scale-out triggers, and the rules every change follows.
+- **[plan-remaining.md](plan-remaining.md)** — everything specified but not built yet: the first-party web pages, Phase 3, dedicated tenancy infrastructure, scale-out triggers, and the rules every change follows.
 - **[remaining_manual_steps.md](remaining_manual_steps.md)** — one-time setup still to do by hand to go live: the Lambda quota, the superadmin password, SES production access, Stripe, and legal.
 - **[infra/README.md](infra/README.md)** — the deployment architecture as built: AWS infrastructure (cost-capped, Aurora Serverless v2, Lambda, no VPC/NAT at Tier 0), the account setup, Stripe Billing, email, webhook and push delivery, audit archival, and local development.
 - **[LICENSE](LICENSE)** — MIT.

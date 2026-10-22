@@ -87,7 +87,11 @@ func withDB(u, name string) string {
 }
 
 // newDatabase creates and migrates a fresh database.
-func newDatabase() (string, error) {
+func newDatabase() (string, error) { return newDatabaseThrough("") }
+
+// newDatabaseThrough creates a fresh database migrated through version
+// ("" for every migration).
+func newDatabaseThrough(version string) (string, error) {
 	ctx := context.Background()
 	admin, err := pgx.Connect(ctx, baseURL())
 	if err != nil {
@@ -110,10 +114,49 @@ func newDatabase() (string, error) {
 	if err != nil {
 		return "", err
 	}
+	if version != "" {
+		var through []migrate.Migration
+		for _, m := range all {
+			if m.Version <= version {
+				through = append(through, m)
+			}
+		}
+		all = through
+	}
 	if _, err := migrate.Up(ctx, d, all); err != nil {
 		return "", err
 	}
 	return u, nil
+}
+
+// DatabaseThrough opens a fresh database migrated only through version, to
+// test a later migration's backfill. MigrateRest applies the others. The
+// database is dropped when the test ends.
+func DatabaseThrough(t testing.TB, version string) db.DB {
+	t.Helper()
+	u, err := newDatabaseThrough(version)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	t.Cleanup(func() { dropDatabase(u) })
+	d, err := pg.Open(context.Background(), u)
+	if err != nil {
+		t.Fatalf("open db: %v", err)
+	}
+	t.Cleanup(d.Close)
+	return d
+}
+
+// MigrateRest applies every migration not yet applied to d.
+func MigrateRest(t testing.TB, d db.DB) {
+	t.Helper()
+	all, err := migrate.Load(migrations.FS)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	if _, err := migrate.Up(context.Background(), d, all); err != nil {
+		t.Fatalf("migrate: %v", err)
+	}
 }
 
 func dropDatabase(u string) {

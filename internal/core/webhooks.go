@@ -21,7 +21,7 @@ var WebhookEventTypes = []string{
 	"access.granted", "access.revoked",
 	"entitlement.granted", "entitlement.disabled", "entitlement.revoked", "entitlement.expired",
 	"entitlement.updated", "entitlement.member_scope_changed", "entitlement.deleted",
-	"role.assigned", "role.removed", "user.suspended", "user.reactivated", "user.deleted",
+	"role.assigned", "role.removed", "user.suspended", "user.reactivated", "user.deleted", "user.expired",
 	"organization.member_added", "organization.member_removed", "application.review_status_changed",
 	"device.registered", "device.deactivated", "device.deleted", "notification.push_failed", "push_credential.failed",
 	"webhook.test",

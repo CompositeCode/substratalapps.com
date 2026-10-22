@@ -1024,6 +1024,7 @@
                 "user.suspended",
                 "user.reactivated",
                 "user.deleted",
+                "user.expired",
                 "user.erasure_requested",
                 "user.erasure_cancelled",
                 "user.erased",
@@ -1983,6 +1984,11 @@
               },
               "email": {
                 "format": "email",
+                "type": "string"
+              },
+              "expires_at": {
+                "description": "Test mode only: when the account stops working. Default 24 hours from now; at least 15 minutes away, at most 30 days. 422 expires_at_out_of_range, or live_user when test_mode is false.",
+                "format": "date-time",
                 "type": "string"
               },
               "password": {
@@ -5707,6 +5713,11 @@
                 "format": "email",
                 "type": "string"
               },
+              "expires_at": {
+                "description": "Test-mode keys only: when the User stops working. Default 24 hours from now; at least 15 minutes away, at most 30 days. 422 expires_at_out_of_range, or live_user with a live key.",
+                "format": "date-time",
+                "type": "string"
+              },
               "send_invitation": {
                 "default": true,
                 "type": "boolean"
@@ -6065,6 +6076,11 @@
                 "format": "email",
                 "type": "string"
               },
+              "expires_at": {
+                "description": "users.manage only, test-mode Users only. At least 15 minutes from now and at most 30 days after created_at. Moving it later on an expired User brings them back and fires access.granted (test_user_extended).",
+                "format": "date-time",
+                "type": "string"
+              },
               "status": {
                 "description": "users.manage only. active on a deleted User restores it.",
                 "enum": [
@@ -6140,6 +6156,7 @@
                         "user.suspended",
                         "user.reactivated",
                         "user.deleted",
+                        "user.expired",
                         "organization.member_added",
                         "organization.member_removed",
                         "application.review_status_changed",
