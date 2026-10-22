@@ -2,6 +2,10 @@
 # scripts/docs-build.rb on main's GitHub build; each entry has a frozen
 # static copy at <version>/ on this branch, served at /versions/<version>/.
 versions:
+- version: 1.7.3
+  released: '2026-10-22'
+  commit: f66cb8d9314441b92ed9e99f871a0ba954292bed
+  summary: 'Merge pull request #67 from CompositeCode/feature/header-versioning-spec'
 - version: 1.7.2
   released: '2026-10-22'
   commit: 8d1a3f6ed856747a33e07b8fb48c66ce607337d9
