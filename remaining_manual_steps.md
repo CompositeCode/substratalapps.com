@@ -2,7 +2,7 @@
 
 One-time setup that has to be done by hand, in a console or from a laptop, to take the Platform API live. Code that still has to be built is in [plan-remaining.md](plan-remaining.md); how the deployment works is in [infra/README.md](infra/README.md).
 
-Already done (2026-10-20): the AWS account (`substratal-prod`, `196936048600`) and its management account; CLI access with `aws login`; DNS moved from Vercel to Route 53; the Organization SCP exception for `substratal-prod`; the bootstrap Terraform (budgets, anomaly detection, state and artifact buckets, GitHub OIDC roles); GitHub variables, the `production` environment limited to `main`, and the `main` ruleset; and a first partial deploy (Aurora, all five Lambdas, API Gateway, the certificate, SES domain). `https://api.substratalapps.com/v1/health` returns `200`.
+Already done (2026-10-20): the AWS account (`substratal-prod`, `196936048600`) and its management account; CLI access with `aws login`; DNS moved from Vercel to Route 53; the Organization SCP exception for `substratal-prod`; the bootstrap Terraform (budgets, anomaly detection, state and artifact buckets, GitHub OIDC roles); GitHub variables, the `production` environment limited to `main`, and the `main` ruleset; and a first partial deploy (Aurora, all five Lambdas, API Gateway, the certificate, SES domain). `https://api.substratalapps.com/health` returns `200` (the API moved from `/v1/…` paths to the `Substratal-Version` header on 2026-10-21; see [Conventions → Versioning](https://compositecode.github.io/substratalapps.com/api-reference/conventions/#versioning)).
 
 Work through these in order. The first four make the API usable; the rest make it ready for real customers.
 
@@ -38,7 +38,7 @@ After the quota shows **1000** (`aws lambda get-account-settings --profile subst
 - **Easiest:** GitHub → **Actions → Deploy → Run workflow**, branch `main`, **Run workflow**.
 - Or from a terminal: `gh workflow run deploy.yml -R CompositeCode/substratalapps.com --ref main`.
 
-The run builds the Lambdas, applies Terraform (it picks up where the first run stopped), runs the migrations on the new cluster, makes sure the protected superadmin exists (`SUPERADMIN_EMAIL`), and smoke-tests `/v1/health` and JWKS. It takes about 5–10 minutes. Every later merge into `main` deploys the same way, automatically.
+The run builds the Lambdas, applies Terraform (it picks up where the first run stopped), runs the migrations on the new cluster, makes sure the protected superadmin exists (`SUPERADMIN_EMAIL`), and smoke-tests `/health` and JWKS. It takes about 5–10 minutes. Every later merge into `main` deploys the same way, automatically.
 
 ## 3. Set the superadmin's password
 
@@ -53,7 +53,7 @@ export DATABASE_BACKEND=dataapi \
 go run ./cmd/admin bootstrap -email adronhall@proton.me   # prompts for the password (12+ characters)
 ```
 
-Then sign in: `curl -s https://api.substratalapps.com/v1/auth/login -H 'content-type: application/json' -d '{"email":"adronhall@proton.me","password":"…"}'`. Turn on MFA right away ([Auth → MFA](https://compositecode.github.io/substratalapps.com/api-reference/auth/#mfa-totp)).
+Then sign in: `curl -s https://api.substratalapps.com/auth/login -H 'Substratal-Version: 1' -H 'content-type: application/json' -d '{"email":"adronhall@proton.me","password":"…"}'`. Turn on MFA right away ([Auth → MFA](https://compositecode.github.io/substratalapps.com/api-reference/auth/#mfa-totp)).
 
 ## 4. Confirm the alert emails
 
@@ -86,16 +86,16 @@ The billing code (Free and Standard at $6 per user per month) is built and deplo
 
 Push notifications are merged (PR #12) and ship with the next successful deploy, which also applies migration `0003_push.sql`. Migrations `0003_push` and `0004_protected_superadmin` touch different tables, so it doesn't matter that `0004` reached `main` first.
 
-For each Application that sends pushes, its owner uploads credentials with `POST /v1/applications/{id}/push-credentials` (and rotates them with `PATCH …/push-credentials/{provider}`): an APNs key (`.p8`, key id, team id, bundle id), an FCM service account, or Web Push VAPID keys ([Push Notifications → Push credentials](https://compositecode.github.io/substratalapps.com/api-reference/notifications/#push-credentials)).
+For each Application that sends pushes, its owner uploads credentials with `POST /applications/{id}/push-credentials` (and rotates them with `PATCH …/push-credentials/{provider}`): an APNs key (`.p8`, key id, team id, bundle id), an FCM service account, or Web Push VAPID keys ([Push Notifications → Push credentials](https://compositecode.github.io/substratalapps.com/api-reference/notifications/#push-credentials)).
 
 ## 8. Register Substratal's Applications
 
-For each of Substratal's apps, with the superadmin's token ([Applications → Owner onboarding](https://compositecode.github.io/substratalapps.com/api-reference/applications/#owner-onboarding-end-to-end)):
+For each of Substratal's apps, with the superadmin's token and `Substratal-Version: 1` on every request ([Applications → Owner onboarding](https://compositecode.github.io/substratalapps.com/api-reference/applications/#owner-onboarding-end-to-end)):
 
-1. `POST /v1/applications` with its slug, name, `launch_url`, `redirect_uris`, `permissions`, `available_app_roles`, and **`access_tier`** (`free` or `standard`, which decides who gets it under [Pricing](https://compositecode.github.io/substratalapps.com/pricing/)).
-2. Give each seeded Role its permissions (`PATCH /v1/roles/role_<slug>_<name>`).
-3. Create the app backend's key (`POST /v1/api-keys`, scope the app, `entitlements.manage` and `users.list`), plus a test-mode key.
-4. Subscribe the backend to `access.revoked` and `role.removed` (`POST /v1/webhooks`): the required revocation integration.
+1. `POST /applications` with its slug, name, `launch_url`, `redirect_uris`, `permissions`, `available_app_roles`, and **`access_tier`** (`free` or `standard`, which decides who gets it under [Pricing](https://compositecode.github.io/substratalapps.com/pricing/)).
+2. Give each seeded Role its permissions (`PATCH /roles/role_<slug>_<name>`).
+3. Create the app backend's key (`POST /api-keys`, scope the app, `entitlements.manage` and `users.list`), plus a test-mode key.
+4. Subscribe the backend to `access.revoked` and `role.removed` (`POST /webhooks`): the required revocation integration.
 
 ## 9. Fix the pull-request plan job
 
