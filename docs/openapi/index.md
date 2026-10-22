@@ -27,7 +27,7 @@ The complete Platform API contract as an [OpenAPI 3.1](https://spec.openapis.org
 | Base URL | `https://api.substratalapps.com/v1` |
 | Authentication | `Authorization: Bearer <token>`: a user access token or an API Key (`bearerAuth`) |
 | Content type | `application/json; charset=utf-8` |
-| Operations | 118, every one with a stable `operationId` |
+| Operations | 121, every one with a stable `operationId` |
 | Schemas | 109 reusable components under `components.schemas` |
 
 The prose pages under [API Reference](../api-reference/) are authoritative. `openapi.yaml` is kept in sync with them by hand, and the implementation's contract tests validate every response against it, so a drift between the two fails CI rather than reaching a client. See [Conventions → Machine-readable](../api-reference/conventions/#machine-readable).

@@ -31,6 +31,7 @@ Team management, and the Organization's own [Standard subscription](../billing/)
 | `DELETE` | `/v1/organizations/{id}/members/{userId}` | org admin, `organizations.manage`, or the member themselves (`me`) | Remove a member, withdraw an invitation, leave, or decline. |
 | `GET` | `/v1/organizations/{id}/entitlements` | active member, or `organizations.manage` | List org-wide ("seat") grants. |
 | `POST` | `/v1/organizations/{id}/entitlements` | `entitlements.manage` (platform, or the Application's own confined key), or the Application's owner | Grant an app to the whole Organization. |
+| `POST` / `GET` / `DELETE` | `/v1/organizations/{id}/scim-token` | org admin, or `organizations.manage` | Set up, show, or turn off [SCIM provisioning](../scim/). |
 
 ## The Organization object
 

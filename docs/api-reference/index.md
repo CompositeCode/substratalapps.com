@@ -22,6 +22,7 @@ Resource-oriented REST, JSON, versioned at `/v1`. Read [Conventions](conventions
 | [Entitlements](entitlements/) | Grant, toggle, revoke access to an app — the on/off switch. |
 | [Roles & Permissions](roles-and-permissions/) | Assign/remove roles; resolve effective permissions. |
 | [Organizations](organizations/) | Team management and org-wide grants. |
+| [SCIM](scim/) | An Organization's identity provider inviting and removing its members (SCIM 2.0). |
 | [Tenancy](tenancy/) | Where a Tenant's data lives, and the (support-only) process to change it. |
 | [Billing](billing/) | The Free/Standard subscription: a User's or Organization's plan, Stripe Checkout and Portal, and which members an Organization covers. |
 | [Audit](audit/) | Query the audit log. |

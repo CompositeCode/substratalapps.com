@@ -47,7 +47,7 @@ Enough to replace "someone manually emails a link and flips a flag in a spreadsh
 ## Phase 3
 
 - Richer audit/compliance views — filtering, export, retention policy enforcement; see [Compliance & Data Protection](../compliance/) for what's driving this (SOC 2 readiness, GDPR data-subject requests).
-- SCIM-style provisioning for larger customers who want their own IdP to push user lifecycle events into the hub automatically.
+- SCIM-style provisioning for larger customers who want their own IdP to push user lifecycle events into the hub automatically. **Built 2026-10-21:** [SCIM 2.0 Users](../api-reference/scim/), as invitations and membership removal.
 - The **hosted sign-in page** and the authorization-code + PKCE flow ([Auth → Getting an app token](../api-reference/auth/#getting-an-app-token)). The API side is specified now; this is the UI. It's required before any third-party Application goes live.
 - Self-service Application registration and review queue for third-party developers — the marketplace phase. See [App developer/publisher model](../domain-model/applications/#the-review-lifecycle).
 

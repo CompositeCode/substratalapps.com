@@ -12,6 +12,17 @@ What's changed in this specification over time. Every decision is written into t
 
 ---
 
+## 2026-10-21 — SCIM provisioning
+
+An Organization's identity provider can invite and remove its members with SCIM 2.0. See [API Reference → SCIM](../api-reference/scim/). `openapi.yaml` is now at `1.0.0-draft.4`, with 121 operations.
+
+- **Setting it up:** `POST`, `GET`, and `DELETE /v1/organizations/{id}/scim-token` (org admin or `organizations.manage`). There's one token per Organization, and its secret is shown once. New audit actions `organization.scim_token_created` and `organization.scim_token_revoked`. Migration `0008_scim_tokens`.
+- **`/scim/v2`** serves `ServiceProviderConfig`, `ResourceTypes`, and `Users` (list with a `userName eq` filter, create, get, put, patch, delete), in SCIM's own response and error shapes. These endpoints follow RFC 7644, not `openapi.yaml`, like `/.well-known`.
+- **The membership rules don't change.** Provisioning invites, so the person accepts before they join, whether or not they already had an account. Deprovisioning removes the membership, with `access.revoked`, and never touches the person's own account. The last-`org_admin` guard applies. Writes are audited with actor type `system` and the token's id.
+- Users only: no Groups, bulk, sorting, or ETags. Roles stay with org admins.
+
+---
+
 ## 2026-10-20 — Test-mode Users are time-limited
 
 Test mode already never counted toward billing (decision #36, confirmed on 2026-10-18). Now every **test-mode User expires**, so a test account can't stand in for a free production account. See [Auth → Test-mode Users → Lifetime](../api-reference/auth/#lifetime).

@@ -119,6 +119,7 @@ func (s *Server) Handler() http.Handler {
 	})
 	mux.HandleFunc("GET /.well-known/jwks.json", s.jwks)
 	mux.HandleFunc("GET /.well-known/openid-configuration", s.openIDConfiguration)
+	mux.Handle("/scim/v2/", s.scimHandler())
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteError(w, httpx.ErrNotFound())
 	})
