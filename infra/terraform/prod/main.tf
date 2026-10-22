@@ -259,6 +259,22 @@ module "stripe_webhook" {
   policy_statements = concat(local.data_api, local.secrets, local.verify_only, local.crypt)
 }
 
+# A new AWS account starts with a Lambda concurrency limit of 10, and AWS
+# keeps 10 unreserved, so reserving any concurrency fails until the limit is
+# raised (deploy error: "decreases account's UnreservedConcurrentExecution
+# below its minimum value of [10]"). Read the applied limit on every deploy
+# and reserve the worker's share only once there's room for it; after the
+# increase is approved, the next deploy turns the reservation on by itself.
+data "aws_servicequotas_service_quota" "lambda_concurrency" {
+  service_code = "lambda"
+  quota_code   = "L-B99A9384" # Concurrent executions
+}
+
+locals {
+  lambda_concurrency_limit = data.aws_servicequotas_service_quota.lambda_concurrency.value
+  webhook_worker_reserved  = local.lambda_concurrency_limit >= 100 ? 5 : -1
+}
+
 module "webhook_worker" {
   source               = "../modules/lambda_function"
   name                 = "${local.prefix}-webhook-worker"
@@ -266,7 +282,7 @@ module "webhook_worker" {
   artifact_key         = local.artifact["webhook-worker"]
   memory_mb            = 256
   timeout_s            = 110
-  reserved_concurrency = 5 # isolates delivery load from the API's blast radius
+  reserved_concurrency = local.webhook_worker_reserved # isolates delivery load from the API's blast radius, once the account allows it
   environment          = local.common_env
   policy_statements = concat(local.data_api, local.secrets, local.verify_only, local.crypt, local.email, [{
     Effect   = "Allow"
