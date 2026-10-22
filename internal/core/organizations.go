@@ -445,76 +445,9 @@ func (s *Server) OrganizationsAddMember(w http.ResponseWriter, r *http.Request, 
 				return httpx.NotFoundResource("user")
 			}
 			uid = u.ID
-		} else {
-			addr, ok := validEmail(*in.Email)
-			if !ok {
-				var f httpx.Fields
-				f.Add("email", "invalid_format")
-				return f.Err()
-			}
-			u, taken, err := c.emailTaken(addr)
-			if err != nil {
+			if err := c.insertPendingMember(o, uid, role); err != nil {
 				return err
 			}
-			if taken {
-				uid = u.ID
-			} else {
-				// The one way a non-platform caller can cause a User to be
-				// created: as an invited account for this invitation.
-				nu, err := c.createUser(newUser{Email: addr, Status: "invited"})
-				if err != nil {
-					return err
-				}
-				uid = nu.ID
-				if err := c.sendInvitation(uid, addr, nil); err != nil {
-					return err
-				}
-			}
-			if taken && u.Status != "invited" {
-				c.mail(email.Message{To: u.Email, Kind: "org_invitation",
-					Subject: fmt.Sprintf("You've been invited to join %s on Substratal", o.Name),
-					Text:    fmt.Sprintf("You've been invited to join %s. Sign in to accept the invitation.", o.Name)})
-			} else if taken && u.Status == "invited" {
-				if err := c.sendInvitation(uid, u.Email, nil); err != nil {
-					return err
-				}
-			}
-		}
-		if existing, err := c.loadMember(o.ID, uid); err == nil {
-			_ = existing
-			return httpx.Conflict("already_member", "This user is already a member or has a pending invitation.")
-		}
-		var invitedBy any
-		if c.p.IsUser() {
-			invitedBy = c.p.UserID
-		}
-		direct := in.UserID != nil
-		if _, err := c.q.Exec(c.ctx, `insert into organization_memberships (user_id, organization_id, role, status, invited_by, test_mode)
-			values (:u, :o, :r, 'pending', :by, :tm)`,
-			db.Args{"u": uid, "o": o.ID, "r": role, "by": invitedBy, "tm": c.testMode()}); err != nil {
-			if _, ok := db.UniqueViolation(err); ok {
-				return httpx.Conflict("already_member", "This user is already a member or has a pending invitation.")
-			}
-			return err
-		}
-		if err := c.audit(Audit{Action: "organization.member_invited", TargetType: "organization", TargetID: o.ID,
-			TargetUserID: &uid, OrganizationID: &o.ID, After: map[string]any{"user_id": uid, "role": role}}); err != nil {
-			return err
-		}
-		if !direct {
-			// An existing active User hears about it in their inbox too; a
-			// new or invited one has no inbox yet, only the email. The
-			// caller can't tell which, so nothing about the account leaks.
-			data := map[string]string{"organization_id": o.ID}
-			if c.p.IsUser() {
-				data["invited_by"] = c.p.UserID
-			}
-			if err := c.platformAlert(uid, "account.organization_invitation", "You've been invited to join "+o.Name,
-				strp("Open the invitation to accept it."), data); err != nil {
-				return err
-			}
-		}
-		if direct {
 			pairs, err := c.orgAppPairs(uid, o.ID)
 			if err != nil {
 				return err
@@ -529,6 +462,16 @@ func (s *Server) OrganizationsAddMember(w http.ResponseWriter, r *http.Request, 
 			if err := c.flip(watch, "org_member_added", "org_member_removed"); err != nil {
 				return err
 			}
+		} else {
+			addr, ok := validEmail(*in.Email)
+			if !ok {
+				var f httpx.Fields
+				f.Add("email", "invalid_format")
+				return f.Err()
+			}
+			if uid, err = c.inviteMember(o, addr, role); err != nil {
+				return err
+			}
 		}
 		x, err := c.loadMember(o.ID, uid)
 		if err != nil {
@@ -539,6 +482,81 @@ func (s *Server) OrganizationsAddMember(w http.ResponseWriter, r *http.Request, 
 }
 
 // activateMembership turns a pending membership active and records it.
+// inviteMember is POST …/members by email, shared with SCIM provisioning:
+// it resolves the address to a User (creating an invited one if there's
+// none), emails them, and adds a pending membership they must accept.
+// Nothing about whether the address already had an account leaks.
+func (c *Call) inviteMember(o orgRow, addr, role string) (string, error) {
+	if o.Status == "suspended" {
+		return "", httpx.E(403, "organization_suspended", "This Organization is suspended; no new members can join.")
+	}
+	u, taken, err := c.emailTaken(addr)
+	if err != nil {
+		return "", err
+	}
+	uid := u.ID
+	if !taken {
+		// The one way a non-platform caller can cause a User to be
+		// created: as an invited account for this invitation.
+		nu, err := c.createUser(newUser{Email: addr, Status: "invited"})
+		if err != nil {
+			return "", err
+		}
+		uid = nu.ID
+	}
+	if err := c.insertPendingMember(o, uid, role); err != nil {
+		return "", err
+	}
+	switch {
+	case !taken:
+		if err := c.sendInvitation(uid, addr, nil); err != nil {
+			return "", err
+		}
+	case u.Status == "invited":
+		if err := c.sendInvitation(uid, u.Email, nil); err != nil {
+			return "", err
+		}
+	default:
+		c.mail(email.Message{To: u.Email, Kind: "org_invitation",
+			Subject: fmt.Sprintf("You've been invited to join %s on Substratal", o.Name),
+			Text:    fmt.Sprintf("You've been invited to join %s. Sign in to accept the invitation.", o.Name)})
+	}
+	// An existing active User hears about it in their inbox too; a new or
+	// invited one has no inbox yet, only the email. The caller can't tell
+	// which, so nothing about the account leaks.
+	data := map[string]string{"organization_id": o.ID}
+	if c.p != nil && c.p.IsUser() {
+		data["invited_by"] = c.p.UserID
+	}
+	if err := c.platformAlert(uid, "account.organization_invitation", "You've been invited to join "+o.Name,
+		strp("Open the invitation to accept it."), data); err != nil {
+		return "", err
+	}
+	return uid, nil
+}
+
+// insertPendingMember adds a pending membership and writes
+// organization.member_invited.
+func (c *Call) insertPendingMember(o orgRow, uid, role string) error {
+	if _, err := c.loadMember(o.ID, uid); err == nil {
+		return httpx.Conflict("already_member", "This user is already a member or has a pending invitation.")
+	}
+	var invitedBy any
+	if c.p != nil && c.p.IsUser() {
+		invitedBy = c.p.UserID
+	}
+	if _, err := c.q.Exec(c.ctx, `insert into organization_memberships (user_id, organization_id, role, status, invited_by, test_mode)
+		values (:u, :o, :r, 'pending', :by, :tm)`,
+		db.Args{"u": uid, "o": o.ID, "r": role, "by": invitedBy, "tm": c.testMode()}); err != nil {
+		if _, ok := db.UniqueViolation(err); ok {
+			return httpx.Conflict("already_member", "This user is already a member or has a pending invitation.")
+		}
+		return err
+	}
+	return c.audit(Audit{Action: "organization.member_invited", TargetType: "organization", TargetID: o.ID,
+		TargetUserID: &uid, OrganizationID: &o.ID, After: map[string]any{"user_id": uid, "role": role}})
+}
+
 func (c *Call) activateMembership(userID, orgID, actorUserID string) error {
 	var role string
 	if err := db.One(c.ctx, c.q, &role, `update organization_memberships set status = 'active', joined_at = now()
@@ -692,47 +710,56 @@ func (s *Server) OrganizationsRemoveMember(w http.ResponseWriter, r *http.Reques
 		if err != nil {
 			return err
 		}
-		if x.Role == "org_admin" && x.MembershipStatus == "active" {
-			if n, err := c.activeAdminCount(id); err != nil {
-				return err
-			} else if n <= 1 {
-				return httpx.Conflict("last_org_admin", "Promote another org_admin before removing the last one.")
-			}
-		}
-		active := x.MembershipStatus == "active"
-		var watch *accessWatch
-		if active {
-			pairs, err := c.orgAppPairs(uid, id)
-			if err != nil {
-				return err
-			}
-			if watch, err = c.watchAccess(pairs); err != nil {
-				return err
-			}
-		}
-		if _, err := c.q.Exec(c.ctx, `delete from organization_memberships where organization_id = :o and user_id = :u`,
-			db.Args{"o": id, "u": uid}); err != nil {
+		if err := c.removeMember(id, x); err != nil {
 			return err
-		}
-		if _, err := c.q.Exec(c.ctx, `update entitlements set member_overrides = array_remove(member_overrides, :u)
-			where organization_id = :o and :u = any(member_overrides)`, db.Args{"o": id, "u": uid}); err != nil {
-			return err
-		}
-		if err := c.audit(Audit{Action: "organization.member_removed", TargetType: "organization", TargetID: id,
-			TargetUserID: &uid, OrganizationID: &id, Before: map[string]any{"user_id": uid, "role": x.Role,
-				"membership_status": x.MembershipStatus}}); err != nil {
-			return err
-		}
-		if active {
-			if err := c.emit("organization.member_removed", nil, map[string]any{"organization_id": id, "user_id": uid, "role": x.Role}); err != nil {
-				return err
-			}
-			if err := c.flip(watch, "org_member_added", "org_member_removed"); err != nil {
-				return err
-			}
 		}
 		return c.NoContent()
 	})
+}
+
+// removeMember is DELETE …/members/{userId}'s effect, shared with SCIM
+// deprovisioning: it refuses to remove the last active org_admin, and
+// fires organization.member_removed and access.revoked for an active one.
+func (c *Call) removeMember(orgID string, x member) error {
+	uid := x.UserID
+	if x.Role == "org_admin" && x.MembershipStatus == "active" {
+		if n, err := c.activeAdminCount(orgID); err != nil {
+			return err
+		} else if n <= 1 {
+			return httpx.Conflict("last_org_admin", "Promote another org_admin before removing the last one.")
+		}
+	}
+	active := x.MembershipStatus == "active"
+	var watch *accessWatch
+	if active {
+		pairs, err := c.orgAppPairs(uid, orgID)
+		if err != nil {
+			return err
+		}
+		if watch, err = c.watchAccess(pairs); err != nil {
+			return err
+		}
+	}
+	if _, err := c.q.Exec(c.ctx, `delete from organization_memberships where organization_id = :o and user_id = :u`,
+		db.Args{"o": orgID, "u": uid}); err != nil {
+		return err
+	}
+	if _, err := c.q.Exec(c.ctx, `update entitlements set member_overrides = array_remove(member_overrides, :u)
+		where organization_id = :o and :u = any(member_overrides)`, db.Args{"o": orgID, "u": uid}); err != nil {
+		return err
+	}
+	if err := c.audit(Audit{Action: "organization.member_removed", TargetType: "organization", TargetID: orgID,
+		TargetUserID: &uid, OrganizationID: &orgID, Before: map[string]any{"user_id": uid, "role": x.Role,
+			"membership_status": x.MembershipStatus}}); err != nil {
+		return err
+	}
+	if !active {
+		return nil
+	}
+	if err := c.emit("organization.member_removed", nil, map[string]any{"organization_id": orgID, "user_id": uid, "role": x.Role}); err != nil {
+		return err
+	}
+	return c.flip(watch, "org_member_added", "org_member_removed")
 }
 
 // ── Org-wide grants ────────────────────────────────────────────────────

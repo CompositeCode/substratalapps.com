@@ -12,6 +12,15 @@ What's changed in this specification over time. Every decision is written into t
 
 ---
 
+## 2026-10-21 — SCIM provisioning
+
+An Organization's identity provider can invite and remove its members with SCIM 2.0. See [API Reference → SCIM](../api-reference/scim/). `openapi.yaml` is now at `1.0.0-draft.5`, with 121 operations.
+
+- **Setting it up:** `POST`, `GET`, and `DELETE /organizations/{id}/scim-token` (org admin or `organizations.manage`). There's one token per Organization, and its secret is shown once. New audit actions `organization.scim_token_created` and `organization.scim_token_revoked`. Migration `0008_scim_tokens`.
+- **`/scim/v2`** serves `ServiceProviderConfig`, `ResourceTypes`, and `Users` (list with a `userName eq` filter, create, get, put, patch, delete), in SCIM's own response and error shapes. These endpoints follow RFC 7644, not `openapi.yaml`, like `/.well-known`, and are exempt from `Substratal-Version`: identity providers can't add the header, and SCIM versions itself in the path.
+- **The membership rules don't change.** Provisioning invites, so the person accepts before they join, whether or not they already had an account. Deprovisioning removes the membership, with `access.revoked`, and never touches the person's own account. The last-`org_admin` guard applies. Writes are audited with actor type `system` and the token's id.
+- Users only: no Groups, bulk, sorting, or ETags. Roles stay with org admins.
+
 ## 2026-10-21 — Versioning rules spelled out
 
 Clarifications to the header-based versioning below; nothing about the API's behavior changed.
