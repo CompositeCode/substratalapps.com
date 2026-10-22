@@ -3,6 +3,7 @@ package core
 import (
 	"net/mail"
 	"strings"
+	"time"
 
 	"github.com/CompositeCode/substratalapps.com/internal/db"
 	"github.com/CompositeCode/substratalapps.com/internal/httpx"
@@ -20,6 +21,26 @@ type newUser struct {
 	PasswordHash string
 	ActorType    string // system for signup
 	ActorID      string
+	ExpiresAt    *time.Time // test mode only; nil means the default lifetime
+}
+
+// Test-mode User lifetime (Auth → Test-mode Users → Lifetime).
+const (
+	testUserDefaultTTL = 24 * time.Hour
+	testUserMinTTL     = 15 * time.Minute
+	testUserMaxAge     = 30 * 24 * time.Hour // the test-data purge horizon
+)
+
+// checkExpiresAt validates a requested expires_at for a User created at
+// createdAt (now, for a new User): live Users can't have one, and a test
+// User's must be at least 15 minutes away and within 30 days of creation.
+func (c *Call) checkExpiresAt(f *httpx.Fields, t time.Time, testMode bool, createdAt time.Time) {
+	switch {
+	case !testMode:
+		f.Add("expires_at", "live_user")
+	case t.Before(c.now.Add(testUserMinTTL)) || t.After(createdAt.Add(testUserMaxAge)):
+		f.Add("expires_at", "expires_at_out_of_range")
+	}
 }
 
 // validEmail checks an address's syntax and normalizes it.
@@ -53,9 +74,19 @@ func (c *Call) createUser(n newUser) (userRow, error) {
 		display = n.Email[:strings.Index(n.Email, "@")]
 	}
 	tm := c.testMode()
-	if _, err := c.q.Exec(c.ctx, `insert into users (id, email, email_verified, status, signup_application_id, test_mode)
-		values (:id, :e, :v, :st, :app, :tm)`,
-		db.Args{"id": id, "e": n.Email, "v": n.EmailVerify, "st": n.Status, "app": n.SignupApp, "tm": tm}); err != nil {
+	var expires any
+	if tm {
+		t := c.now.Add(testUserDefaultTTL)
+		if n.ExpiresAt != nil {
+			t = *n.ExpiresAt
+		}
+		expires = db.Time(t)
+	}
+	if _, err := c.q.Exec(c.ctx, `insert into users (id, email, email_verified, status, signup_application_id, test_mode,
+			created_at, expires_at)
+		values (:id, :e, :v, :st, :app, :tm, :now::timestamptz, :exp::timestamptz)`,
+		db.Args{"id": id, "e": n.Email, "v": n.EmailVerify, "st": n.Status, "app": n.SignupApp, "tm": tm,
+			"now": db.Time(c.now), "exp": expires}); err != nil {
 		if _, ok := db.UniqueViolation(err); ok {
 			return userRow{}, httpx.Conflict("email_taken", "A user with this email already exists.")
 		}

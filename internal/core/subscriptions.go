@@ -114,11 +114,12 @@ const userPlanSQL = `(select coalesce(jsonb_agg(jsonb_build_object('type', src.t
 	) src)`
 
 // coveredMembersSQL counts an Organization subscription's covered members:
-// active Users with an active membership, included by the member
-// selection, in the subscription's own mode.
+// active, unexpired Users with an active membership, included by the
+// member selection, in the subscription's own mode.
 const coveredMembersSQL = `select to_jsonb(count(*)) from subscriptions s
 	join organization_memberships m on m.organization_id = s.organization_id and m.status = 'active'
 	join users u on u.id = m.user_id and u.status = 'active' and u.test_mode = s.test_mode
+	  and (u.expires_at is null or u.expires_at > :now::timestamptz)
 	where s.id = :s
 	  and (s.member_scope = 'all_members'
 	       or (s.member_scope = 'allowlist' and m.user_id = any(s.member_overrides))
@@ -126,7 +127,7 @@ const coveredMembersSQL = `select to_jsonb(count(*)) from subscriptions s
 
 func (c *Call) coveredMembers(subID string) (int, error) {
 	var n int
-	err := db.One(c.ctx, c.q, &n, coveredMembersSQL, db.Args{"s": subID})
+	err := db.One(c.ctx, c.q, &n, coveredMembersSQL, db.Args{"s": subID, "now": db.Time(c.now)})
 	return n, err
 }
 
