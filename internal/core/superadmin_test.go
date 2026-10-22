@@ -23,7 +23,7 @@ func TestProtectedSuperadmin(t *testing.T) {
 	if err != nil || created || again != id {
 		t.Fatalf("second ensure should be a no-op: %s %v %v", again, created, err)
 	}
-	roles := e.Get("/v1/users/"+id+"/roles", e.Admin).Expect(200).JSON()["data"].([]any)
+	roles := e.Get("/users/"+id+"/roles", e.Admin).Expect(200).JSON()["data"].([]any)
 	hasSuper := false
 	for _, r := range roles {
 		hasSuper = hasSuper || r.(map[string]any)["role_id"] == "role_platform_superadmin"
@@ -31,12 +31,12 @@ func TestProtectedSuperadmin(t *testing.T) {
 	if !hasSuper {
 		t.Fatalf("roles = %v", roles)
 	}
-	if u := e.Get("/v1/users/"+id, e.Admin).JSON(); u["status"] != "active" || u["email_verified"] != true {
+	if u := e.Get("/users/"+id, e.Admin).JSON(); u["status"] != "active" || u["email_verified"] != true {
 		t.Fatalf("user = %v", u)
 	}
 
 	// Every API path that could lock the account out is refused.
-	up := "/v1/users/" + id
+	up := "/users/" + id
 	e.Delete(up, e.Admin).ExpectErr(409, "user_protected")
 	e.Post(up+"/suspend", e.Admin, map[string]any{"reason": "x"}).ExpectErr(409, "user_protected")
 	e.Patch(up, e.Admin, map[string]any{"status": "suspended"}).ExpectErr(409, "user_protected")

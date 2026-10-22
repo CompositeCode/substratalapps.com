@@ -9,10 +9,12 @@ import (
 )
 
 // scimCall sends a SCIM request with the Organization's token and checks
-// the status.
+// the status. Like an identity provider, it sends no Substratal-Version
+// (Conventions → Versioning exempts /scim/v2).
 func scimCall(t *testing.T, e *testenv.Env, method, path, token string, body any, status int) map[string]any {
 	t.Helper()
-	r := e.Do(testenv.Req{Method: method, Path: "/scim/v2" + path, Token: token, Body: body})
+	r := e.Do(testenv.Req{Method: method, Path: "/scim/v2" + path, Token: token, Body: body,
+		Header: map[string]string{"Substratal-Version": ""}})
 	if r.Status != status {
 		t.Fatalf("%s %s: got %d, want %d: %s", method, path, r.Status, status, r.Body)
 	}
@@ -33,18 +35,18 @@ func scimMembership(u map[string]any) map[string]any {
 func TestSCIMProvisioning(t *testing.T) {
 	e := testenv.New(t)
 	admin := e.Signup()
-	oid := e.Post("/v1/organizations", admin.Token, map[string]any{"name": "Acme " + testenv.Unique()}).Expect(201).Str("id")
+	oid := e.Post("/organizations", admin.Token, map[string]any{"name": "Acme " + testenv.Unique()}).Expect(201).Str("id")
 	app := e.App(system, nil)
-	e.PostIdem("/v1/organizations/"+oid+"/entitlements", e.Admin, testenv.Unique(), map[string]any{"application_id": app}).Expect(201)
+	e.PostIdem("/organizations/"+oid+"/entitlements", e.Admin, testenv.Unique(), map[string]any{"application_id": app}).Expect(201)
 
 	// Token management: org admins only; the secret is shown once.
-	e.Get("/v1/organizations/"+oid+"/scim-token", admin.Token).ExpectErr(404, "scim_token_not_found")
-	tok := e.Post("/v1/organizations/"+oid+"/scim-token", admin.Token, nil).Expect(201).JSON()
+	e.Get("/organizations/"+oid+"/scim-token", admin.Token).ExpectErr(404, "scim_token_not_found")
+	tok := e.Post("/organizations/"+oid+"/scim-token", admin.Token, nil).Expect(201).JSON()
 	secret := tok["token"].(string)
 	if !strings.HasPrefix(secret, "scim_") || tok["base_url"] != "http://localhost/scim/v2" {
 		t.Fatalf("token = %v", tok)
 	}
-	if shown := e.Get("/v1/organizations/"+oid+"/scim-token", admin.Token).Expect(200).JSON(); shown["token"] != nil {
+	if shown := e.Get("/organizations/"+oid+"/scim-token", admin.Token).Expect(200).JSON(); shown["token"] != nil {
 		t.Fatal("GET must never show the secret")
 	}
 
@@ -73,7 +75,7 @@ func TestSCIMProvisioning(t *testing.T) {
 	if _, ok := e.Mail.Last(newAddr, "invitation"); !ok {
 		t.Fatal("a new address should get an account invitation")
 	}
-	audit := e.Get("/v1/audit-events?action=organization.member_invited&target_user_id="+existing.ID, e.Admin).Expect(200).JSON()["data"].([]any)
+	audit := e.Get("/audit-events?action=organization.member_invited&target_user_id="+existing.ID, e.Admin).Expect(200).JSON()["data"].([]any)
 	if actor := audit[0].(map[string]any)["actor"].(map[string]any); actor["type"] != "system" || actor["id"] != tok["id"] {
 		t.Fatalf("SCIM writes should be attributed to the token: %v", actor)
 	}
@@ -90,7 +92,7 @@ func TestSCIMProvisioning(t *testing.T) {
 	scimCall(t, e, "GET", "/Users?filter=title%20eq%20%22x%22", secret, nil, 400)
 
 	// Once accepted, the member has the Organization's access.
-	e.Post("/v1/organizations/"+oid+"/members/me/accept", existing.Token, map[string]any{}).Expect(200)
+	e.Post("/organizations/"+oid+"/members/me/accept", existing.Token, map[string]any{}).Expect(200)
 	if got := scimCall(t, e, "GET", "/Users/"+existing.ID, secret, nil, 200); scimMembership(got)["status"] != "active" {
 		t.Fatalf("after accept = %v", got)
 	}
@@ -110,7 +112,7 @@ func TestSCIMProvisioning(t *testing.T) {
 		t.Fatal("deprovisioning should revoke the org's access")
 	}
 	scimCall(t, e, "GET", "/Users/"+existing.ID, secret, nil, 404)
-	e.Get("/v1/users/me", existing.Token).Expect(200)
+	e.Get("/users/me", existing.Token).Expect(200)
 
 	// DELETE removes a pending invitation; the last org_admin can't be removed.
 	scimCall(t, e, "DELETE", "/Users/"+fresh["id"].(string), secret, nil, 204)
@@ -120,9 +122,9 @@ func TestSCIMProvisioning(t *testing.T) {
 
 	// Only org admins manage the token; revoking it cuts SCIM off at once.
 	member := e.Signup()
-	e.Post("/v1/organizations/"+oid+"/members", admin.Token, map[string]any{"email": member.Email}).Expect(201)
-	e.Post("/v1/organizations/"+oid+"/members/me/accept", member.Token, map[string]any{}).Expect(200)
-	e.Post("/v1/organizations/"+oid+"/scim-token", member.Token, nil).ExpectErr(403, "forbidden")
-	e.Delete("/v1/organizations/"+oid+"/scim-token", admin.Token).Expect(204)
+	e.Post("/organizations/"+oid+"/members", admin.Token, map[string]any{"email": member.Email}).Expect(201)
+	e.Post("/organizations/"+oid+"/members/me/accept", member.Token, map[string]any{}).Expect(200)
+	e.Post("/organizations/"+oid+"/scim-token", member.Token, nil).ExpectErr(403, "forbidden")
+	e.Delete("/organizations/"+oid+"/scim-token", admin.Token).Expect(204)
 	scimCall(t, e, "GET", "/Users", secret, nil, 401)
 }

@@ -89,7 +89,7 @@ An Application's credential for one push provider. Configuration, not per-user d
 
 | Field | Type | Notes |
 |---|---|---|
-| `id` | string | `pcr_` prefix. Addressed in the API by `provider` (`/v1/applications/{id}/push-credentials/{provider}`), since there's at most one per provider. The id is what Audit Events reference. |
+| `id` | string | `pcr_` prefix. Addressed in the API by `provider` (`/applications/{id}/push-credentials/{provider}`), since there's at most one per provider. The id is what Audit Events reference. |
 | `application_id` | string | |
 | `provider` | enum | `apns` \| `fcm` \| `web_push`. Unique per Application. |
 | `team_id`, `key_id`, `topic` | string | APNs only. `topic` is the app's bundle id. |
@@ -118,7 +118,7 @@ One message to one User, from one Application or from the platform. It's both th
 | `title`, `body` | string | `body` is nullable. |
 | `data` | object | Up to 20 string → string pairs, delivered with the push and kept with the inbox item. |
 | `action_url` | string, nullable | Where opening it takes the User. |
-| `badge`, `sound`, `collapse_key`, `ttl_seconds` | | Push presentation and delivery hints. See [Sending a notification](../../api-reference/notifications/#post-v1usersidnotifications). |
+| `badge`, `sound`, `collapse_key`, `ttl_seconds` | | Push presentation and delivery hints. See [Sending a notification](../../api-reference/notifications/#post-usersidnotifications). |
 | `push` | object | `requested`, `status` (`queued` \| `sent` \| `failed` \| `skipped`), `devices_targeted`, `devices_sent`, `devices_failed`, and `skip_reason`. A summary of the deliveries below. |
 | `state` | enum | `unread` \| `read` \| `archived`, derived from `read_at` and `archived_at`. |
 | `read_at`, `archived_at` | timestamp, nullable | |
@@ -163,7 +163,7 @@ erDiagram
 
 Device tokens, notification content, and delivery results are personal data:
 
-- [`GET /v1/users/{id}/export`](../../api-reference/users/#get-v1usersidexport) includes the User's devices (without tokens) and their notifications.
+- [`GET /users/{id}/export`](../../api-reference/users/#get-usersidexport) includes the User's devices (without tokens) and their notifications.
 - The [hard-delete cascade](../../non-functional-requirements/#hard-delete-cascade) deletes every Device, Notification, and NotificationDelivery of the User.
 - A soft-delete or suspension deactivates the User's devices right away, so nothing is pushed to a closed or suspended account.
 

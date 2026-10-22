@@ -20,9 +20,9 @@ How an Organization's own identity provider (Okta, Microsoft Entra ID, Google Wo
 
 SCIM drives the same membership rules an [org admin](../organizations/) follows by hand. It isn't a way around them:
 
-- **Provisioning a User invites them.** `POST /Users` is [`POST /v1/organizations/{id}/members`](../organizations/#post-v1organizationsidmembers) by email: the person gets a `pending` membership and an invitation, and joins when they accept it. Until then the membership grants nothing. Activating someone on their behalf stays a platform action, so an identity provider can't attach an existing account to an Organization without its owner agreeing.
-- **Deprovisioning removes the membership.** `active: false` (by `PATCH` or `PUT`) or `DELETE` is [`DELETE …/members/{userId}`](../organizations/#delete-v1organizationsidmembersuserid): the Organization's grants stop reaching the person, `organization.member_removed` and `access.revoked` fire, and the membership is gone. The person's own Substratal account, and anything they have outside the Organization, is untouched. Provisioning them again sends a new invitation.
-- **Users only.** Groups, bulk operations, sorting, and ETags aren't supported. Roles aren't set through SCIM: everyone provisioned is a `member`, and org admins promote people with [`PATCH …/members/{userId}`](../organizations/#patch-v1organizationsidmembersuserid).
+- **Provisioning a User invites them.** `POST /Users` is [`POST /organizations/{id}/members`](../organizations/#post-organizationsidmembers) by email: the person gets a `pending` membership and an invitation, and joins when they accept it. Until then the membership grants nothing. Activating someone on their behalf stays a platform action, so an identity provider can't attach an existing account to an Organization without its owner agreeing.
+- **Deprovisioning removes the membership.** `active: false` (by `PATCH` or `PUT`) or `DELETE` is [`DELETE …/members/{userId}`](../organizations/#delete-organizationsidmembersuserid): the Organization's grants stop reaching the person, `organization.member_removed` and `access.revoked` fire, and the membership is gone. The person's own Substratal account, and anything they have outside the Organization, is untouched. Provisioning them again sends a new invitation.
+- **Users only.** Groups, bulk operations, sorting, and ETags aren't supported. Roles aren't set through SCIM: everyone provisioned is a `member`, and org admins promote people with [`PATCH …/members/{userId}`](../organizations/#patch-organizationsidmembersuserid).
 
 SCIM isn't SSO. Members still sign in with their Substratal password until [per-Organization SSO](../auth/#native-auth-and-per-organization-sso) ships.
 
@@ -31,7 +31,7 @@ SCIM isn't SSO. Members still sign in with their Substratal password until [per-
 An org admin (or `organizations.manage`) creates the Organization's SCIM token, with a User token:
 
 ```json
-// POST /v1/organizations/{id}/scim-token → 201
+// POST /organizations/{id}/scim-token → 201
 {
   "id": "sct_01JAH4M2N3P4Q5R6S7T8V9W0X1",
   "organization_id": "org_01JAGK8N9P0Q1R2S3T4V5W6X7Y",
@@ -48,15 +48,15 @@ Give the identity provider `base_url` and `token` (as a bearer token). The secre
 
 | Method | Path | Purpose |
 |---|---|---|
-| `POST` | `/v1/organizations/{id}/scim-token` | Create the token, or rotate it: the previous one stops working at once. Writes `organization.scim_token_created`. |
-| `GET` | `/v1/organizations/{id}/scim-token` | Show it (never the secret), including `last_used_at`. `404 scim_token_not_found` when SCIM isn't set up. |
-| `DELETE` | `/v1/organizations/{id}/scim-token` | Turn SCIM off. Writes `organization.scim_token_revoked`. |
+| `POST` | `/organizations/{id}/scim-token` | Create the token, or rotate it: the previous one stops working at once. Writes `organization.scim_token_created`. |
+| `GET` | `/organizations/{id}/scim-token` | Show it (never the secret), including `last_used_at`. `404 scim_token_not_found` when SCIM isn't set up. |
+| `DELETE` | `/organizations/{id}/scim-token` | Turn SCIM off. Writes `organization.scim_token_revoked`. |
 
 An Organization has at most one token. A test-mode Organization's token runs in test mode.
 
 ## Endpoints
 
-All under `base_url`, with `Authorization: Bearer scim_…`. Responses are `application/scim+json`, and errors use SCIM's own shape (`urn:ietf:params:scim:api:messages:2.0:Error`, with `status`, `detail`, and `scimType` where it applies), not the API's usual [error envelope](../conventions/#errors).
+All under `base_url`, with `Authorization: Bearer scim_…`. They don't take `Substratal-Version`: identity providers can't add custom headers, and SCIM's own version is in the path (`/scim/v2`). The token endpoints above are ordinary API calls and need it, like every other request (see [Conventions → Versioning](../conventions/#versioning)). Responses are `application/scim+json`, and errors use SCIM's own shape (`urn:ietf:params:scim:api:messages:2.0:Error`, with `status`, `detail`, and `scimType` where it applies), not the API's usual [error envelope](../conventions/#errors).
 
 | Method | Path | What it does |
 |---|---|---|
@@ -85,7 +85,7 @@ Removing the Organization's last active `org_admin` is refused (`409`, `scimType
 }
 ```
 
-`active` is `true` for both pending and active memberships, so the identity provider sees what it provisioned. The extension's `status` says whether the person has accepted. `displayName` appears only once they have, the same rule the [member list](../organizations/#get-v1organizationsidmembers) follows, so provisioning an address never reveals whether it already had an account. The response to a deprovisioning `PATCH` or `PUT` shows `active: false`. After that the User is gone from the Organization, and `GET` returns `404`.
+`active` is `true` for both pending and active memberships, so the identity provider sees what it provisioned. The extension's `status` says whether the person has accepted. `displayName` appears only once they have, the same rule the [member list](../organizations/#get-organizationsidmembers) follows, so provisioning an address never reveals whether it already had an account. The response to a deprovisioning `PATCH` or `PUT` shows `active: false`. After that the User is gone from the Organization, and `GET` returns `404`.
 
 ## Audit and limits
 

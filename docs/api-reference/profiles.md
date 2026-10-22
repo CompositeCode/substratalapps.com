@@ -20,14 +20,14 @@ See [Domain Model → Profiles](../../domain-model/profiles/) for the global-vs-
 
 | Method | Path | Requires | Purpose |
 |---|---|---|---|
-| `GET` | `/v1/users/{id}/profile` | self, `users.list`, or app-confined `users.list` | Fetch global Profile. |
-| `PATCH` | `/v1/users/{id}/profile` | self or `users.manage` | Update global Profile. |
-| `GET` | `/v1/users/{id}/apps/{appId}/profile` | self, the app's own key, or platform `users.list` | Fetch per-app AppProfile. |
-| `PATCH` | `/v1/users/{id}/apps/{appId}/profile` | self, the app's own key, or `users.manage` | Update per-app AppProfile. |
+| `GET` | `/users/{id}/profile` | self, `users.list`, or app-confined `users.list` | Fetch global Profile. |
+| `PATCH` | `/users/{id}/profile` | self or `users.manage` | Update global Profile. |
+| `GET` | `/users/{id}/apps/{appId}/profile` | self, the app's own key, or platform `users.list` | Fetch per-app AppProfile. |
+| `PATCH` | `/users/{id}/apps/{appId}/profile` | self, the app's own key, or `users.manage` | Update per-app AppProfile. |
 
 "The app's own key" means an app-scoped [API Key](../api-keys/) whose scope is `{appId}`. Any app-scoped key can read and write AppProfile for its own Application, with no extra permission, as long as the user currently has *active* access to that Application (see the access gate below). It can never reach another Application's AppProfile (`404`).
 
-## `GET /v1/users/{id}/profile`
+## `GET /users/{id}/profile`
 
 ```json
 // Response — 200
@@ -44,7 +44,7 @@ See [Domain Model → Profiles](../../domain-model/profiles/) for the global-vs-
 
 An app-scoped key with `users.list` can read (never write) the global Profile of users who have an access path to its Application, which is how an app gets a user's name and avatar.
 
-## `PATCH /v1/users/{id}/profile`
+## `PATCH /users/{id}/profile`
 
 ```json
 // Request — only the fields being changed
@@ -57,7 +57,7 @@ An app-scoped key with `users.list` can read (never write) the global Profile of
 | `avatar_url` | `https` URL, ≤ 2,048 characters, or `null`. The API stores the URL; it doesn't host or proxy images. |
 | `contact_email` | Valid email, or `null`. Not verified, and not used for login. |
 | `contact_phone` | E.164 (`+` and 8–15 digits), or `null`. |
-| `locale` | **Read-only here** (`422 read_only_field`). It mirrors the global Settings `locale`; change it with [`PATCH /v1/users/{id}/settings`](../settings/#patch-v1usersidsettings). |
+| `locale` | **Read-only here** (`422 read_only_field`). It mirrors the global Settings `locale`; change it with [`PATCH /users/{id}/settings`](../settings/#patch-usersidsettings). |
 
 ```json
 // Response — 200, the full updated Profile
@@ -93,7 +93,7 @@ A failed validation lists every field at once:
 
 A self-service change writes no Audit Event. A change made by an admin to someone else's Profile writes `profile.updated` — see [Orders & Audit](../../domain-model/orders-and-audit/#what-triggers-an-audit-event).
 
-## `GET /v1/users/{id}/apps/{appId}/profile`
+## `GET /users/{id}/apps/{appId}/profile`
 
 ```json
 // Response — 200
@@ -111,7 +111,7 @@ A self-service change writes no Audit Event. A change made by an admin to someon
 - **No record yet?** You get the default: `display_handle: null`, `custom: {}`, and `updated_at: null`. Nothing is written on a read; the row is created by the first `PATCH`. That keeps `GET` safe, and still means no app ever has a separate "provision this user" step.
 - **Access gate.** For the user themselves and for the app's own key, the user must currently have *active* access to the Application. Otherwise the response is `403 entitlement_required`, so a disabled or never-purchased app doesn't accumulate profile data. Support can bypass the gate for investigations: platform `users.list` (held by the `support` Role) can **read** regardless, and `users.manage` can read and write regardless.
 
-## `PATCH /v1/users/{id}/apps/{appId}/profile`
+## `PATCH /users/{id}/apps/{appId}/profile`
 
 ```json
 // Request — add a key, remove a key
@@ -142,4 +142,4 @@ A self-service change writes no Audit Event. A change made by an admin to someon
 | `user_not_found` | 404 | `{id}` doesn't resolve, or isn't visible to an app-confined caller. |
 | `application_not_found` | 404 | `{appId}` doesn't resolve, or isn't the calling app key's own Application. |
 | `read_only_field` | 422 | A Profile `PATCH` included `locale` or `user_id`, or an AppProfile `PATCH` included `effective_display_name`. |
-| `validation_failed` | 422 | A field breaks the rules above; see the example under [`PATCH /v1/users/{id}/profile`](#patch-v1usersidprofile). |
+| `validation_failed` | 422 | A field breaks the rules above; see the example under [`PATCH /users/{id}/profile`](#patch-usersidprofile). |

@@ -131,12 +131,12 @@ jobs:
         run: |
           BASE="https://${{ vars.API_DOMAIN }}"
           for i in $(seq 1 30); do
-            code=$(curl -s -o /dev/null -w '%{http_code}' "$BASE/v1/health") && [ "$code" = 200 ] && break; sleep 5
+            code=$(curl -s -o /dev/null -w '%{http_code}' "$BASE/health") && [ "$code" = 200 ] && break; sleep 5
           done
           [ "$code" = 200 ] || { echo "::error::health check failed ($code)"; exit 1; }
           curl -sf "$BASE/.well-known/jwks.json" | grep -q '"keys"'
           if [ -n "${{ secrets.SMOKE_API_KEY }}" ]; then
             # A dedicated smoke-test User and Application seeded in production.
-            curl -sf "$BASE/v1/users/${{ vars.SMOKE_USER_ID }}/apps/${{ vars.SMOKE_APP_ID }}/effective-permissions" \
-              -H "Authorization: Bearer ${{ secrets.SMOKE_API_KEY }}" | grep -q '"allowed":true'
+            curl -sf "$BASE/users/${{ vars.SMOKE_USER_ID }}/apps/${{ vars.SMOKE_APP_ID }}/effective-permissions" \
+              -H "Substratal-Version: 1" -H "Authorization: Bearer ${{ secrets.SMOKE_API_KEY }}" | grep -q '"allowed":true'
           fi

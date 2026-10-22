@@ -317,7 +317,7 @@ func (s *Server) scimServiceProviderConfig(c *Call, _ orgRow) (int, any, error) 
 		"sort":             map[string]any{"supported": false},
 		"etag":             map[string]any{"supported": false},
 		"authenticationSchemes": []map[string]any{{"type": "oauthbearertoken", "name": "Bearer token",
-			"description": "The Organization's SCIM token, from POST /v1/organizations/{id}/scim-token."}},
+			"description": "The Organization's SCIM token, from POST /organizations/{id}/scim-token."}},
 	}, nil
 }
 

@@ -24,7 +24,8 @@ The complete Platform API contract as an [OpenAPI 3.1](https://spec.openapis.org
 | Format | OpenAPI **3.1.0**, YAML |
 | Document | [`openapi.yaml`]({{ site.baseurl }}/openapi.yaml) |
 | Interactive view | [Interactive Reference](reference/) (Swagger UI) |
-| Base URL | `https://api.substratalapps.com/v1` |
+| Base URL | `https://api.substratalapps.com` |
+| API version | `Substratal-Version: 1` request header, required (see [Conventions → Versioning](../api-reference/conventions/#versioning)) |
 | Authentication | `Authorization: Bearer <token>`: a user access token or an API Key (`bearerAuth`) |
 | Content type | `application/json; charset=utf-8` |
 | Operations | 121, every one with a stable `operationId` |
@@ -62,7 +63,7 @@ Operations are grouped by tag, and each tag matches an API Reference page that e
 | Notifications | 17 | [Push Notifications](../api-reference/notifications/) |
 | API Keys | 6 | [API Keys](../api-reference/api-keys/) |
 
-Some endpoints live outside `/v1` and aren't in the document's `paths`, because they follow external standards instead:
+Some endpoints aren't in the document's `paths`, because they follow external standards instead:
 
 - `GET /.well-known/jwks.json` and `GET /.well-known/openid-configuration`: signing keys and discovery, for verifying app tokens with any standard JWT library. See [Auth → Signing keys](../api-reference/auth/#signing-keys-jwks).
 - `/mcp`: the [MCP Server](../mcp-server/), generated from this document's `operationId`s.
@@ -126,12 +127,12 @@ To explore by hand, import `openapi.yaml` into Postman, Insomnia, Bruno, or any 
 
 - **Lint the document, or your copy of it.** Run `npx @redocly/cli lint openapi.yaml` or `npx @stoplight/spectral-cli lint openapi.yaml`.
 - **Check your mocks against it.** `npx @stoplight/prism-cli mock openapi.yaml` serves a mock API from the document, so you can build a client before you have credentials.
-- **Run the reference implementation locally.** The repository's devserver serves every route at `http://localhost:8080/v1` with no AWS account. See the repository's [README → Local development](https://github.com/CompositeCode/substratalapps.com#local-development). The Interactive Reference can send requests to it once its origin is allowed. See the steps at the top of the [Interactive Reference](reference/).
+- **Run the reference implementation locally.** The repository's devserver serves every route at `http://localhost:8080` with no AWS account. See the repository's [README → Local development](https://github.com/CompositeCode/substratalapps.com#local-development). The Interactive Reference can send requests to it once its origin is allowed. See the steps at the top of the [Interactive Reference](reference/).
 
 ## Versioning and change policy
 
-The `/v1` prefix in the base URL is the API version. `info.version` in the document (currently a `1.0.0-draft` pre-release) is the version of the document itself.
+The API version is the `Substratal-Version` request header (currently `1`), not part of the base URL. The document doesn't declare it on each operation, so configure a generated client to send it as a default header; the Interactive Reference sends it for you. `info.version` in the document (currently a `1.0.0-draft` pre-release) is the version of the document itself.
 
-- **Additive changes** (new optional fields, new operations, new enum values) ship without a new prefix. Write clients to ignore fields they don't know, and to handle enum values they don't recognize.
-- **Breaking changes** get a new prefix and a deprecation window for the old one. See [Non-Functional Requirements → Versioning](../non-functional-requirements/#versioning).
+- **Additive changes** (new optional fields, new operations, new enum values) ship within the current version. Write clients to ignore fields they don't know, and to handle enum values they don't recognize.
+- **Breaking changes** ship as the next version number, and the previous version keeps working for at least 6 months. See [Non-Functional Requirements → Versioning](../non-functional-requirements/#versioning) for what counts as breaking.
 - Every change is recorded in the [Changelog](../changelog/).
