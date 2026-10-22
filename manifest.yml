@@ -2,6 +2,10 @@
 # scripts/docs-build.rb on main's GitHub build; each entry has a frozen
 # static copy at <version>/ on this branch, served at /versions/<version>/.
 versions:
+- version: 1.7.4
+  released: '2026-10-22'
+  commit: db02d073871f3f45e2654f740714482871f54df1
+  summary: 'Merge pull request #58 from CompositeCode/feature/test-user-expiry'
 - version: 1.7.3
   released: '2026-10-22'
   commit: f66cb8d9314441b92ed9e99f871a0ba954292bed
