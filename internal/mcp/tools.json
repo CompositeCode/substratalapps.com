@@ -1056,6 +1056,8 @@
                 "organization.member_added",
                 "organization.member_removed",
                 "organization.member_role_changed",
+                "organization.scim_token_created",
+                "organization.scim_token_revoked",
                 "subscription.created",
                 "subscription.status_changed",
                 "subscription.members_changed",
@@ -3944,6 +3946,74 @@
       "x_accepts_if_match": false
     },
     {
+      "name": "substratal_organizations_createScimToken",
+      "title": "Create (or rotate) the Organization's SCIM token",
+      "description": "Create (or rotate) the Organization's SCIM token\n\norg_admin or organizations.manage, with a User token. Returns the secret once, for the identity provider's SCIM settings, with base_url. Replaces any existing token at once. Writes organization.scim_token_created.\n\nREST: POST /organizations/{id}/scim-token",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false,
+        "title": "Create (or rotate) the Organization's SCIM token"
+      },
+      "x_operation_id": "organizations.createScimToken",
+      "x_method": "POST",
+      "x_path": "/organizations/{id}/scim-token",
+      "x_path_params": [
+        "id"
+      ],
+      "x_query_params": null,
+      "x_has_body": false,
+      "x_needs_idempotency_key": false,
+      "x_accepts_if_match": false
+    },
+    {
+      "name": "substratal_organizations_deleteScimToken",
+      "title": "Turn SCIM off for the Organization",
+      "description": "Turn SCIM off for the Organization\n\norg_admin or organizations.manage. The token stops working at once. Writes organization.scim_token_revoked.\n\nREST: DELETE /organizations/{id}/scim-token",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": false,
+        "title": "Turn SCIM off for the Organization"
+      },
+      "x_operation_id": "organizations.deleteScimToken",
+      "x_method": "DELETE",
+      "x_path": "/organizations/{id}/scim-token",
+      "x_path_params": [
+        "id"
+      ],
+      "x_query_params": null,
+      "x_has_body": false,
+      "x_needs_idempotency_key": false,
+      "x_accepts_if_match": false
+    },
+    {
       "name": "substratal_organizations_get",
       "title": "Fetch one Organization",
       "description": "Fetch one Organization\n\nREST: GET /organizations/{id}",
@@ -3969,6 +4039,40 @@
       "x_operation_id": "organizations.get",
       "x_method": "GET",
       "x_path": "/organizations/{id}",
+      "x_path_params": [
+        "id"
+      ],
+      "x_query_params": null,
+      "x_has_body": false,
+      "x_needs_idempotency_key": false,
+      "x_accepts_if_match": false
+    },
+    {
+      "name": "substratal_organizations_getScimToken",
+      "title": "Show the Organization's SCIM token (never its secret)",
+      "description": "Show the Organization's SCIM token (never its secret)\n\norg_admin or organizations.manage. 404 scim_token_not_found when SCIM isn't set up.\n\nREST: GET /organizations/{id}/scim-token",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "Show the Organization's SCIM token (never its secret)"
+      },
+      "x_operation_id": "organizations.getScimToken",
+      "x_method": "GET",
+      "x_path": "/organizations/{id}/scim-token",
       "x_path_params": [
         "id"
       ],

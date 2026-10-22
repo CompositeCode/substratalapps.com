@@ -123,6 +123,7 @@ Every value `action` can take. It's mirrored exactly by the `AuditAction` enum i
 | `webhook.created` / `webhook.updated` / `webhook.deleted` / `webhook.secret_rotated` | [Webhook](../../api-reference/webhooks/) subscription lifecycle | `webhook` |
 | `push_credential.created` / `push_credential.updated` / `push_credential.deleted` | An Application's [push credential](../../api-reference/notifications/#push-credentials) is configured, changed, or removed. The platform marking one `failed` (or a change returning it to `active`) is `push_credential.updated` with actor `system`. Key material never appears in `before`/`after` | `push_credential` |
 | `device.deleted` | `users.manage` deletes another User's [Device](../../api-reference/notifications/#delete-usersiddevicesdeviceid) — **admin-only** | `device` |
+| `organization.scim_token_created` / `organization.scim_token_revoked` | An Organization's [SCIM](../../api-reference/scim/) token is created (or rotated), or revoked | `organization` |
 
 This list is the authoritative source for `action` values. If an endpoint's page describes a write that isn't represented here, that's a spec bug; file it the same way as any other inconsistency.
 

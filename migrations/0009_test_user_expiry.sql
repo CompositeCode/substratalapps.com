@@ -1,10 +1,15 @@
--- 0005_test_user_expiry: test-mode Users are time-limited
+-- 0009_test_user_expiry: test-mode Users are time-limited
 -- (Auth → Test-mode Users → Lifetime).
 --
 -- expires_at is set on every test-mode User and null on every live one.
 -- Tokens stop working at expires_at (checked per request); the 5-minute
 -- entitlement-sweep then revokes sessions and devices, fires the events,
 -- and sets expired_processed_at so it does that exactly once.
+
+-- Numbered after 0008_scim_tokens, which reached production first. The
+-- audit action list is the full set, including actions from migrations
+-- that may land after this one (self-registered apps, audit exports), so
+-- merge order can't drop any.
 
 -- users has forced Row-Level Security; see both modes for the backfill.
 select set_config('app.current_test_mode', 'any', true);
@@ -37,8 +42,10 @@ alter table audit_events add constraint audit_events_action_check check (action 
     'application.created','application.updated','application.review_status_changed',
     'organization.created','organization.updated','organization.member_invited','organization.member_added',
     'organization.member_removed','organization.member_role_changed',
+    'organization.scim_token_created','organization.scim_token_revoked',
     'subscription.created','subscription.status_changed','subscription.members_changed',
     'tenant.tier_change_requested','tenant.tier_change_request_updated','tenant.tier_changed',
     'api_key.created','api_key.updated','api_key.rotated','api_key.revoked','api_key.restrict_destructive_disabled',
     'webhook.created','webhook.updated','webhook.deleted','webhook.secret_rotated',
-    'push_credential.created','push_credential.updated','push_credential.deleted','device.deleted')) not valid;
+    'push_credential.created','push_credential.updated','push_credential.deleted','device.deleted',
+    'audit.exported')) not valid;

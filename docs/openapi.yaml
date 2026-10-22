@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Substratal Apps — Platform API
-  version: "1.0.0-draft.5"
+  version: "1.0.0-draft.6"
   summary: >-
     User accounts, auth, roles, per-app entitlements (the on/off access
     switch), profiles, settings, organizations, tenancy, subscription billing,
@@ -17,7 +17,8 @@ info:
     version that served it. A missing header is `400 api_version_required`,
     and an unknown version is `400 unsupported_api_version`, both with
     `details.supported`. Exempt: `GET /health`, `POST /auth/oauth/token`
-    (called by standard OAuth libraries), and the `/.well-known` endpoints.
+    (called by standard OAuth libraries), the `/.well-known` endpoints, and
+    SCIM under `/scim/v2` (called by identity providers).
     The header isn't declared on each operation, so generated clients
     should send it as a default header. See /api-reference/conventions/#versioning.
 
@@ -1566,6 +1567,51 @@ paths:
         "204": { description: Removed }
         "403": { $ref: "#/components/responses/Forbidden" }
         "409": { $ref: "#/components/responses/Conflict" }
+
+  /organizations/{id}/scim-token:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    get:
+      operationId: organizations.getScimToken
+      tags: [Organizations]
+      summary: Show the Organization's SCIM token (never its secret)
+      description: "org_admin or organizations.manage. 404 scim_token_not_found when SCIM isn't set up."
+      x-substratal-phase: phase3
+      responses:
+        "200":
+          description: The token
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ScimToken" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    post:
+      operationId: organizations.createScimToken
+      tags: [Organizations]
+      summary: Create (or rotate) the Organization's SCIM token
+      description: >-
+        org_admin or organizations.manage, with a User token. Returns the secret once, for the identity
+        provider's SCIM settings, with base_url. Replaces any existing token at once. Writes
+        organization.scim_token_created.
+      x-substratal-phase: phase3
+      responses:
+        "201":
+          description: The new token, with its secret
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ScimToken" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      operationId: organizations.deleteScimToken
+      tags: [Organizations]
+      summary: Turn SCIM off for the Organization
+      description: "org_admin or organizations.manage. The token stops working at once. Writes organization.scim_token_revoked."
+      x-substratal-phase: phase3
+      responses:
+        "204": { description: Revoked }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
 
   /organizations/{id}/entitlements:
     parameters:
@@ -3457,6 +3503,8 @@ components:
         - organization.member_added
         - organization.member_removed
         - organization.member_role_changed
+        - organization.scim_token_created
+        - organization.scim_token_revoked
         - subscription.created
         - subscription.status_changed
         - subscription.members_changed
@@ -3480,6 +3528,18 @@ components:
     AuditTargetType:
       type: string
       enum: [user, entitlement, role, role_assignment, application, organization, subscription, tenant, tier_change_request, api_key, webhook, push_credential, device]
+
+    ScimToken:
+      type: object
+      properties:
+        id: { type: string }
+        organization_id: { type: string }
+        token: { type: string, description: "The secret (scim_…). Only in the response that creates it." }
+        base_url: { type: string, format: uri, description: "The SCIM 2.0 base URL to give the identity provider." }
+        created_by: { type: string }
+        created_at: { type: string, format: date-time }
+        last_used_at: { type: [string, "null"], format: date-time }
+        test_mode: { type: boolean }
 
     AuditEvent:
       type: object

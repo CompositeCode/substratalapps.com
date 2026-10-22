@@ -14,7 +14,7 @@ What's changed in this specification over time. Every decision is written into t
 
 ## 2026-10-21 — Test-mode User expiry implemented
 
-[Test-mode Users → Lifetime](../api-reference/auth/#lifetime) is built, as specified on 2026-10-20. `openapi.yaml` is now at `1.0.0-draft.5`:
+[Test-mode Users → Lifetime](../api-reference/auth/#lifetime) is built, as specified on 2026-10-20. `openapi.yaml` is now at `1.0.0-draft.6`:
 
 - `User.expires_at`, and `expires_at` on `POST /auth/signup`, `POST /users`, and `PATCH /users/{id}`.
 - `user.expired` in the webhook event and audit action enums, `test_user_expired` and `test_user_extended` in the access-event reasons, and `test_user_expired` in the device inactive reasons.
@@ -25,7 +25,16 @@ A few behaviors the spec left implicit are now stated:
 - An out-of-range or live-User `expires_at` is reported like any other field error: `422 validation_failed` with the code in `details.fields`, not a separate `details.reason`.
 - A Platform access token whose test-mode User has expired gets `401 session_revoked`, the same as a suspended User's. Sign-in, refresh, MFA verification, and app-token issuance return `403 test_user_expired`.
 - Extending a User the expiry sweep hasn't processed yet fires no `access.granted`, since no `access.revoked` went out for them either.
-- Migration `0005_test_user_expiry` sets every existing test-mode User's `expires_at` to `created_at` + 30 days, when the purge would have removed them anyway.
+- Migration `0009_test_user_expiry` sets every existing test-mode User's `expires_at` to `created_at` + 30 days, when the purge would have removed them anyway.
+
+## 2026-10-21 — SCIM provisioning
+
+An Organization's identity provider can invite and remove its members with SCIM 2.0. See [API Reference → SCIM](../api-reference/scim/). `openapi.yaml` is now at `1.0.0-draft.5`, with 121 operations.
+
+- **Setting it up:** `POST`, `GET`, and `DELETE /organizations/{id}/scim-token` (org admin or `organizations.manage`). There's one token per Organization, and its secret is shown once. New audit actions `organization.scim_token_created` and `organization.scim_token_revoked`. Migration `0008_scim_tokens`.
+- **`/scim/v2`** serves `ServiceProviderConfig`, `ResourceTypes`, and `Users` (list with a `userName eq` filter, create, get, put, patch, delete), in SCIM's own response and error shapes. These endpoints follow RFC 7644, not `openapi.yaml`, like `/.well-known`, and are exempt from `Substratal-Version`: identity providers can't add the header, and SCIM versions itself in the path.
+- **The membership rules don't change.** Provisioning invites, so the person accepts before they join, whether or not they already had an account. Deprovisioning removes the membership, with `access.revoked`, and never touches the person's own account. The last-`org_admin` guard applies. Writes are audited with actor type `system` and the token's id.
+- Users only: no Groups, bulk, sorting, or ETags. Roles stay with org admins.
 
 ## 2026-10-21 — Versioning rules spelled out
 

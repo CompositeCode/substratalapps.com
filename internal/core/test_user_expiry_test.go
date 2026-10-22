@@ -202,10 +202,10 @@ func TestTestUserExpiry(t *testing.T) {
 	}
 }
 
-// Migration 0005's backfill: existing test Users expire when the 30-day
+// Migration 0009's backfill: existing test Users expire when the 30-day
 // purge would have removed them, and live Users never do.
 func TestTestUserExpiryBackfill(t *testing.T) {
-	d := testenv.DatabaseThrough(t, "0004")
+	d := testenv.DatabaseThrough(t, "0008")
 	ctx := context.Background()
 	created := time.Now().Add(-48 * time.Hour).UTC().Truncate(time.Second)
 	err := d.Tx(ctx, db.Settings{AllModes: true}, func(q db.Querier) error {
