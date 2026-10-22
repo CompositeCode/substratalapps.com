@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Substratal Apps — Platform API
-  version: "1.0.0-draft.8"
+  version: "1.0.0-draft.9"
   summary: >-
     User accounts, auth, roles, per-app entitlements (the on/off access
     switch), profiles, settings, organizations, tenancy, subscription billing,
@@ -635,6 +635,46 @@ paths:
                     properties:
                       data: { type: array, items: { $ref: "#/components/schemas/Session" } }
 
+  /users/{id}/sessions/revoke-all:
+    parameters:
+      - $ref: "#/components/parameters/UserIdOrMe"
+    post:
+      operationId: auth.revokeAllSessions
+      parameters:
+        - $ref: "#/components/parameters/ApiVersion"
+      tags: [Auth]
+      summary: Revoke every session (self or users.manage)
+      description: >-
+        Signs the User out everywhere: each live session is revoked with revoked_reason
+        revoked_all, which ends its refresh tokens and app refresh tokens and deactivates
+        the push devices it registered. keep_current keeps the calling session, and only
+        applies to your own sessions. Writes user.sessions_revoked.
+      x-substratal-phase: mvp
+      x-substratal-destructive: always
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                keep_current: { type: boolean, default: false, description: "Self only; 422 self_only otherwise." }
+      responses:
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "200":
+          description: Revoked
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [revoked]
+                properties:
+                  revoked: { type: integer, description: "How many sessions were revoked." }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/Unprocessable" }
+
   /users/{id}/sessions/{sessionId}:
     parameters:
       - $ref: "#/components/parameters/UserIdOrMe"
@@ -662,7 +702,9 @@ paths:
       operationId: users.list
       tags: [Users]
       summary: List or search users
-      description: "Requires users.list. An app-scoped key with users.list is forced to application_id=<its app>."
+      description: >-
+        Requires users.list. An app-scoped key with users.list is forced to application_id=<its app>,
+        and any role_id it sends must be one of its own Application's Roles (403 role_scope_mismatch).
       x-substratal-phase: mvp
       parameters:
         - $ref: "#/components/parameters/ApiVersion"
@@ -673,6 +715,14 @@ paths:
         - { name: q, in: query, schema: { type: string, minLength: 3 } }
         - { name: application_id, in: query, schema: { type: string } }
         - { name: organization_id, in: query, schema: { type: string } }
+        - name: role_id
+          in: query
+          description: >-
+            Users holding any of these Roles by explicit assignment. Repeatable. Implicit holders
+            of an Application's default_app_role aren't listed.
+          style: form
+          explode: true
+          schema: { type: array, items: { type: string }, maxItems: 20 }
         - { name: created_after, in: query, schema: { type: string, format: date-time } }
         - { name: created_before, in: query, schema: { type: string, format: date-time } }
       responses:
@@ -3849,6 +3899,7 @@ components:
         - user.mfa_enabled
         - user.mfa_disabled
         - user.mfa_reset
+        - user.sessions_revoked
         - audit.exported
         - entitlement.granted
         - entitlement.disabled

@@ -76,6 +76,12 @@ func (s *Server) authenticate(c *Call) (*Principal, error) {
 		return nil, err
 	}
 	if strings.HasPrefix(tok, ids.APIKeyLive) || strings.HasPrefix(tok, ids.APIKeyTest) {
+		// Browsers always send Origin on these requests; server-side
+		// clients don't. A key in a web page is a leaked key (NFR → CORS).
+		if c.r.Header.Get("Origin") != "" {
+			return nil, httpx.E(400, "api_key_in_browser",
+				"API Keys can't be used from a browser. Call from your backend, or use a user's own token.")
+		}
 		return s.authenticateKey(c, tok)
 	}
 	return s.authenticateUser(c, tok)

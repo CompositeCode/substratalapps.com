@@ -12,6 +12,17 @@ What's changed in this specification over time. Every decision is written into t
 
 ---
 
+## 2026-10-22 — Browser CORS, a role filter on users, and sign out everywhere
+
+Three gaps the management console needs ([#38](https://github.com/CompositeCode/substratalapps.com/issues/38), [#54](https://github.com/CompositeCode/substratalapps.com/issues/54), [#51](https://github.com/CompositeCode/substratalapps.com/issues/51)). `openapi.yaml` is now at `1.0.0-draft.9`, with 124 operations.
+
+- **CORS matches what's built.** [NFR → CORS](../non-functional-requirements/#cors) said only some `GET`s allowed the first-party origin and that an admin console would call through its own backend. In fact, allow-listed origins may call any endpoint with the signed-in person's own User token, which is sound because a Bearer token isn't sent automatically. The page now says so.
+  - Browsers can now read `Retry-After` and `Audit-Hot-Window-Start`.
+  - Preflights are cached for 2 hours instead of 10 minutes.
+  - An API Key sent with an `Origin` header is refused with the new `400 api_key_in_browser`, so a key pasted into a web page can't be used from it. The Interactive Reference's local "Try it out" takes a user token for the same reason.
+- **`GET /users?role_id=`** lists the Users holding any of the given Roles by explicit assignment. Repeatable, up to 20. An app-confined key may only name its own Application's Roles (`403 role_scope_mismatch`). See [Users → filters](../api-reference/users/#get-users).
+- **`POST /users/{id}/sessions/revoke-all`** signs a User out everywhere, by the User or a `users.manage` caller, and returns `{"revoked": n}`. `keep_current` keeps the calling session, self only. New `revoked_reason` `revoked_all` and audit action `user.sessions_revoked` (migration `0012_sessions_revoked`). Destructive. See [Auth → Sessions](../api-reference/auth/#post-usersidsessionsrevoke-all).
+
 ## 2026-10-22 — Audit Event exports
 
 The audit log can be exported to a file. See [API Reference → Audit → Exporting](../api-reference/audit/#exporting). `openapi.yaml` is now at `1.0.0-draft.8`, with 123 operations.

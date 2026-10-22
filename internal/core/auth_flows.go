@@ -995,3 +995,46 @@ func (s *Server) AuthRevokeSession(w http.ResponseWriter, r *http.Request, id ge
 		return c.NoContent()
 	})
 }
+
+// AuthRevokeAllSessions signs a User out everywhere (Auth → Sessions).
+func (s *Server) AuthRevokeAllSessions(w http.ResponseWriter, r *http.Request, id gen.UserIdOrMe) {
+	s.serve(w, r, opts{op: "auth.revokeAllSessions"}, func(c *Call) error {
+		uid, err := c.selfID(id)
+		if err != nil {
+			return err
+		}
+		var in struct {
+			KeepCurrent bool `json:"keep_current"`
+		}
+		if err := c.Decode(&in); err != nil {
+			return err
+		}
+		self := c.isSelf(uid)
+		if !self && !c.can("users.manage") {
+			return httpx.Forbidden("users.manage")
+		}
+		if _, err := c.visibleUser(uid); err != nil {
+			return err
+		}
+		except := ""
+		if in.KeepCurrent {
+			if !self {
+				var f httpx.Fields
+				f.Add("keep_current", "self_only")
+				return f.Err()
+			}
+			except = c.p.SessionID
+		}
+		n, err := c.revokeSessionsCount(uid, "revoked_all", except)
+		if err != nil {
+			return err
+		}
+		if err := c.audit(Audit{Action: "user.sessions_revoked", TargetType: "user", TargetID: uid,
+			TargetUserID: &uid, After: map[string]any{"revoked": n, "keep_current": in.KeepCurrent}}); err != nil {
+			return err
+		}
+		c.s.Log.Info("security", "event", "sessions_revoked", "user", uid, "count", n,
+			"request_id", c.requestID, "actor", c.p.ID, "ip", c.ip)
+		return c.OK(map[string]any{"revoked": n})
+	})
+}
