@@ -45,6 +45,11 @@ func (r *Runner) Jobs() map[string]func(context.Context) error {
 		"entitlement-sweep": func(ctx context.Context) error {
 			exp, started, err := r.Core.SweepEntitlements(ctx)
 			r.Base.Log.Info("entitlement sweep", "expired", exp, "started", started)
+			if err != nil {
+				return err
+			}
+			users, err := r.Core.ExpireTestUsers(ctx)
+			r.Base.Log.Info("test user expiry", "expired", users)
 			return err
 		},
 		// every minute: the safety net under SQS nudges, for webhooks and

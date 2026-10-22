@@ -49,6 +49,7 @@ func (c *Call) resolvePairs(pairs []pair) (map[pair]resolved, error) {
 		select jsonb_build_object(
 			'user_id', req.u, 'application_id', req.a,
 			'user_status', (select status from users where id = req.u),
+			'user_expires_at', (select expires_at from users where id = req.u),
 			'tenant_id', (select tenant_id from applications where id = req.a),
 			'paths', coalesce((select jsonb_agg(p) from (
 				select e.id as entitlement_id, e.source, e.status, null::text as organization_id,
@@ -68,11 +69,12 @@ func (c *Call) resolvePairs(pairs []pair) (map[pair]resolved, error) {
 	}
 	for _, raw := range rows {
 		var r struct {
-			UserID     string    `json:"user_id"`
-			AppID      string    `json:"application_id"`
-			UserStatus *string   `json:"user_status"`
-			TenantID   *string   `json:"tenant_id"`
-			Paths      []pathRow `json:"paths"`
+			UserID     string     `json:"user_id"`
+			AppID      string     `json:"application_id"`
+			UserStatus *string    `json:"user_status"`
+			ExpiresAt  *time.Time `json:"user_expires_at"`
+			TenantID   *string    `json:"tenant_id"`
+			Paths      []pathRow  `json:"paths"`
 		}
 		if err := json.Unmarshal(raw, &r); err != nil {
 			return nil, err
@@ -91,8 +93,11 @@ func (c *Call) resolvePairs(pairs []pair) (map[pair]resolved, error) {
 		if r.UserStatus != nil {
 			status = *r.UserStatus
 		}
+		// An expired test-mode User has no access, like a suspended one.
+		expired := r.ExpiresAt != nil && !r.ExpiresAt.After(c.now)
 		out[pair{r.UserID, r.AppID}] = resolved{
-			UserStatus: status, Res: res, Paths: paths, Allowed: access.Allowed(status, res), TenantID: deref(r.TenantID),
+			UserStatus: status, Res: res, Paths: paths, Allowed: access.Allowed(status, res) && !expired,
+			TenantID: deref(r.TenantID),
 		}
 	}
 	return out, nil

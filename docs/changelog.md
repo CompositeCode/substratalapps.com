@@ -22,6 +22,33 @@ The audit log can be exported to a file. See [API Reference → Audit → Export
 - **Retention** needed no new code. It's already enforced: the one-year hot window, and the nightly archival of older events, shape-only, to indefinite cold storage ([Audit log lifecycle](../non-functional-requirements/#audit-log-lifecycle)).
 - Migration `0011_audit_exports`. Infrastructure: a private exports bucket with a 7-day lifecycle rule, and an `audit-exports` schedule every minute.
 
+## 2026-10-22 — Self-service Application registration
+
+`POST /applications` is open to developers, not just staff. See [API Reference → Applications](../api-reference/applications/#post-applications) and [The review lifecycle](../domain-model/applications/#the-review-lifecycle). `openapi.yaml` is now at `1.0.0-draft.7`.
+
+- **Any User with a verified email** can submit an Application. It's owned by the caller, or by an Organization they're an `org_admin` of. It starts in `pending_review`, `public`, and `standard`, and the moderation fields are staff-only (`403 moderation_field_forbidden`). An unverified email is the new `403 email_not_verified`. Each User can submit 10 a day. Staff creation is unchanged.
+- **Applications gain `self_registered`** (read-only, migration `0010_self_registered_apps`). A self-registered Application is third-party, even once approved:
+  - `POST /auth/app-tokens` refuses it with the new `403 embedded_login_not_allowed`, as [Auth → Getting an app token](../api-reference/auth/#getting-an-app-token) already required once self-service shipped. It must use the hosted flow.
+  - Only `applications.manage` can turn on its `receives_platform_notifications`, so platform security alerts never go out under an unvetted app.
+- **Platform-managed Entitlements wait for approval.** `free` and `subscription` rows are granted only to an Application that has been approved, and approving one grants them. Before this, a `standard` submission would have been granted to every Standard subscriber the moment it was created, firing `access.granted` to an unreviewed developer.
+
+Self-registered Applications still can't go live until the hosted sign-in page exists.
+
+## 2026-10-22 — Test-mode User expiry implemented
+
+[Test-mode Users → Lifetime](../api-reference/auth/#lifetime) is built, as specified on 2026-10-20. `openapi.yaml` is now at `1.0.0-draft.6`:
+
+- `User.expires_at`, and `expires_at` on `POST /auth/signup`, `POST /users`, and `PATCH /users/{id}`.
+- `user.expired` in the webhook event and audit action enums, `test_user_expired` and `test_user_extended` in the access-event reasons, and `test_user_expired` in the device inactive reasons.
+- `POST /auth/token/refresh` and `POST /auth/mfa/verify` now declare `403`, which they return for `test_user_expired` (and, for `mfa/verify`, `account_suspended`, which it already returned).
+
+A few behaviors the spec left implicit are now stated:
+
+- An out-of-range or live-User `expires_at` is reported like any other field error: `422 validation_failed` with the code in `details.fields`, not a separate `details.reason`.
+- A Platform access token whose test-mode User has expired gets `401 session_revoked`, the same as a suspended User's. Sign-in, refresh, MFA verification, and app-token issuance return `403 test_user_expired`.
+- Extending a User the expiry sweep hasn't processed yet fires no `access.granted`, since no `access.revoked` went out for them either.
+- Migration `0009_test_user_expiry` sets every existing test-mode User's `expires_at` to `created_at` + 30 days, when the purge would have removed them anyway.
+
 ## 2026-10-22 — Version header declared in `openapi.yaml`; 405 for a wrong method
 
 - **`openapi.yaml` declares `Substratal-Version`.** Every versioned operation now carries the shared `ApiVersion` header parameter (`Substratal-Version`, enum `1`) and documents its `400` (`api_version_required`, `unsupported_api_version`). Generated clients learn the header from the spec instead of needing it configured by hand. `GET /health` and `POST /auth/oauth/token` don't declare it, because they're exempt. Nothing changes on the wire: the API already required the header ([Conventions → Versioning](../api-reference/conventions/#versioning)).
@@ -69,7 +96,7 @@ Test mode already never counted toward billing (decision #36, confirmed on 2026-
 - **At expiry** sign-in, refresh, and app-token issuance return the new `403 test_user_expired`, and every token already issued stops working. No token's `exp` is ever later than the User's `expires_at`. The 5-minute entitlement-expiry sweep then revokes sessions and devices (reason `test_user_expired`), fires `access.revoked` (reason `test_user_expired`) and the new `user.expired` webhook, and writes the `user.expired` Audit Event. `status`, Entitlements, Roles, and memberships are unchanged. An expired test User isn't a covered member of a test-mode subscription.
 - Test-mode API Keys, Organizations, and Applications don't expire. The nightly 30-day purge is unchanged.
 
-Not yet built: until it is, test-mode Users last until the 30-day purge, as before. `openapi.yaml` gains `expires_at` in the same change as the code. The build steps are in the repository's `plan-remaining.md` → Test-mode User expiry.
+Built on 2026-10-21; see the entry above.
 
 ## 2026-10-18 — Push notifications implemented
 

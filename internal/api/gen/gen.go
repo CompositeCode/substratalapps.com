@@ -28,6 +28,8 @@ const (
 	AccessEventReasonOrgGrantChanged     AccessEventReason = "org_grant_changed"
 	AccessEventReasonOrgMemberAdded      AccessEventReason = "org_member_added"
 	AccessEventReasonOrgMemberRemoved    AccessEventReason = "org_member_removed"
+	AccessEventReasonTestUserExpired     AccessEventReason = "test_user_expired"
+	AccessEventReasonTestUserExtended    AccessEventReason = "test_user_extended"
 	AccessEventReasonUserDeleted         AccessEventReason = "user_deleted"
 	AccessEventReasonUserReactivated     AccessEventReason = "user_reactivated"
 	AccessEventReasonUserSuspended       AccessEventReason = "user_suspended"
@@ -55,6 +57,10 @@ func (e AccessEventReason) Valid() bool {
 	case AccessEventReasonOrgMemberAdded:
 		return true
 	case AccessEventReasonOrgMemberRemoved:
+		return true
+	case AccessEventReasonTestUserExpired:
+		return true
+	case AccessEventReasonTestUserExtended:
 		return true
 	case AccessEventReasonUserDeleted:
 		return true
@@ -389,6 +395,7 @@ const (
 	AuditActionUserErased                        AuditAction = "user.erased"
 	AuditActionUserErasureCancelled              AuditAction = "user.erasure_cancelled"
 	AuditActionUserErasureRequested              AuditAction = "user.erasure_requested"
+	AuditActionUserExpired                       AuditAction = "user.expired"
 	AuditActionUserMfaDisabled                   AuditAction = "user.mfa_disabled"
 	AuditActionUserMfaEnabled                    AuditAction = "user.mfa_enabled"
 	AuditActionUserMfaReset                      AuditAction = "user.mfa_reset"
@@ -499,6 +506,8 @@ func (e AuditAction) Valid() bool {
 	case AuditActionUserErasureCancelled:
 		return true
 	case AuditActionUserErasureRequested:
+		return true
+	case AuditActionUserExpired:
 		return true
 	case AuditActionUserMfaDisabled:
 		return true
@@ -727,6 +736,7 @@ const (
 	DeviceInactiveReasonLimit             DeviceInactiveReason = "limit"
 	DeviceInactiveReasonSessionRevoked    DeviceInactiveReason = "session_revoked"
 	DeviceInactiveReasonStale             DeviceInactiveReason = "stale"
+	DeviceInactiveReasonTestUserExpired   DeviceInactiveReason = "test_user_expired"
 	DeviceInactiveReasonUnregistered      DeviceInactiveReason = "unregistered"
 	DeviceInactiveReasonUserDeleted       DeviceInactiveReason = "user_deleted"
 	DeviceInactiveReasonUserSuspended     DeviceInactiveReason = "user_suspended"
@@ -742,6 +752,8 @@ func (e DeviceInactiveReason) Valid() bool {
 	case DeviceInactiveReasonSessionRevoked:
 		return true
 	case DeviceInactiveReasonStale:
+		return true
+	case DeviceInactiveReasonTestUserExpired:
 		return true
 	case DeviceInactiveReasonUnregistered:
 		return true
@@ -1757,6 +1769,7 @@ const (
 	WebhookEventRoleAssigned                   WebhookEvent = "role.assigned"
 	WebhookEventRoleRemoved                    WebhookEvent = "role.removed"
 	WebhookEventUserDeleted                    WebhookEvent = "user.deleted"
+	WebhookEventUserExpired                    WebhookEvent = "user.expired"
 	WebhookEventUserReactivated                WebhookEvent = "user.reactivated"
 	WebhookEventUserSuspended                  WebhookEvent = "user.suspended"
 	WebhookEventWebhookTest                    WebhookEvent = "webhook.test"
@@ -1804,6 +1817,8 @@ func (e WebhookEvent) Valid() bool {
 	case WebhookEventRoleRemoved:
 		return true
 	case WebhookEventUserDeleted:
+		return true
+	case WebhookEventUserExpired:
 		return true
 	case WebhookEventUserReactivated:
 		return true
@@ -2402,6 +2417,9 @@ type Application struct {
 	RedirectUris                  *[]string                `json:"redirect_uris,omitempty"`
 	ReviewNotes                   *string                  `json:"review_notes,omitempty"`
 	ReviewStatus                  *ApplicationReviewStatus `json:"review_status,omitempty"`
+
+	// SelfRegistered true when a developer submitted it themselves, not staff. A self-registered Application must use the hosted sign-in flow (POST /auth/app-tokens returns 403 embedded_login_not_allowed), and only applications.manage can turn on receives_platform_notifications for it.
+	SelfRegistered *bool `json:"self_registered,omitempty"`
 
 	// SettingsSchema JSON Schema 2020-12 subset — see Domain Model → Settings → settings_schema rules
 	SettingsSchema      *map[string]interface{} `json:"settings_schema,omitempty"`
@@ -3406,10 +3424,13 @@ type User struct {
 	CreatedAt     *time.Time           `json:"created_at,omitempty"`
 	Email         *openapi_types.Email `json:"email,omitempty"`
 	EmailVerified *bool                `json:"email_verified,omitempty"`
-	Id            *string              `json:"id,omitempty"`
-	LastLoginAt   *time.Time           `json:"last_login_at,omitempty"`
-	MfaEnabled    *bool                `json:"mfa_enabled,omitempty"`
-	PendingEmail  *openapi_types.Email `json:"pending_email,omitempty"`
+
+	// ExpiresAt When a test-mode User stops working (Auth → Test-mode Users → Lifetime). Always null for live Users.
+	ExpiresAt    *time.Time           `json:"expires_at,omitempty"`
+	Id           *string              `json:"id,omitempty"`
+	LastLoginAt  *time.Time           `json:"last_login_at,omitempty"`
+	MfaEnabled   *bool                `json:"mfa_enabled,omitempty"`
+	PendingEmail *openapi_types.Email `json:"pending_email,omitempty"`
 
 	// Plan Business and enterprise plans come later.
 	Plan *Plan `json:"plan,omitempty"`
@@ -3840,7 +3861,10 @@ type AuthSignupJSONBody struct {
 	ApplicationId *string             `json:"application_id,omitempty"`
 	DisplayName   *string             `json:"display_name,omitempty"`
 	Email         openapi_types.Email `json:"email"`
-	Password      string              `json:"password"`
+
+	// ExpiresAt Test mode only: when the account stops working. Default 24 hours from now; at least 15 minutes away, at most 30 days. 422 expires_at_out_of_range, or live_user when test_mode is false.
+	ExpiresAt *time.Time `json:"expires_at,omitempty"`
+	Password  string     `json:"password"`
 
 	// TestMode Create a test-mode User.
 	TestMode *bool `json:"test_mode,omitempty"`
@@ -4107,8 +4131,11 @@ type UsersListParamsStatus string
 
 // UsersCreateJSONBody defines parameters for UsersCreate.
 type UsersCreateJSONBody struct {
-	DisplayName    *string                    `json:"display_name,omitempty"`
-	Email          openapi_types.Email        `json:"email"`
+	DisplayName *string             `json:"display_name,omitempty"`
+	Email       openapi_types.Email `json:"email"`
+
+	// ExpiresAt Test-mode keys only: when the User stops working. Default 24 hours from now; at least 15 minutes away, at most 30 days. 422 expires_at_out_of_range, or live_user with a live key.
+	ExpiresAt      *time.Time                 `json:"expires_at,omitempty"`
 	SendInvitation *bool                      `json:"send_invitation,omitempty"`
 	Status         *UsersCreateJSONBodyStatus `json:"status,omitempty"`
 }
@@ -4130,6 +4157,9 @@ type BillingCreateUserCheckoutSessionParams struct {
 // UsersUpdateJSONBody defines parameters for UsersUpdate.
 type UsersUpdateJSONBody struct {
 	Email *openapi_types.Email `json:"email,omitempty"`
+
+	// ExpiresAt users.manage only, test-mode Users only. At least 15 minutes from now and at most 30 days after created_at. Moving it later on an expired User brings them back and fires access.granted (test_user_extended).
+	ExpiresAt *time.Time `json:"expires_at,omitempty"`
 
 	// Status users.manage only. active on a deleted User restores it.
 	Status *UsersUpdateJSONBodyStatus `json:"status,omitempty"`
@@ -4873,7 +4903,7 @@ type ServerInterface interface {
 	// ApplicationsList List the catalog (filtered by visibility rules)
 	// (GET /applications)
 	ApplicationsList(w http.ResponseWriter, r *http.Request, params ApplicationsListParams)
-	// ApplicationsCreate Register an Application (applications.manage)
+	// ApplicationsCreate Register an Application (applications.manage, or self-service into review)
 	// (POST /applications)
 	ApplicationsCreate(w http.ResponseWriter, r *http.Request, params ApplicationsCreateParams)
 	// ApplicationsGet Fetch one Application

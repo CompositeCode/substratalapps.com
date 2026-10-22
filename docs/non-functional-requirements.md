@@ -71,6 +71,7 @@ Per-API-key token bucket, returning `429` with a `Retry-After` header on exhaust
 | `POST /auth/token/refresh` | 30 requests/minute per session |
 | `GET /users/{id}/export` | 5 per user per day |
 | `POST /organizations` | 10 per user per day |
+| `POST /applications`, self-service | 10 per user per day (staff with `applications.manage` aren't limited beyond the default) |
 | `POST /audit-exports` | 20 per API Key or User per day |
 | `POST /users/{id}/notifications` | 600 requests/minute per API Key, and 60 notifications per recipient User per Application per rolling hour (`429 rate_limited`, `details.scope: "recipient"`). Platform alerts don't count toward the per-recipient limit. |
 | `POST /users/{id}/devices/{deviceId}/test` | 10 per device per hour |

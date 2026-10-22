@@ -229,6 +229,7 @@ subscriptions (
 | `owner_organization_id` | `text` | nullable, `references organizations(id)` |
 | `review_status` | `text` | not null, default `'approved'`, `check (review_status in ('approved','pending_review','rejected','suspended'))` |
 | `review_notes` | `text` | nullable — `check (review_notes is not null or review_status not in ('rejected','suspended'))` enforces it's required on exactly those two transitions, at the database level, not just in application code |
+| `self_registered` | `boolean` | not null, default `false` — `true` for a self-service submission; never changes |
 | `tenant_id` | `text` | not null, `references tenants(id)` — resolved from whichever owner column is set at insert time, see [Tenancy](../tenancy/) |
 | `test_mode` | `boolean` | not null, default `false` |
 | `created_at`, `updated_at` | `timestamptz` | |

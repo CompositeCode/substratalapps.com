@@ -160,10 +160,35 @@ type userRow struct {
 	CreatedAt           time.Time    `json:"created_at"`
 	UpdatedAt           time.Time    `json:"updated_at"`
 	LastLoginAt         *time.Time   `json:"last_login_at"`
+	ExpiresAt           *time.Time   `json:"expires_at"`
 	Plan                string       `json:"plan"`
 	PlanSources         []planSource `json:"plan_sources"`
 	Version             int          `json:"-"`
 	DeletedAt           *time.Time   `json:"-"`
+	ExpiredProcessedAt  *time.Time   `json:"-"`
+}
+
+// expired reports whether a test-mode User's expires_at has passed
+// (Auth → Test-mode Users → Lifetime). Live Users never expire.
+func (u userRow) expired(now time.Time) bool {
+	return u.ExpiresAt != nil && !u.ExpiresAt.After(now)
+}
+
+// testUserExpired is the error sign-in, refresh, and app-token issuance
+// return for an expired test-mode User.
+func testUserExpired() error {
+	return httpx.E(403, "test_user_expired", "This test-mode User has expired.")
+}
+
+// tokenTTL caps a token's lifetime at the User's expires_at, so no token
+// outlives a test-mode User (Auth → Test-mode Users → Lifetime).
+func (c *Call) tokenTTL(u userRow, ttl time.Duration) time.Duration {
+	if u.ExpiresAt != nil {
+		if left := u.ExpiresAt.Sub(c.now); left < ttl {
+			return max(left, 0)
+		}
+	}
+	return ttl
 }
 
 // userRowSQL selects a user with its computed mfa_enabled, as the API
@@ -171,12 +196,13 @@ type userRow struct {
 const userRowSQL = `select to_jsonb(u) - 'stripe_customer_id' || jsonb_build_object(
 	'mfa_enabled', exists (select 1 from user_identities i where i.user_id = u.id and i.mfa_enabled),
 	'plan_sources', ` + userPlanSQL + `,
-	'version_', u.version, 'deleted_at_', u.deleted_at) from users u`
+	'version_', u.version, 'deleted_at_', u.deleted_at, 'expired_processed_at_', u.expired_processed_at) from users u`
 
 type userRowDB struct {
 	userRow
-	V  int        `json:"version_"`
-	DA *time.Time `json:"deleted_at_"`
+	V   int        `json:"version_"`
+	DA  *time.Time `json:"deleted_at_"`
+	EPA *time.Time `json:"expired_processed_at_"`
 }
 
 func decodeUser(raw []byte) (userRow, error) {
@@ -184,7 +210,7 @@ func decodeUser(raw []byte) (userRow, error) {
 	if err := json.Unmarshal(raw, &r); err != nil {
 		return userRow{}, err
 	}
-	r.userRow.Version, r.userRow.DeletedAt = r.V, r.DA
+	r.userRow.Version, r.userRow.DeletedAt, r.userRow.ExpiredProcessedAt = r.V, r.DA, r.EPA
 	if r.userRow.PlanSources == nil {
 		r.userRow.PlanSources = []planSource{}
 	}
@@ -239,6 +265,7 @@ type appRow struct {
 	OwnerOrganizationID *string         `json:"owner_organization_id"`
 	ReviewStatus        string          `json:"review_status"`
 	ReviewNotes         *string         `json:"review_notes"`
+	SelfRegistered      bool            `json:"self_registered"`
 	TenantID            string          `json:"tenant_id"`
 	TestMode            bool            `json:"test_mode"`
 	CreatedAt           time.Time       `json:"created_at"`

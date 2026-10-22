@@ -194,7 +194,7 @@ Endpoints that take a token (`mfa/verify`, `token/refresh`, `password/reset`, `e
 Every test-mode User is **time-limited**. Its `expires_at` is set when it's created, and at that moment the account stops working. Live Users never expire (`expires_at` is always `null`).
 
 - **Default: 24 hours** after creation. A caller creating a test-mode User, through [`POST /users`](../users/#post-users) with a `satk_test_` key or through signup with `"test_mode": true`, may send `expires_at` to choose a different lifetime, to suit what's being tested: a short-lived account for one CI run, or one that lasts a week for a manual QA pass.
-- **Range:** at least 15 minutes from now, and no later than **30 days after the User's `created_at`**, which is when its test data is purged. Anything outside that range is `422 validation_failed` (`details.reason: "expires_at_out_of_range"`). Sending `expires_at` for a live User is `422 validation_failed` (`details.reason: "live_user"`).
+- **Range:** at least 15 minutes from now, and no later than **30 days after the User's `created_at`**, which is when its test data is purged. Anything outside that range is `422 validation_failed`, with the `expires_at` field's code `expires_at_out_of_range` in `details.fields`. Sending `expires_at` for a live User is `422 validation_failed` with the code `live_user`.
 - **Changing it:** `users.manage` can move `expires_at` with [`PATCH /users/{id}`](../users/#patch-usersid), within the same range, to extend a run, end it early, or bring back an expired User that hasn't been purged yet.
 - **At expiry:** login returns `403 test_user_expired`, and every token issued to the User stops working, whatever its own `exp`. That covers access, refresh, and app tokens. No token is issued with an `exp` later than the User's `expires_at`, so an Application that verifies app tokens locally against JWKS stops accepting them at the same moment. Within 5 minutes, the expiry sweep revokes the User's sessions (`revoked_reason: test_user_expired`), deactivates their push devices, fires `access.revoked` (reason `test_user_expired`) for every Application they had active access to, and writes the `user.expired` Audit Event. Like suspension, expiry leaves `status` and the User's Entitlements, Roles, and memberships unchanged, so an extension restores exactly what was there and fires `access.granted` again.
 - **Purge:** the nightly purge of test-mode rows older than 30 days is unchanged. The 30-day ceiling on `expires_at` means a test User has always expired before its data is purged.
@@ -252,7 +252,7 @@ Revokes the session(s): the refresh token and any app refresh tokens in them sto
 
 ## Getting an app token
 
-Embedded login is allowed today because every Application is first-party, so no third party ever handles a Substratal password. It's blocked for any Application not owned by Substratal once self-service registration ships, and the hosted sign-in page must exist before any third-party Application goes live. Requiring the hosted page from Phase 1 instead was considered and not chosen: it would make the MVP depend on a UI project.
+Embedded login is allowed for Applications staff create, which are either Substratal's own or a concierge customer's, so no unvetted third party ever handles a Substratal password. A [self-registered](../applications/#post-applications) Application is third-party: `app-tokens` refuses it with `403 embedded_login_not_allowed`, and it must use the hosted flow. The hosted sign-in page must exist before any self-registered Application can go live. Requiring the hosted page from Phase 1 instead was considered and not chosen: it would make the MVP depend on a UI project.
 
 An **app token** is the per-Application JWT that [Trust Model](../../trust-model/) describes. Two ways to get one:
 
@@ -266,6 +266,7 @@ Both paths produce the identical app token. Either way, issuance **fails** if th
 | Error | Status | When |
 |---|---|---|
 | `entitlement_required` | 403 | Resolved entitlement status isn't `active` (see [Access Control](../../access-control/)). `details.entitlement_status` says what it is, including `scheduled` for a grant whose `starts_at` hasn't arrived. |
+| `embedded_login_not_allowed` | 403 | `app-tokens` only: the Application is `self_registered`, so it must use the hosted flow. |
 | `application_not_available` | 409 | The Application's `review_status` is `suspended`/`rejected`/`pending_review` — see [Applications → review lifecycle](../../domain-model/applications/#the-review-lifecycle). A state conflict, not a permission failure, so it's the same `409` wherever this code appears. |
 | `tenant_suspended` | 403 | The Application's Tenant is `suspended` by the platform. See [Tenancy](../../domain-model/tenancy/#fields). |
 | `account_suspended` | 403 | The User is suspended. |

@@ -139,13 +139,15 @@ func (s *Server) authenticateUser(c *Call, tok string) (*Principal, error) {
 		AbsExpires    time.Time  `json:"absolute_expires_at"`
 		UserStatus    string     `json:"user_status"`
 		TestMode      bool       `json:"test_mode"`
+		ExpiresAt     *time.Time `json:"expires_at"`
 		EmailVerified bool       `json:"email_verified"`
 		Perms         []string   `json:"perms"`
 	}
 	err := db.One(c.ctx, c.q, &row, `select jsonb_build_object(
 			'revoked_at', s.revoked_at, 'idle_expires_at', s.idle_expires_at,
 			'absolute_expires_at', s.absolute_expires_at,
-			'user_status', u.status, 'test_mode', u.test_mode, 'email_verified', u.email_verified,
+			'user_status', u.status, 'test_mode', u.test_mode, 'expires_at', u.expires_at,
+			'email_verified', u.email_verified,
 			'perms', coalesce((select array_agg(distinct perm) from user_role_assignments a
 			                     join roles r on r.id = a.role_id, unnest(r.permissions) perm
 			                    where a.user_id = u.id and r.scope = 'platform'), '{}'))
@@ -160,7 +162,10 @@ func (s *Server) authenticateUser(c *Call, tok string) (*Principal, error) {
 	if row.TestMode != cl.TestMode {
 		return nil, httpx.ErrUnauthenticated()
 	}
-	if row.RevokedAt != nil || !row.AbsExpires.After(c.now) || row.UserStatus == "suspended" || row.UserStatus == "deleted" {
+	// An expired test-mode User's tokens stop working at expires_at, to
+	// the second, before the sweep has revoked anything.
+	if row.RevokedAt != nil || !row.AbsExpires.After(c.now) || row.UserStatus == "suspended" || row.UserStatus == "deleted" ||
+		(row.ExpiresAt != nil && !row.ExpiresAt.After(c.now)) {
 		return nil, httpx.ErrSessionRevoked()
 	}
 	p := &Principal{Type: "user", ID: cl.Sub, UserID: cl.Sub, SessionID: cl.Sid, AMR: cl.AMR,

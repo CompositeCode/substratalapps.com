@@ -105,6 +105,7 @@ paths:
                 display_name: { type: string, minLength: 1, maxLength: 100 }
                 application_id: { type: string, description: "Informational: records which app the signup came from. Grants nothing." }
                 test_mode: { type: boolean, default: false, description: "Create a test-mode User." }
+                expires_at: { type: string, format: date-time, description: "Test mode only: when the account stops working. Default 24 hours from now; at least 15 minutes away, at most 30 days. 422 expires_at_out_of_range, or live_user when test_mode is false." }
       responses:
         "400": { $ref: "#/components/responses/BadRequest" }
         "201":
@@ -178,6 +179,7 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/AuthSession" }
         "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
 
   /auth/token/refresh:
@@ -206,6 +208,7 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/AuthSession" }
         "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
 
   /auth/logout:
     post:
@@ -236,7 +239,7 @@ paths:
         - $ref: "#/components/parameters/ApiVersion"
       tags: [Auth]
       summary: Mint a per-app JWT from a platform session (embedded login)
-      description: "Requires a User token. Fails with 403 entitlement_required unless the user's resolved access to the Application is active, 409 application_not_available unless it's approved, and 403 tenant_suspended if its Tenant is suspended."
+      description: "Requires a User token. Fails with 403 embedded_login_not_allowed for a self-registered (third-party) Application, which must use the hosted flow; 403 entitlement_required unless the user's resolved access to the Application is active; 409 application_not_available unless it's approved; and 403 tenant_suspended if its Tenant is suspended."
       x-substratal-phase: mvp
       requestBody:
         required: true
@@ -701,6 +704,7 @@ paths:
                 display_name: { type: string, maxLength: 100 }
                 status: { type: string, enum: [invited, active], default: invited }
                 send_invitation: { type: boolean, default: true }
+                expires_at: { type: string, format: date-time, description: "Test-mode keys only: when the User stops working. Default 24 hours from now; at least 15 minutes away, at most 30 days. 422 expires_at_out_of_range, or live_user with a live key." }
       responses:
         "400": { $ref: "#/components/responses/BadRequest" }
         "201":
@@ -750,6 +754,7 @@ paths:
               properties:
                 email: { type: string, format: email }
                 status: { type: string, enum: [active, suspended], description: "users.manage only. active on a deleted User restores it." }
+                expires_at: { type: string, format: date-time, description: "users.manage only, test-mode Users only. At least 15 minutes from now and at most 30 days after created_at. Moving it later on an expired User brings them back and fires access.granted (test_user_extended)." }
       responses:
         "400": { $ref: "#/components/responses/BadRequest" }
         "200":
@@ -1091,7 +1096,14 @@ paths:
     post:
       operationId: applications.create
       tags: [Applications]
-      summary: Register an Application (applications.manage)
+      summary: Register an Application (applications.manage, or self-service into review)
+      description: >-
+        applications.manage creates any Application, approved by default (concierge onboarding).
+        Any other User with a verified email may submit their own: it's owned by the caller (or an
+        Organization they're an org_admin of), starts in pending_review, and can't set visibility,
+        access_tier, review_status, or review_notes (403 moderation_field_forbidden). Unverified
+        email is 403 email_not_verified; API Keys without applications.manage are 403 forbidden.
+        Self-service submissions are limited to 10 per User per day.
       x-substratal-phase: mvp
       parameters:
         - $ref: "#/components/parameters/ApiVersion"
@@ -1115,6 +1127,7 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "409": { $ref: "#/components/responses/Conflict" }
         "422": { $ref: "#/components/responses/Unprocessable" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
 
   /applications/{id}:
     parameters:
@@ -3279,6 +3292,7 @@ components:
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
         last_login_at: { type: [string, "null"], format: date-time }
+        expires_at: { type: [string, "null"], format: date-time, description: "When a test-mode User stops working (Auth → Test-mode Users → Lifetime). Always null for live Users." }
         plan: { $ref: "#/components/schemas/Plan" }
         plan_sources: { type: array, items: { $ref: "#/components/schemas/PlanSource" }, description: "What gives this User Standard: their own subscription, an Organization's, or both. Empty on Free." }
 
@@ -3483,6 +3497,7 @@ components:
               readOnly: true
               properties:
                 stale_override_counts: { type: object, additionalProperties: { type: integer } }
+            self_registered: { type: boolean, readOnly: true, description: "true when a developer submitted it themselves, not staff. A self-registered Application must use the hosted sign-in flow (POST /auth/app-tokens returns 403 embedded_login_not_allowed), and only applications.manage can turn on receives_platform_notifications for it." }
             test_mode: { type: boolean }
             created_at: { type: string, format: date-time }
             updated_at: { type: string, format: date-time }
@@ -3825,6 +3840,7 @@ components:
         - user.suspended
         - user.reactivated
         - user.deleted
+        - user.expired
         - user.erasure_requested
         - user.erasure_cancelled
         - user.erased
@@ -3973,6 +3989,7 @@ components:
         - user.suspended
         - user.reactivated
         - user.deleted
+        - user.expired
         - organization.member_added
         - organization.member_removed
         - application.review_status_changed
@@ -3999,6 +4016,8 @@ components:
         - user_suspended
         - user_reactivated
         - user_deleted
+        - test_user_expired
+        - test_user_extended
 
     WebhookEventEnvelope:
       type: object
@@ -4119,7 +4138,7 @@ components:
 
     DeviceInactiveReason:
       type: string
-      enum: [unregistered, session_revoked, user_suspended, user_deleted, stale, limit, credential_removed]
+      enum: [unregistered, session_revoked, user_suspended, user_deleted, test_user_expired, stale, limit, credential_removed]
 
     WebPushSubscription:
       type: object

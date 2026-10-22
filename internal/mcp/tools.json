@@ -499,8 +499,8 @@
     },
     {
       "name": "substratal_applications_create",
-      "title": "Register an Application (applications.manage)",
-      "description": "Register an Application (applications.manage)\n\nREST: POST /applications",
+      "title": "Register an Application (applications.manage, or self-service into review)",
+      "description": "Register an Application (applications.manage, or self-service into review)\n\napplications.manage creates any Application, approved by default (concierge onboarding). Any other User with a verified email may submit their own: it's owned by the caller (or an Organization they're an org_admin of), starts in pending_review, and can't set visibility, access_tier, review_status, or review_notes (403 moderation_field_forbidden). Unverified email is 403 email_not_verified; API Keys without applications.manage are 403 forbidden. Self-service submissions are limited to 10 per User per day.\n\nREST: POST /applications",
       "inputSchema": {
         "additionalProperties": false,
         "properties": {
@@ -668,7 +668,7 @@
         "idempotentHint": false,
         "openWorldHint": false,
         "readOnlyHint": false,
-        "title": "Register an Application (applications.manage)"
+        "title": "Register an Application (applications.manage, or self-service into review)"
       },
       "x_operation_id": "applications.create",
       "x_method": "POST",
@@ -993,6 +993,7 @@
                     "user.suspended",
                     "user.reactivated",
                     "user.deleted",
+                    "user.expired",
                     "user.erasure_requested",
                     "user.erasure_cancelled",
                     "user.erased",
@@ -1223,6 +1224,7 @@
                 "user.suspended",
                 "user.reactivated",
                 "user.deleted",
+                "user.expired",
                 "user.erasure_requested",
                 "user.erasure_cancelled",
                 "user.erased",
@@ -1533,7 +1535,7 @@
     {
       "name": "substratal_auth_createAppToken",
       "title": "Mint a per-app JWT from a platform session (embedded login)",
-      "description": "Mint a per-app JWT from a platform session (embedded login)\n\nRequires a User token. Fails with 403 entitlement_required unless the user's resolved access to the Application is active, 409 application_not_available unless it's approved, and 403 tenant_suspended if its Tenant is suspended.\n\nREST: POST /auth/app-tokens",
+      "description": "Mint a per-app JWT from a platform session (embedded login)\n\nRequires a User token. Fails with 403 embedded_login_not_allowed for a self-registered (third-party) Application, which must use the hosted flow; 403 entitlement_required unless the user's resolved access to the Application is active; 409 application_not_available unless it's approved; and 403 tenant_suspended if its Tenant is suspended.\n\nREST: POST /auth/app-tokens",
       "inputSchema": {
         "additionalProperties": false,
         "properties": {
@@ -2186,6 +2188,11 @@
               },
               "email": {
                 "format": "email",
+                "type": "string"
+              },
+              "expires_at": {
+                "description": "Test mode only: when the account stops working. Default 24 hours from now; at least 15 minutes away, at most 30 days. 422 expires_at_out_of_range, or live_user when test_mode is false.",
+                "format": "date-time",
                 "type": "string"
               },
               "password": {
@@ -6012,6 +6019,11 @@
                 "format": "email",
                 "type": "string"
               },
+              "expires_at": {
+                "description": "Test-mode keys only: when the User stops working. Default 24 hours from now; at least 15 minutes away, at most 30 days. 422 expires_at_out_of_range, or live_user with a live key.",
+                "format": "date-time",
+                "type": "string"
+              },
               "send_invitation": {
                 "default": true,
                 "type": "boolean"
@@ -6370,6 +6382,11 @@
                 "format": "email",
                 "type": "string"
               },
+              "expires_at": {
+                "description": "users.manage only, test-mode Users only. At least 15 minutes from now and at most 30 days after created_at. Moving it later on an expired User brings them back and fires access.granted (test_user_extended).",
+                "format": "date-time",
+                "type": "string"
+              },
               "status": {
                 "description": "users.manage only. active on a deleted User restores it.",
                 "enum": [
@@ -6445,6 +6462,7 @@
                         "user.suspended",
                         "user.reactivated",
                         "user.deleted",
+                        "user.expired",
                         "organization.member_added",
                         "organization.member_removed",
                         "application.review_status_changed",

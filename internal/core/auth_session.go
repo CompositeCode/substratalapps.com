@@ -40,12 +40,13 @@ func (c *Call) setAnyMode() error {
 	return err
 }
 
-// signAccess mints a platform access token for a session.
-func (c *Call) signAccess(userID, sessionID string, amr []string, emailVerified, testMode bool) (string, error) {
+// signAccess mints a platform access token for a session, never outliving
+// a test-mode User's expires_at.
+func (c *Call) signAccess(u userRow, sessionID string, amr []string) (string, error) {
 	return auth.SignJWT(c.ctx, c.s.Signer, accessClaims{
-		Iss: c.s.Issuer, Aud: platformAudience, Sub: userID, Sid: sessionID, AMR: amr,
-		EmailVerified: emailVerified, TestMode: testMode,
-		Iat: c.now.Unix(), Exp: c.now.Add(accessTTL).Unix(), Jti: ids.New(ids.AccessTokenJTI),
+		Iss: c.s.Issuer, Aud: platformAudience, Sub: u.ID, Sid: sessionID, AMR: amr,
+		EmailVerified: u.EmailVerified, TestMode: u.TestMode,
+		Iat: c.now.Unix(), Exp: c.now.Add(c.tokenTTL(u, accessTTL)).Unix(), Jti: ids.New(ids.AccessTokenJTI),
 	})
 }
 
@@ -66,7 +67,7 @@ func (c *Call) issueSession(u userRow, amr []string, identityID string) (authSes
 		values (:id, :u, :amr::text[], (case when :ip::text ~ '^[0-9a-fA-F:.]+$' then :ip::inet end), :ua, :tm,
 			:idle::timestamptz, :abs::timestamptz)`,
 		db.Args{"id": sid, "u": u.ID, "amr": db.TextArray(amr), "ip": ipArg, "ua": ua, "tm": u.TestMode,
-			"idle": db.Time(c.now.Add(sessionIdleTTL)), "abs": db.Time(c.now.Add(sessionAbsTTL))}); err != nil {
+			"idle": db.Time(c.now.Add(sessionIdleTTL)), "abs": db.Time(c.now.Add(c.tokenTTL(u, sessionAbsTTL)))}); err != nil {
 		return authSession{}, err
 	}
 	if err := c.alertNewSignIn(u.ID, sid, ua, c.ip); err != nil {
@@ -86,18 +87,18 @@ func (c *Call) issueSession(u userRow, amr []string, identityID string) (authSes
 			return authSession{}, err
 		}
 	}
-	at, err := c.signAccess(u.ID, sid, amr, u.EmailVerified, u.TestMode)
+	at, err := c.signAccess(u, sid, amr)
 	if err != nil {
 		return authSession{}, err
 	}
-	return authSession{TokenType: "Bearer", AccessToken: at, ExpiresIn: int(accessTTL.Seconds()),
+	return authSession{TokenType: "Bearer", AccessToken: at, ExpiresIn: int(c.tokenTTL(u, accessTTL).Seconds()),
 		RefreshToken: rtk, RefreshTokenExpiresIn: int(sessionIdleTTL.Seconds()),
 		SessionID: sid, UserID: u.ID, EmailVerified: u.EmailVerified}, nil
 }
 
 // revokeSessions revokes a User's sessions (all, or all but `except`),
 // and deactivates the push devices they registered. Suspension and
-// deletion deactivate every device the User holds, including ones an app
+// deletion (and test-mode expiry) deactivate every device the User holds, including ones an app
 // key registered with no session (Push Notifications → Sessions and
 // device lifecycle).
 func (c *Call) revokeSessions(userID, reason, except string) error {
@@ -108,6 +109,10 @@ func (c *Call) revokeSessions(userID, reason, except string) error {
 		}
 	case "deleted":
 		if err := c.deactivateDevices("d.user_id = :u", db.Args{"u": userID}, "user_deleted"); err != nil {
+			return err
+		}
+	case "test_user_expired":
+		if err := c.deactivateDevices("d.user_id = :u", db.Args{"u": userID}, "test_user_expired"); err != nil {
 			return err
 		}
 	}
@@ -145,11 +150,12 @@ func weakPassword(err error) error {
 func (s *Server) AuthSignup(w http.ResponseWriter, r *http.Request) {
 	s.serve(w, r, opts{op: "auth.signup", public: true, idem: idemOptional}, func(c *Call) error {
 		var in struct {
-			Email         string  `json:"email"`
-			Password      string  `json:"password"`
-			DisplayName   *string `json:"display_name"`
-			ApplicationID *string `json:"application_id"`
-			TestMode      bool    `json:"test_mode"`
+			Email         string     `json:"email"`
+			Password      string     `json:"password"`
+			DisplayName   *string    `json:"display_name"`
+			ApplicationID *string    `json:"application_id"`
+			TestMode      bool       `json:"test_mode"`
+			ExpiresAt     *time.Time `json:"expires_at"`
 		}
 		if err := c.Decode(&in); err != nil {
 			return err
@@ -169,6 +175,9 @@ func (s *Server) AuthSignup(w http.ResponseWriter, r *http.Request) {
 		}
 		if in.DisplayName != nil && (len([]rune(*in.DisplayName)) < 1 || len([]rune(*in.DisplayName)) > 100) {
 			f.Max("display_name", "too_long", 100)
+		}
+		if in.ExpiresAt != nil {
+			c.checkExpiresAt(&f, *in.ExpiresAt, in.TestMode, c.now)
 		}
 		if in.ApplicationID != nil {
 			if _, err := c.loadApp(*in.ApplicationID); err == db.ErrNotFound {
@@ -204,7 +213,7 @@ func (s *Server) AuthSignup(w http.ResponseWriter, r *http.Request) {
 			return err
 		}
 		u, err := c.createUser(newUser{Email: addr, Status: "active", DisplayName: deref(in.DisplayName),
-			SignupApp: in.ApplicationID, PasswordHash: hash})
+			SignupApp: in.ApplicationID, PasswordHash: hash, ExpiresAt: in.ExpiresAt})
 		if err != nil {
 			return err
 		}
@@ -310,6 +319,9 @@ func (s *Server) AuthLogin(w http.ResponseWriter, r *http.Request) {
 		}
 		if u.Status != "active" {
 			return invalidCredentials()
+		}
+		if u.expired(c.now) {
+			return testUserExpired()
 		}
 		if ident.MFAEnabled {
 			tok, err := c.issueToken("mfa_challenge", ids.MFAChallenge, u.ID, mfaChallengeTTL,
@@ -487,6 +499,9 @@ func (s *Server) AuthVerifyMfa(w http.ResponseWriter, r *http.Request) {
 			}
 			return tokenInvalid
 		}
+		if u.expired(c.now) {
+			return testUserExpired()
+		}
 		if err := c.consumeToken(t.TokenHash); err != nil {
 			return err
 		}
@@ -595,15 +610,18 @@ func (s *Server) AuthRefreshToken(w http.ResponseWriter, r *http.Request) {
 		if u.Status == "suspended" || u.Status == "deleted" {
 			return httpx.ErrSessionRevoked()
 		}
+		if u.expired(c.now) {
+			return testUserExpired()
+		}
 		next, err := c.rotateRefresh(rt)
 		if err != nil {
 			return err
 		}
-		at, err := c.signAccess(u.ID, rt.SessionID, rt.AMR, u.EmailVerified, u.TestMode)
+		at, err := c.signAccess(u, rt.SessionID, rt.AMR)
 		if err != nil {
 			return err
 		}
-		return c.OK(authSession{TokenType: "Bearer", AccessToken: at, ExpiresIn: int(accessTTL.Seconds()),
+		return c.OK(authSession{TokenType: "Bearer", AccessToken: at, ExpiresIn: int(c.tokenTTL(u, accessTTL).Seconds()),
 			RefreshToken: next, RefreshTokenExpiresIn: int(sessionIdleTTL.Seconds()),
 			SessionID: rt.SessionID, UserID: u.ID, EmailVerified: u.EmailVerified})
 	})
