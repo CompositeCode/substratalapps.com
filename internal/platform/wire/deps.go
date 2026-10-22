@@ -138,6 +138,7 @@ type Base struct {
 	Encrypter auth.Encrypter
 	Email     email.Sender
 	Push      push.Sender
+	Exports   core.ExportStore
 }
 
 // NewBase builds the shared dependencies.
@@ -167,7 +168,12 @@ func NewBase(ctx context.Context) (*Base, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Base{Config: cfg, Log: log, DB: d, Signer: signer, Encrypter: enc, Email: mail, Push: sender}, nil
+	exports, err := Exports(ctx, cfg)
+	if err != nil {
+		return nil, err
+	}
+	return &Base{Config: cfg, Log: log, DB: d, Signer: signer, Encrypter: enc, Email: mail, Push: sender,
+		Exports: exports}, nil
 }
 
 // Deliverer is the webhook delivery engine.
@@ -197,7 +203,7 @@ func (b *Base) Server(n core.Notifier) *core.Server {
 	}
 	core.AllowPrivateWebhookTargets = b.Config.Env != "production" && os.Getenv("WEBHOOKS_ALLOW_PRIVATE") == "true"
 	return core.New(core.Deps{
-		DB: b.DB, Signer: b.Signer, Encrypter: b.Encrypter, Email: b.Email, Notifier: n, Push: b.Push,
+		DB: b.DB, Signer: b.Signer, Encrypter: b.Encrypter, Email: b.Email, Notifier: n, Push: b.Push, Exports: b.Exports,
 		Billing: Billing(b.Config, b.Log), Cursors: httpx.Cursors{Key: key}, Log: b.Log,
 		Issuer: b.Config.Issuer, PublicBaseURL: b.Config.PublicBaseURL, AuthorizeURL: b.Config.AuthorizeURL,
 		DashboardURL: b.Config.DashboardURL, CORSOrigins: b.Config.CORSOrigins,

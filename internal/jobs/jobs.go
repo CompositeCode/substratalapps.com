@@ -61,6 +61,12 @@ func (r *Runner) Jobs() map[string]func(context.Context) error {
 			}
 			return r.Base.Deliverer().Run(ctx)
 		},
+		// every minute: write requested Audit Event exports
+		"audit-exports": func(ctx context.Context) error {
+			n, err := r.Core.RunAuditExports(ctx)
+			r.Base.Log.Info("audit exports", "written", n)
+			return err
+		},
 		// daily: stale devices, inactive-device deletion, inbox retention
 		"push-maintenance": func(ctx context.Context) error { return r.Core.PushMaintenance(ctx) },
 		// hourly

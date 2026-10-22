@@ -35,6 +35,7 @@ const (
 	Notification         = "ntf_"
 	NotificationDelivery = "ndl_"
 	SCIMToken            = "sct_"
+	AuditExport          = "aex_"
 )
 
 // Credential prefixes. Never logged, never echoed after issuance.

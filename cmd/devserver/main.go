@@ -56,20 +56,22 @@ func main() {
 			Stripe: stripe, Core: server, Log: base.Log})
 	}
 
-	// The 5-minute entitlement sweep, in-process.
+	// The 5-minute entitlement sweep and the audit-export worker, in-process.
 	runner := jobs.New(base)
-	go func() {
-		t := time.NewTicker(5 * time.Minute)
+	every := func(d time.Duration, job string) {
+		t := time.NewTicker(d)
 		defer t.Stop()
 		for {
 			select {
 			case <-ctx.Done():
 				return
 			case <-t.C:
-				_ = runner.Run(ctx, "entitlement-sweep")
+				_ = runner.Run(ctx, job)
 			}
 		}
-	}()
+	}
+	go every(5*time.Minute, "entitlement-sweep")
+	go every(15*time.Second, "audit-exports")
 
 	srv := &http.Server{Addr: base.Config.ListenAddr, Handler: mux, ReadHeaderTimeout: 10 * time.Second}
 	go func() {

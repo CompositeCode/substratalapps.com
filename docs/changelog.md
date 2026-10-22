@@ -12,6 +12,16 @@ What's changed in this specification over time. Every decision is written into t
 
 ---
 
+## 2026-10-22 — Audit Event exports
+
+The audit log can be exported to a file. See [API Reference → Audit → Exporting](../api-reference/audit/#exporting). `openapi.yaml` is now at `1.0.0-draft.8`, with 123 operations.
+
+- **`POST /audit-exports`** takes the same filters as `GET /audit-events`, as body fields, plus `format` (`ndjson` or `csv`). It confines the caller to the same scope as the list, requires `Idempotency-Key`, and returns `202`. A job writes the file, usually within a minute. Limited to 20 per caller per day.
+- **`GET /audit-exports/{id}`** shows the status, and once it's `ready`, a download link signed for 15 minutes. Only the requester and `audit.view` can see an export. Files and records are deleted after 7 days.
+- New audit action `audit.exported` (target type `audit_export`), written when the file is ready, with the requester as actor.
+- **Retention** needed no new code. It's already enforced: the one-year hot window, and the nightly archival of older events, shape-only, to indefinite cold storage ([Audit log lifecycle](../non-functional-requirements/#audit-log-lifecycle)).
+- Migration `0011_audit_exports`. Infrastructure: a private exports bucket with a 7-day lifecycle rule, and an `audit-exports` schedule every minute.
+
 ## 2026-10-22 — Self-service Application registration
 
 `POST /applications` is open to developers, not just staff. See [API Reference → Applications](../api-reference/applications/#post-applications) and [The review lifecycle](../domain-model/applications/#the-review-lifecycle). `openapi.yaml` is now at `1.0.0-draft.7`.

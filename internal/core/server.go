@@ -67,6 +67,7 @@ type Deps struct {
 	Notifier  Notifier
 	Billing   Billing     // nil disables checkout/portal (503 billing_unavailable)
 	Push      push.Sender // nil logs pushes instead of sending them (PUSH_BACKEND=log)
+	Exports   ExportStore // nil disables audit exports (503)
 	Cursors   httpx.Cursors
 	Log       *slog.Logger
 

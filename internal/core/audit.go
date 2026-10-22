@@ -44,81 +44,114 @@ func (c *Call) ownsTenant(t tenantRow) (bool, error) {
 	return c.isOrgAdmin(*t.OwnerOrganizationID)
 }
 
+// auditForced is the scope a caller without audit.view is confined to: at
+// most one field is set, and none for audit.view.
+type auditForced struct {
+	ApplicationID string `json:"application_id,omitempty"`
+	TargetUserID  string `json:"target_user_id,omitempty"`
+	TenantID      string `json:"tenant_id,omitempty"`
+}
+
 // auditScope returns the forced scope for the caller, or 403.
-func (c *Call) auditScope(targetUser, tenant *string) (where []string, args db.Args, err error) {
-	args = db.Args{}
+func (c *Call) auditScope(targetUser, tenant *string) (auditForced, error) {
 	if c.can("audit.view") {
-		return nil, args, nil
+		return auditForced{}, nil
 	}
 	if app, ok := c.p.AppKey(); ok {
 		if !c.p.Perms["audit.view"] {
-			return nil, nil, httpx.Forbidden("audit.view")
+			return auditForced{}, httpx.Forbidden("audit.view")
 		}
-		args["forced_app"] = app
-		return []string{"a.application_id = :forced_app"}, args, nil
+		return auditForced{ApplicationID: app}, nil
 	}
 	if c.p.IsUser() && targetUser != nil && *targetUser == c.p.UserID {
-		args["forced_user"] = c.p.UserID
-		return []string{"a.target_user_id = :forced_user"}, args, nil
+		return auditForced{TargetUserID: c.p.UserID}, nil
 	}
 	if tenant != nil {
 		t, err := c.loadTenant(*tenant)
 		if err == nil {
 			if owner, err := c.ownsTenant(t); err != nil {
-				return nil, nil, err
+				return auditForced{}, err
 			} else if owner {
-				args["forced_tenant"] = t.ID
-				return []string{"a.tenant_id = :forced_tenant"}, args, nil
+				return auditForced{TenantID: t.ID}, nil
 			}
 		}
 	}
-	return nil, nil, httpx.Forbidden("audit.view")
+	return auditForced{}, httpx.Forbidden("audit.view")
+}
+
+// auditFilters are GET /audit-events' filters, and an export's.
+type auditFilters struct {
+	TargetUserID   *string    `json:"target_user_id,omitempty"`
+	TargetType     *string    `json:"target_type,omitempty"`
+	TargetID       *string    `json:"target_id,omitempty"`
+	ActorID        *string    `json:"actor_id,omitempty"`
+	ActorType      *string    `json:"actor_type,omitempty"`
+	Action         []string   `json:"action,omitempty"`
+	ApplicationID  *string    `json:"application_id,omitempty"`
+	OrganizationID *string    `json:"organization_id,omitempty"`
+	TenantID       *string    `json:"tenant_id,omitempty"`
+	Since          *time.Time `json:"since,omitempty"`
+	Until          *time.Time `json:"until,omitempty"`
+}
+
+// auditWhere is the where clause for a forced scope and filters.
+func auditWhere(forced auditForced, f auditFilters) ([]string, db.Args) {
+	var where []string
+	args := db.Args{}
+	add := func(cond, key string, v *string) {
+		if v != nil && *v != "" {
+			where = append(where, cond)
+			args[key] = *v
+		}
+	}
+	add("a.application_id = :forced_app", "forced_app", &forced.ApplicationID)
+	add("a.target_user_id = :forced_user", "forced_user", &forced.TargetUserID)
+	add("a.tenant_id = :forced_tenant", "forced_tenant", &forced.TenantID)
+	add("a.target_user_id = :tu", "tu", f.TargetUserID)
+	add("a.target_type = :tt", "tt", f.TargetType)
+	add("a.target_id = :ti", "ti", f.TargetID)
+	add("a.actor_id = :ai", "ai", f.ActorID)
+	add("a.actor_type = :at", "at", f.ActorType)
+	add("a.application_id = :app", "app", f.ApplicationID)
+	add("a.organization_id = :org", "org", f.OrganizationID)
+	add("a.tenant_id = :tnt", "tnt", f.TenantID)
+	if len(f.Action) > 0 {
+		where = append(where, "a.action = any(:acts::text[])")
+		args["acts"] = db.TextArray(f.Action)
+	}
+	if f.Since != nil {
+		where = append(where, "a.timestamp >= :since::timestamptz")
+		args["since"] = db.Time(*f.Since)
+	}
+	if f.Until != nil {
+		where = append(where, "a.timestamp < :until::timestamptz")
+		args["until"] = db.Time(*f.Until)
+	}
+	return where, args
 }
 
 func (s *Server) AuditList(w http.ResponseWriter, r *http.Request, params gen.AuditListParams) {
 	s.serve(w, r, opts{op: "audit.list"}, func(c *Call) error {
-		var targetUser *string
+		f := auditFilters{TargetType: enumStr(params.TargetType), TargetID: params.TargetId, ActorID: params.ActorId,
+			ActorType: enumStr(params.ActorType), ApplicationID: params.ApplicationId, OrganizationID: params.OrganizationId,
+			TenantID: params.TenantId, Since: params.Since, Until: params.Until}
 		if params.TargetUserId != nil {
 			uid, err := c.selfID(*params.TargetUserId)
 			if err != nil {
 				return err
 			}
-			targetUser = &uid
+			f.TargetUserID = &uid
 		}
-		where, args, err := c.auditScope(targetUser, params.TenantId)
+		if params.Action != nil {
+			for _, a := range *params.Action {
+				f.Action = append(f.Action, string(a))
+			}
+		}
+		forced, err := c.auditScope(f.TargetUserID, params.TenantId)
 		if err != nil {
 			return err
 		}
-		add := func(cond, key string, v *string) {
-			if v != nil {
-				where = append(where, cond)
-				args[key] = *v
-			}
-		}
-		add("a.target_user_id = :tu", "tu", targetUser)
-		add("a.target_type = :tt", "tt", enumStr(params.TargetType))
-		add("a.target_id = :ti", "ti", params.TargetId)
-		add("a.actor_id = :ai", "ai", params.ActorId)
-		add("a.actor_type = :at", "at", enumStr(params.ActorType))
-		add("a.application_id = :app", "app", params.ApplicationId)
-		add("a.organization_id = :org", "org", params.OrganizationId)
-		add("a.tenant_id = :tnt", "tnt", params.TenantId)
-		if params.Action != nil && len(*params.Action) > 0 {
-			acts := make([]string, len(*params.Action))
-			for i, a := range *params.Action {
-				acts[i] = string(a)
-			}
-			where = append(where, "a.action = any(:acts::text[])")
-			args["acts"] = db.TextArray(acts)
-		}
-		if params.Since != nil {
-			where = append(where, "a.timestamp >= :since::timestamptz")
-			args["since"] = db.Time(*params.Since)
-		}
-		if params.Until != nil {
-			where = append(where, "a.timestamp < :until::timestamptz")
-			args["until"] = db.Time(*params.Until)
-		}
+		where, args := auditWhere(forced, f)
 		lim := httpx.Limit(params.Limit)
 		args["lim"] = int64(lim + 1)
 		filters := httpx.Filters(c.r)
@@ -155,11 +188,11 @@ func (s *Server) AuditGet(w http.ResponseWriter, r *http.Request, id string) {
 		} else if err != nil {
 			return err
 		}
-		where, args, err := c.auditScope(ev.TargetUserID, ev.TenantID)
+		forced, err := c.auditScope(ev.TargetUserID, ev.TenantID)
 		if err != nil {
 			return httpx.NotFoundResource("audit_event")
 		}
-		if len(where) > 0 {
+		if where, args := auditWhere(forced, auditFilters{}); len(where) > 0 {
 			args["id"] = id
 			rows, err := c.q.Query(c.ctx, `select to_jsonb(a.id) from audit_events a where a.id = :id and `+
 				strings.Join(where, " and "), args)

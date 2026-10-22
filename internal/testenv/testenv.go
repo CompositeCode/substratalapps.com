@@ -59,6 +59,7 @@ type Env struct {
 	Mail      *email.Capture
 	Deliverer *webhooks.Deliverer
 	Push      *push.Recorder // every push the API sends, instead of APNs/FCM/Web Push
+	Exports   *Exports       // finished audit exports, instead of S3
 	Signer    *auth.LocalSigner
 	Admin     string // superadmin access token
 	AdminID   string
@@ -269,12 +270,14 @@ func NewWith(t testing.TB, opts Options) *Env {
 	deliverer := webhooks.New(d, enc, mail, log)
 	deliverer.AllowPrivate = true
 	recorder := &push.Recorder{}
-	s := core.New(core.Deps{DB: d, Signer: signer(), Encrypter: enc, Email: mail, Push: recorder,
+	exports := &Exports{}
+	s := core.New(core.Deps{DB: d, Signer: signer(), Encrypter: enc, Email: mail, Push: recorder, Exports: exports,
 		Cursors: httpx.Cursors{Key: []byte("test-cursor-key")}, Log: log,
 		Issuer: "https://api.substratalapps.com", PublicBaseURL: "http://localhost", AuthorizeURL: "https://auth.substratalapps.com/authorize",
 		DashboardURL: "https://dashboard.test", DisableRateLimits: !opts.RateLimits, Billing: opts.Billing, Now: opts.Now})
 	srv := httptest.NewServer(s.Handler())
-	e := &Env{T: t, Server: srv, Core: s, DB: d, Mail: mail, Deliverer: deliverer, Push: recorder, Signer: signer(), Validate: true,
+	e := &Env{T: t, Server: srv, Core: s, DB: d, Mail: mail, Deliverer: deliverer, Push: recorder, Exports: exports,
+		Signer: signer(), Validate: true,
 		validator: specValidator(t)}
 	t.Cleanup(func() { srv.Close(); d.Close() })
 	adminEmail := "admin+" + Unique() + "@example.com"
@@ -285,6 +288,43 @@ func NewWith(t testing.TB, opts Options) *Env {
 	e.AdminID = id
 	e.Admin = e.Login(adminEmail, AdminPassword).Token()
 	return e
+}
+
+// Exports is an in-memory core.ExportStore. Its URLs are
+// https://exports.test/<key>; Download reads one back.
+type Exports struct {
+	mu    sync.Mutex
+	files map[string][]byte
+}
+
+func (x *Exports) Put(_ context.Context, key, _ string, body io.ReadSeeker) error {
+	b, err := io.ReadAll(body)
+	if err != nil {
+		return err
+	}
+	x.mu.Lock()
+	defer x.mu.Unlock()
+	if x.files == nil {
+		x.files = map[string][]byte{}
+	}
+	x.files[key] = b
+	return nil
+}
+
+func (x *Exports) URL(_ context.Context, key string, ttl time.Duration) (string, error) {
+	return "https://exports.test/" + key + "?ttl=" + ttl.String(), nil
+}
+
+// Download returns the file a URL from this store points at.
+func (x *Exports) Download(rawURL string) ([]byte, bool) {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return nil, false
+	}
+	x.mu.Lock()
+	defer x.mu.Unlock()
+	b, ok := x.files[strings.TrimPrefix(u.Path, "/")]
+	return b, ok
 }
 
 // Unique returns a short random suffix for emails, slugs, and names.

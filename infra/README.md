@@ -257,6 +257,10 @@ The delivery worker reserves 5 concurrent executions, so a burst of deliveries c
 
 Cost is negligible at Tier 0 volume (Glacier Deep Archive is priced for exactly this shape of rarely-read, kept-forever data) — this is about bounding Aurora's hot-table size and honoring the redaction-on-age guarantee, not about saving money on S3 itself.
 
+### Audit exports
+
+[`POST /audit-exports`](https://compositecode.github.io/substratalapps.com/api-reference/audit/#exporting) files go to a second private bucket, `substratal-prod-audit-exports-<account>` (SSE-S3, public access blocked), with a lifecycle rule that deletes every object after 7 days, matching the export record's `expires_at`. The `audit-exports` job runs every minute on the jobs Lambda, pages through the matching events into a temporary file, and uploads it (`AUDIT_EXPORT_BUCKET`, `s3:PutObject`). The API Lambda signs the 15-minute download links, so it holds `s3:GetObject` on that bucket only. Locally, exports are written under `.dev/audit-exports` and the devserver runs the worker every 15 seconds.
+
 ## Local development
 
 The RDS Data API choice that keeps Tier 0 NAT-free has a real cost: it doesn't have a clean open-source local emulator, so a developer can't just point the production data-access code at "Data API, but local" the way they could with a plain Postgres driver.

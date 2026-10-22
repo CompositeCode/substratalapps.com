@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Substratal Apps — Platform API
-  version: "1.0.0-draft.7"
+  version: "1.0.0-draft.8"
   summary: >-
     User accounts, auth, roles, per-app entitlements (the on/off access
     switch), profiles, settings, organizations, tenancy, subscription billing,
@@ -2244,6 +2244,56 @@ paths:
               schema: { $ref: "#/components/schemas/AuditEvent" }
         "404": { $ref: "#/components/responses/NotFound" }
 
+  /audit-exports:
+    post:
+      operationId: audit.createExport
+      tags: [Audit]
+      summary: Export Audit Events to a file (asynchronous)
+      description: >-
+        Exports every Audit Event matching the same filters as GET /audit-events, in the caller's
+        scope there, as NDJSON or CSV. Hot window only. Returns 202 at once; a job writes the file,
+        usually within a minute. Poll GET /audit-exports/{id} until status is ready, then download
+        from download_url. Exports are kept 7 days. Writes audit.exported when the file is ready.
+      x-substratal-phase: phase3
+      parameters:
+        - $ref: "#/components/parameters/ApiVersion"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AuditExportRequest" }
+      responses:
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "202":
+          description: Export queued
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuditExport" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "422": { $ref: "#/components/responses/Unprocessable" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /audit-exports/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    get:
+      operationId: audit.getExport
+      tags: [Audit]
+      summary: Fetch an export's status, and its download link once ready
+      description: "Visible to whoever requested it, and to audit.view. download_url is freshly signed on every call and valid for 15 minutes."
+      x-substratal-phase: phase3
+      parameters:
+        - $ref: "#/components/parameters/ApiVersion"
+      responses:
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "200":
+          description: The export
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuditExport" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
   # ───────────────────────────── Webhooks ─────────────────────────────
 
   /webhooks:
@@ -3799,6 +3849,7 @@ components:
         - user.mfa_enabled
         - user.mfa_disabled
         - user.mfa_reset
+        - audit.exported
         - entitlement.granted
         - entitlement.disabled
         - entitlement.revoked
@@ -3846,7 +3897,40 @@ components:
 
     AuditTargetType:
       type: string
-      enum: [user, entitlement, role, role_assignment, application, organization, subscription, tenant, tier_change_request, api_key, webhook, push_credential, device]
+      enum: [user, entitlement, role, role_assignment, application, organization, subscription, tenant, tier_change_request, api_key, webhook, push_credential, device, audit_export]
+
+    AuditExportRequest:
+      type: object
+      description: "The same filters as GET /audit-events, as body fields, plus format."
+      properties:
+        format: { type: string, enum: [ndjson, csv], default: ndjson }
+        target_user_id: { type: string, description: "A User id, or me." }
+        target_type: { $ref: "#/components/schemas/AuditTargetType" }
+        target_id: { type: string }
+        actor_id: { type: string }
+        actor_type: { type: string, enum: [user, api_key, system] }
+        action: { type: array, items: { $ref: "#/components/schemas/AuditAction" }, maxItems: 100 }
+        application_id: { type: string }
+        organization_id: { type: string }
+        tenant_id: { type: string }
+        since: { type: string, format: date-time }
+        until: { type: string, format: date-time }
+
+    AuditExport:
+      type: object
+      properties:
+        id: { type: string }
+        status: { type: string, enum: [pending, running, ready, failed] }
+        format: { type: string, enum: [ndjson, csv] }
+        filters: { type: object, description: "The filters as requested, with target_user_id me resolved to the caller's id." }
+        row_count: { type: [integer, "null"], description: "Set once ready." }
+        download_url: { type: [string, "null"], format: uri, description: "Set once ready. Signed, valid for 15 minutes; fetch the export again for a fresh one." }
+        download_url_expires_at: { type: [string, "null"], format: date-time }
+        error: { type: [string, "null"], description: "Set when failed: too_many_rows (over 200,000), too_large (over 400 MB), or internal_error." }
+        created_at: { type: string, format: date-time }
+        completed_at: { type: [string, "null"], format: date-time }
+        expires_at: { type: string, format: date-time, description: "When the file and this record are deleted: 7 days after the request." }
+        test_mode: { type: boolean }
 
     ScimToken:
       type: object

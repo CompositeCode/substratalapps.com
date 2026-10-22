@@ -28,7 +28,7 @@ The complete Platform API contract as an [OpenAPI 3.1](https://spec.openapis.org
 | API version | `Substratal-Version: 1` request header, required (see [Conventions → Versioning](../api-reference/conventions/#versioning)) |
 | Authentication | `Authorization: Bearer <token>`: a user access token or an API Key (`bearerAuth`) |
 | Content type | `application/json; charset=utf-8` |
-| Operations | 121, every one with a stable `operationId` |
+| Operations | 123, every one with a stable `operationId` |
 | Schemas | 109 reusable components under `components.schemas` |
 
 The prose pages under [API Reference](../api-reference/) are authoritative. `openapi.yaml` is kept in sync with them by hand, and the implementation's contract tests validate every response against it, so a drift between the two fails CI rather than reaching a client. See [Conventions → Machine-readable](../api-reference/conventions/#machine-readable).
@@ -55,10 +55,10 @@ Operations are grouped by tag, and each tag matches an API Reference page that e
 | Applications | 4 | [Applications](../api-reference/applications/) |
 | Entitlements | 6 | [Entitlements](../api-reference/entitlements/) |
 | Roles & Permissions | 10 | [Roles & Permissions](../api-reference/roles-and-permissions/) |
-| Organizations | 11 | [Organizations](../api-reference/organizations/) |
+| Organizations | 14 | [Organizations](../api-reference/organizations/) |
 | Tenancy | 6 | [Tenancy](../api-reference/tenancy/) |
 | Billing | 7 | [Billing](../api-reference/billing/) |
-| Audit | 2 | [Audit](../api-reference/audit/) |
+| Audit | 4 | [Audit](../api-reference/audit/) |
 | Webhooks | 9 | [Webhooks](../api-reference/webhooks/) |
 | Notifications | 17 | [Push Notifications](../api-reference/notifications/) |
 | API Keys | 6 | [API Keys](../api-reference/api-keys/) |
@@ -67,6 +67,7 @@ Some endpoints aren't in the document's `paths`, because they follow external st
 
 - `GET /.well-known/jwks.json` and `GET /.well-known/openid-configuration`: signing keys and discovery, for verifying app tokens with any standard JWT library. See [Auth → Signing keys](../api-reference/auth/#signing-keys-jwks).
 - `/mcp`: the [MCP Server](../mcp-server/), generated from this document's `operationId`s.
+- `/scim/v2/…`: [SCIM 2.0](../api-reference/scim/) provisioning, following RFC 7644.
 
 ## Authentication in the spec
 
