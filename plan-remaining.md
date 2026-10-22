@@ -56,7 +56,6 @@ The API is complete, but the user-facing pages its emails and redirects point to
 Matches [Roadmap → Phase 3](https://compositecode.github.io/substratalapps.com/roadmap/#phase-3) — explicitly **not** built speculatively ahead of the triggers named in [Scale-out](#scale-out) and [Applications → The review lifecycle](https://compositecode.github.io/substratalapps.com/domain-model/applications/#the-review-lifecycle):
 
 - **SSO broker integration** (`sso_connections` becoming real, an actual WorkOS-or-equivalent wiring behind `POST /auth/sso/{provider}/callback`) — the schema and the route exist from Phase 1 per [Auth → Native auth and per-Organization SSO](https://compositecode.github.io/substratalapps.com/api-reference/auth/#native-auth-and-per-organization-sso), deliberately built in advance precisely so this phase is additive wiring, not a migration. Triggered by a real Organization actually asking for it, not a phase-number default.
-- SCIM-style provisioning.
 - Richer audit/compliance views (filtering, export) — driven by actual [Compliance](https://compositecode.github.io/substratalapps.com/compliance/) needs (a SOC 2 audit, a customer's data-export request), not built ahead of either.
 - **The hosted sign-in page** above, if no first-party app has needed it sooner. Self-service Application registration is built, so this is now what stands between a self-registered Application and going live.
 

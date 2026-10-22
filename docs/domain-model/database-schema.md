@@ -439,6 +439,17 @@ No `updated_at`, no soft-delete column — this table is append-only by design (
 
 **Enforcement, not just storage:** the `restrict_destructive` check happens in the same request-handling layer as the permission check — both read from the authenticated key's row, both must pass. The classification of which operations count as destructive lives in exactly one place in the implementation (a lookup by HTTP method + the specific Entitlement/Role/Organization-member/Tenant-tier mutations named in [API Keys → Agent keys & `restrict_destructive`](../../api-reference/api-keys/#agent-keys--restrict_destructive)), shared by this check and by the MCP server's `destructiveHint` tool-annotation generation — not reimplemented twice and left to drift.
 
+## scim_tokens
+
+| Column | Type | Constraint |
+|---|---|---|
+| `id` | `text` | PK, `sct_…` |
+| `organization_id` | `text` | FK → `organizations`, **unique**: at most one token per Organization |
+| `secret_hash` | `text` | not null, unique — SHA-256 of the `scim_…` secret, never the secret |
+| `created_by` | `text` | FK → `users` |
+| `test_mode` | `boolean` | the mode the token's calls run in; no mode policy, like `api_keys`, since it's resolved by hash first |
+| `created_at`, `last_used_at` | `timestamptz` | |
+
 ## webhook_subscriptions, webhook_events, webhook_deliveries
 
 ```sql
