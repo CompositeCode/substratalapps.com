@@ -354,7 +354,7 @@ func (e *Env) Do(rq Req) *Resp {
 	b, _ := io.ReadAll(resp.Body)
 	r := &Resp{T: e.T, Status: resp.StatusCode, Body: b, Header: resp.Header}
 	if e.Validate && !strings.HasPrefix(rq.Path, "/.well-known/") && !strings.HasPrefix(rq.Path, "/mcp") &&
-		!strings.HasPrefix(rq.Path, "/internal/") {
+		!strings.HasPrefix(rq.Path, "/internal/") && !strings.HasPrefix(rq.Path, "/scim/") {
 		e.contract(rq, raw, resp, b)
 	}
 	return r
