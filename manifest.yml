@@ -2,6 +2,10 @@
 # scripts/docs-build.rb on main's GitHub build; each entry has a frozen
 # static copy at <version>/ on this branch, served at /versions/<version>/.
 versions:
+- version: 1.7.2
+  released: '2026-10-22'
+  commit: 8d1a3f6ed856747a33e07b8fb48c66ce607337d9
+  summary: 'Merge pull request #62 from CompositeCode/feature/scim'
 - version: 1.7.1
   released: '2026-10-22'
   commit: 364ce5bb0458b14bd90d076a972d99d7e3fecfcf
