@@ -44,6 +44,16 @@ func TestAPIVersionHeader(t *testing.T) {
 		t.Fatal("oauth/token must not require Substratal-Version")
 	}
 
+	// A known path with the wrong method is 405, naming the methods it has.
+	r = e.Do(testenv.Req{Method: "PUT", Path: "/health"}).ExpectErr(405, "method_not_allowed")
+	if r.Header.Get("Allow") != "GET" {
+		t.Fatalf("Allow = %q, want GET", r.Header.Get("Allow"))
+	}
+	r = e.Do(testenv.Req{Method: "PUT", Path: "/users/me", Token: u.Token}).ExpectErr(405, "method_not_allowed")
+	if r.Header.Get("Allow") != "GET, PATCH, DELETE" {
+		t.Fatalf("Allow = %q, want GET, PATCH, DELETE", r.Header.Get("Allow"))
+	}
+
 	// The /v1 prefix is gone, and an unknown path is still a 404.
 	e.Get("/v1/users/me", u.Token).ExpectErr(404, "not_found")
 	e.Do(testenv.Req{Method: "GET", Path: "/nope", Header: noVersion}).ExpectErr(404, "not_found")

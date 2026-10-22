@@ -143,13 +143,38 @@ func (s *Server) Handler() http.Handler {
 	return s.middleware(versioned(mux))
 }
 
+// routeMethods are the methods any route uses, for working out Allow.
+var routeMethods = []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete}
+
+// allowedMethods lists the methods that do have a route at r's path, for a
+// request whose own method doesn't (it fell through to the catch-all).
+func allowedMethods(mux *http.ServeMux, r *http.Request) []string {
+	var out []string
+	for _, m := range routeMethods {
+		probe := r.Clone(r.Context())
+		probe.Method = m
+		if _, p := mux.Handler(probe); p != "" && p != "/" {
+			out = append(out, m)
+		}
+	}
+	return out
+}
+
 // versioned requires Substratal-Version on every generated route before it
 // runs, so a missing version is reported ahead of any parameter or body
-// error. Unmatched paths, the well-known endpoints, SCIM, and the
-// unversioned routes pass through.
+// error. A known path called with the wrong method gets 405 with Allow,
+// rather than the catch-all 404. Unmatched paths, the well-known
+// endpoints, SCIM, and the unversioned routes pass through.
 func versioned(mux *http.ServeMux) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, pattern := mux.Handler(r)
+		if pattern == "/" && r.Method != http.MethodOptions {
+			if allowed := allowedMethods(mux, r); len(allowed) > 0 {
+				w.Header().Set("Allow", strings.Join(allowed, ", "))
+				httpx.WriteError(w, httpx.ErrMethodNotAllowed(allowed))
+				return
+			}
+		}
 		if pattern == "" || pattern == "/" || strings.HasPrefix(pattern, "GET /.well-known/") ||
 			strings.HasPrefix(pattern, "/scim/v2/") || unversioned[pattern] {
 			mux.ServeHTTP(w, r)

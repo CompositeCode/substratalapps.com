@@ -12,7 +12,7 @@ What's changed in this specification over time. Every decision is written into t
 
 ---
 
-## 2026-10-21 — Self-service Application registration
+## 2026-10-22 — Self-service Application registration
 
 `POST /applications` is open to developers, not just staff. See [API Reference → Applications](../api-reference/applications/#post-applications) and [The review lifecycle](../domain-model/applications/#the-review-lifecycle). `openapi.yaml` is now at `1.0.0-draft.7`.
 
@@ -23,6 +23,11 @@ What's changed in this specification over time. Every decision is written into t
 - **Platform-managed Entitlements wait for approval.** `free` and `subscription` rows are granted only to an Application that has been approved, and approving one grants them. Before this, a `standard` submission would have been granted to every Standard subscriber the moment it was created, firing `access.granted` to an unreviewed developer.
 
 Self-registered Applications still can't go live until the hosted sign-in page exists.
+
+## 2026-10-22 — Version header declared in `openapi.yaml`; 405 for a wrong method
+
+- **`openapi.yaml` declares `Substratal-Version`.** Every versioned operation now carries the shared `ApiVersion` header parameter (`Substratal-Version`, enum `1`) and documents its `400` (`api_version_required`, `unsupported_api_version`). Generated clients learn the header from the spec instead of needing it configured by hand. `GET /health` and `POST /auth/oauth/token` don't declare it, because they're exempt. Nothing changes on the wire: the API already required the header ([Conventions → Versioning](../api-reference/conventions/#versioning)).
+- **`405 method_not_allowed`.** Calling a path that exists with a method it doesn't support (for example `PUT /health`) now returns `405` with an `Allow` header and `details.allowed`, instead of the catch-all `404 not_found`. See [Conventions → Errors](../api-reference/conventions/#errors).
 
 ## 2026-10-21 — SCIM provisioning
 
