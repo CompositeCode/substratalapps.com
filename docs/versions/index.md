@@ -10,7 +10,7 @@ nav_order: 17
 Every released version of this specification. Each time the site is published, it gets a new version, and a frozen, read-only copy of it is kept here. A link to an old version keeps showing exactly what that version said.
 {: .fs-6 .fw-300 }
 
-This is the version of the **documentation**. It is separate from the API's own `/v1` path version, which is covered in [Conventions](../api-reference/conventions/). For what changed, see the [Changelog](../changelog/).
+This is the version of the **documentation**. It is separate from the API's own version, the `Substratal-Version` header, which is covered in [Conventions](../api-reference/conventions/). For what changed, see the [Changelog](../changelog/).
 
 ---
 

@@ -2,7 +2,7 @@
 // HTTP, JSON-RPC 2.0, one buffered JSON response per request, no server
 // push. It's a protocol gateway, not a new capability: every tool call is
 // forwarded, with the caller's own Bearer credential unchanged, to the
-// matching /v1 REST call, so Access Control, restrict_destructive, rate
+// matching REST call, so Access Control, restrict_destructive, rate
 // limits, and the audit trail all apply exactly as they do to curl.
 //
 // The session is stateless: Mcp-Session-Id is a signed, self-contained
@@ -87,9 +87,13 @@ func Annotations(name string) map[string]any {
 // newest first.
 var SupportedVersions = []string{"2025-06-18", "2025-03-26"}
 
+// APIVersion is the REST API version (Substratal-Version) every tool call
+// is made against; the tools in tools.json describe that version's shape.
+const APIVersion = "1"
+
 // Server handles POST /mcp.
 type Server struct {
-	// API is where tool calls go: an HTTP client to the API's own /v1 (API
+	// API is where tool calls go: an HTTP client to the API's REST routes (API
 	// Gateway in AWS), or an in-process transport in the devserver.
 	API     *http.Client
 	BaseURL string // e.g. https://api.substratalapps.com
@@ -312,6 +316,7 @@ func (s *Server) call(r *http.Request, t tool, args map[string]json.RawMessage) 
 	}
 	req.Header.Set("Authorization", r.Header.Get("Authorization"))
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Substratal-Version", APIVersion)
 	if rid := r.Header.Get("X-Request-Id"); rid != "" {
 		req.Header.Set("X-Request-Id", rid)
 	}

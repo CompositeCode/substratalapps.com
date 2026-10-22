@@ -18,7 +18,7 @@ nav_order: 3
 An atomic, checkable capability, written as a dotted string key: `users.manage`, `billing.refund`, `app.timetrack.export`. Permissions are never assigned to a user directly — only through a Role. There's no standalone `Permission` resource with its own lifecycle; the catalog of valid keys is effectively static, defined by the platform (for platform-scoped keys) and by each Application (for its own `app.<slug>.*` keys).
 
 ```
-GET /v1/permissions
+GET /permissions
 ```
 returns the full known set, for building role-assignment UI — see [API Reference → Roles & Permissions](../../api-reference/roles-and-permissions/).
 
@@ -53,7 +53,7 @@ The exact permission set behind each built-in [PlatformRole](#platformrole):
 | `billing_admin` | `billing.manage`, `billing.refund`, `audit.view`, `users.list` |
 | `member` | None — the default on signup; every permission a `member` effectively has comes from self-service endpoints (`me`), not from a granted permission. |
 
-These are the platform's own seed Roles, not a fixed enum — `superadmin` can define additional PlatformRoles with narrower grants (e.g. a `support_readonly` with only `users.list` and `audit.view`, no `entitlements.manage`) via `POST /v1/roles`.
+These are the platform's own seed Roles, not a fixed enum — `superadmin` can define additional PlatformRoles with narrower grants (e.g. a `support_readonly` with only `users.list` and `audit.view`, no `entitlements.manage`) via `POST /roles`.
 
 ## Role
 
@@ -92,7 +92,7 @@ The join record between a User and a Role.
 | `assigned_at` | timestamp | |
 | `assigned_by` | object | `{ "type": "user" \| "api_key" \| "system", "id": "…" }`, the same actor shape as an [Audit Event](../orders-and-audit/#audit-event). The `member` Role assigned at signup is `system`. |
 
-An Application's `default_app_role`, if set, is held **implicitly** by every user with active access, with no assignment row. `GET /v1/users/{id}/roles` lists it with `implicit: true`.
+An Application's `default_app_role`, if set, is held **implicitly** by every user with active access, with no assignment row. `GET /users/{id}/roles` lists it with `implicit: true`.
 
 ## Example: a user's role assignments
 

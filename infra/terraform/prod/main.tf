@@ -234,7 +234,7 @@ module "api" {
 }
 
 # The MCP server holds no data-plane permissions at all: it only calls the
-# API's own /v1 routes over HTTPS with the caller's credential.
+# API's own REST routes over HTTPS with the caller's credential.
 module "mcp" {
   source          = "../modules/lambda_function"
   name            = "${local.prefix}-mcp"
@@ -346,7 +346,6 @@ locals {
     stripe = module.stripe_webhook
   }
   routes = {
-    "ANY /v1/{proxy+}"              = "api"
     "GET /.well-known/{proxy+}"     = "api"
     "$default"                      = "api"
     "POST /mcp"                     = "mcp"

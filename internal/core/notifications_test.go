@@ -52,13 +52,13 @@ func newPushApp(t *testing.T, e *testenv.Env) pushApp {
 	t.Helper()
 	owner := e.Signup()
 	app := e.App(owner.ID, nil)
-	e.Post("/v1/applications/"+app+"/push-credentials", owner.Token, map[string]any{"provider": "apns",
+	e.Post("/applications/"+app+"/push-credentials", owner.Token, map[string]any{"provider": "apns",
 		"team_id": "ABCDE12345", "key_id": "XYZ987WVU6", "topic": "com.example.app", "private_key": p8Key(t)}).Expect(201)
-	key := e.Post("/v1/api-keys", owner.Token, map[string]any{"name": "backend", "scope": app,
+	key := e.Post("/api-keys", owner.Token, map[string]any{"name": "backend", "scope": app,
 		"permissions": []string{"notifications.send"}}).Expect(201).Str("secret")
 	member := e.Signup()
 	e.Grant(e.Admin, member.ID, app)
-	dev := e.Post("/v1/users/me/devices", member.Token, map[string]any{"application_id": app, "provider": "apns",
+	dev := e.Post("/users/me/devices", member.Token, map[string]any{"application_id": app, "provider": "apns",
 		"token": apntok(), "environment": "production", "name": "Jordan's iPhone"}).Expect(201).Str("id")
 	return pushApp{ID: app, Owner: owner, Key: key, Member: member, DeviceID: dev}
 }
@@ -69,7 +69,7 @@ func TestPushCredentials(t *testing.T) {
 	e := testenv.New(t)
 	owner := e.Signup()
 	app := e.App(owner.ID, nil)
-	base := "/v1/applications/" + app + "/push-credentials"
+	base := "/applications/" + app + "/push-credentials"
 
 	r := e.Post(base, owner.Token, map[string]any{"provider": "apns", "team_id": "ABCDE12345", "key_id": "XYZ987WVU6",
 		"topic": "com.example.app", "private_key": p8Key(t)}).Expect(201)
@@ -95,7 +95,7 @@ func TestPushCredentials(t *testing.T) {
 		t.Fatalf("list = %d credentials", n)
 	}
 	// The app's own key can read, never write.
-	key := e.Post("/v1/api-keys", owner.Token, map[string]any{"name": "k", "scope": app, "permissions": []string{}}).Expect(201).Str("secret")
+	key := e.Post("/api-keys", owner.Token, map[string]any{"name": "k", "scope": app, "permissions": []string{}}).Expect(201).Str("secret")
 	e.Get(base+"/web_push", key).Expect(200)
 	e.Patch(base+"/web_push", key, map[string]any{"subject": "mailto:x@example.com"}).ExpectErr(400, "user_token_required")
 	// Another User can't see or change any of it.
@@ -115,7 +115,7 @@ func TestPushCredentials(t *testing.T) {
 	e.Delete(base+"/fcm", owner.Token).Expect(204)
 	e.Get(base+"/fcm", owner.Token).ExpectErr(404, "push_credential_not_found")
 
-	audit := e.Get("/v1/audit-events?target_type=push_credential", e.Admin).Expect(200)
+	audit := e.Get("/audit-events?target_type=push_credential", e.Admin).Expect(200)
 	actions := map[string]bool{}
 	for _, ev := range audit.JSON()["data"].([]any) {
 		m := ev.(map[string]any)
@@ -140,7 +140,7 @@ func TestDevices(t *testing.T) {
 	e := testenv.New(t)
 	pa := newPushApp(t, e)
 	m := pa.Member
-	devs := "/v1/users/me/devices"
+	devs := "/users/me/devices"
 
 	// Re-registering the same token refreshes the same Device.
 	again := e.Post(devs, m.Token, map[string]any{"application_id": pa.ID, "provider": "apns", "token": apntok(),
@@ -177,9 +177,9 @@ func TestDevices(t *testing.T) {
 		t.Fatalf("devices = %d", n)
 	}
 	// The app's own key manages its users' devices; other users' devices are invisible.
-	e.Get("/v1/users/"+m.ID+"/devices/"+pa.DeviceID, pa.Key).Expect(200)
-	e.Get("/v1/users/"+stranger.ID+"/devices", pa.Key).ExpectErr(404, "user_not_found")
-	e.Get("/v1/users/"+m.ID+"/devices/"+pa.DeviceID, stranger.Token).ExpectErr(403, "forbidden")
+	e.Get("/users/"+m.ID+"/devices/"+pa.DeviceID, pa.Key).Expect(200)
+	e.Get("/users/"+stranger.ID+"/devices", pa.Key).ExpectErr(404, "user_not_found")
+	e.Get("/users/"+m.ID+"/devices/"+pa.DeviceID, stranger.Token).ExpectErr(403, "forbidden")
 
 	// PATCH a rotated token.
 	newTok := strings.Repeat("cd", 32)
@@ -190,7 +190,7 @@ func TestDevices(t *testing.T) {
 	e.Patch(devs+"/"+pa.DeviceID, m.Token, map[string]any{"provider": "fcm"}).ExpectErr(422, "read_only_field")
 
 	// Logging out deactivates the devices that session registered.
-	e.Post("/v1/auth/logout", m.Token, map[string]any{}).Expect(204)
+	e.Post("/auth/logout", m.Token, map[string]any{}).Expect(204)
 	login := e.Login(m.Email, m.Password)
 	tok := login.Token()
 	got := e.Get(devs+"/"+pa.DeviceID, tok).Expect(200)
@@ -222,24 +222,24 @@ func TestDevices(t *testing.T) {
 	}
 
 	// Device test: synchronous, and 409 without a credential for the provider.
-	tr := e.Post("/v1/users/me/devices/"+moved.Str("id")+"/test", other.Token, map[string]any{}).Expect(200)
+	tr := e.Post("/users/me/devices/"+moved.Str("id")+"/test", other.Token, map[string]any{}).Expect(200)
 	if tr.Str("status") != "sent" {
 		t.Fatalf("test = %s", tr.Body)
 	}
 	if msgs := e.Push.Sent(); msgs[len(msgs)-1].Notification.Title != "Test notification from Substratal" {
 		t.Fatalf("test push = %+v", msgs[len(msgs)-1])
 	}
-	e.Post("/v1/users/me/devices/"+web.Str("id")+"/test", tok, map[string]any{}).ExpectErr(409, "push_not_configured")
+	e.Post("/users/me/devices/"+web.Str("id")+"/test", tok, map[string]any{}).ExpectErr(409, "push_not_configured")
 
 	// Suspension deactivates everything; DELETE removes a device.
-	e.Post("/v1/users/"+other.ID+"/suspend", e.Admin, map[string]any{}).Expect(200)
-	sd := e.Get("/v1/users/"+other.ID+"/devices?include_inactive=true", e.Admin).Expect(200).JSON()["data"].([]any)
+	e.Post("/users/"+other.ID+"/suspend", e.Admin, map[string]any{}).Expect(200)
+	sd := e.Get("/users/"+other.ID+"/devices?include_inactive=true", e.Admin).Expect(200).JSON()["data"].([]any)
 	if sd[0].(map[string]any)["inactive_reason"] != "user_suspended" {
 		t.Fatalf("after suspend = %v", sd)
 	}
 	e.Delete(devs+"/"+web.Str("id"), tok).Expect(204)
-	e.Delete("/v1/users/"+other.ID+"/devices/"+moved.Str("id"), e.Admin).Expect(204)
-	if len(e.Get("/v1/audit-events?action=device.deleted", e.Admin).Expect(200).JSON()["data"].([]any)) != 1 {
+	e.Delete("/users/"+other.ID+"/devices/"+moved.Str("id"), e.Admin).Expect(204)
+	if len(e.Get("/audit-events?action=device.deleted", e.Admin).Expect(200).JSON()["data"].([]any)) != 1 {
 		t.Error("an admin device delete should be audited (and only that one)")
 	}
 }
@@ -248,7 +248,7 @@ func TestSendAndInbox(t *testing.T) {
 	e := testenv.New(t)
 	pa := newPushApp(t, e)
 	m := pa.Member
-	send := "/v1/users/" + m.ID + "/notifications"
+	send := "/users/" + m.ID + "/notifications"
 	body := map[string]any{"category": "timesheet.reminder", "title": "Timesheet due tomorrow",
 		"body": "Due Friday at 5 pm.", "priority": "high", "data": map[string]any{"timesheet_id": "ts_8841"},
 		"action_url": "com.example.app:/timesheets/ts_8841", "badge": 1, "collapse_key": "timesheet-due"}
@@ -265,7 +265,7 @@ func TestSendAndInbox(t *testing.T) {
 		msgs[0].Credential.Topic != "com.example.app" || msgs[0].Notification.Data["timesheet_id"] != "ts_8841" {
 		t.Fatalf("pushes = %+v", msgs)
 	}
-	got := e.Get("/v1/users/me/notifications/"+n.Str("id"), m.Token).Expect(200).JSON()
+	got := e.Get("/users/me/notifications/"+n.Str("id"), m.Token).Expect(200).JSON()
 	if p := got["push"].(map[string]any); p["status"] != "sent" || p["devices_sent"] != float64(1) {
 		t.Fatalf("after delivery = %v", got)
 	}
@@ -274,10 +274,10 @@ func TestSendAndInbox(t *testing.T) {
 	}
 
 	// Errors.
-	noPerm := e.Post("/v1/api-keys", pa.Owner.Token, map[string]any{"name": "k2", "scope": pa.ID, "permissions": []string{}}).Expect(201).Str("secret")
+	noPerm := e.Post("/api-keys", pa.Owner.Token, map[string]any{"name": "k2", "scope": pa.ID, "permissions": []string{}}).Expect(201).Str("secret")
 	e.Post(send, noPerm, body).ExpectErr(403, "forbidden")
 	stranger := e.Signup()
-	e.Post("/v1/users/"+stranger.ID+"/notifications", pa.Key, body).ExpectErr(403, "entitlement_required")
+	e.Post("/users/"+stranger.ID+"/notifications", pa.Key, body).ExpectErr(403, "entitlement_required")
 	e.Post(send, pa.Key, map[string]any{"category": "security.alert", "title": "x"}).ExpectErr(422, "reserved_category")
 	e.Post(send, pa.Key, map[string]any{"title": "x"}).ExpectErr(422, "validation_failed")
 	e.Post(send, pa.Key, map[string]any{"category": "c", "title": "x", "data": map[string]any{"substratal": "x"}}).ExpectErr(422, "validation_failed")
@@ -294,7 +294,7 @@ func TestSendAndInbox(t *testing.T) {
 	}
 
 	// Preferences: push off for this app → inbox only.
-	e.Patch("/v1/users/me/apps/"+pa.ID+"/settings", m.Token, map[string]any{"overrides": map[string]any{"notifications": map[string]any{"push": false}}}).Expect(200)
+	e.Patch("/users/me/apps/"+pa.ID+"/settings", m.Token, map[string]any{"overrides": map[string]any{"notifications": map[string]any{"push": false}}}).Expect(200)
 	off := e.Post(send, pa.Key, map[string]any{"category": "c.d", "title": "muted"}).Expect(201)
 	if off.JSON()["push"].(map[string]any)["skip_reason"] != "push_disabled" {
 		t.Fatalf("muted = %s", off.Body)
@@ -302,18 +302,18 @@ func TestSendAndInbox(t *testing.T) {
 	if len(appEvents(e, "notification.push_failed", pa.ID)) != 0 {
 		t.Error("push_disabled is a choice, not a failure")
 	}
-	e.Patch("/v1/users/me/apps/"+pa.ID+"/settings", m.Token, map[string]any{"overrides": map[string]any{"notifications": map[string]any{"push": nil}}}).Expect(200)
+	e.Patch("/users/me/apps/"+pa.ID+"/settings", m.Token, map[string]any{"overrides": map[string]any{"notifications": map[string]any{"push": nil}}}).Expect(200)
 
 	// No devices: skipped, and the app hears about it.
 	other := e.Signup()
 	e.Grant(e.Admin, other.ID, pa.ID)
-	nd := e.Post("/v1/users/"+other.ID+"/notifications", pa.Key, map[string]any{"category": "c", "title": "hi"}).Expect(201)
+	nd := e.Post("/users/"+other.ID+"/notifications", pa.Key, map[string]any{"category": "c", "title": "hi"}).Expect(201)
 	if nd.JSON()["push"].(map[string]any)["skip_reason"] != "no_devices" || len(appEvents(e, "notification.push_failed", pa.ID)) != 1 {
 		t.Fatalf("no devices = %s", nd.Body)
 	}
 
 	// Inbox.
-	inbox := "/v1/users/me/notifications"
+	inbox := "/users/me/notifications"
 	if l := e.Get(inbox, m.Token).Expect(200).JSON()["data"].([]any); len(l) != 3 {
 		t.Fatalf("inbox = %d", len(l))
 	}
@@ -337,12 +337,12 @@ func TestSendAndInbox(t *testing.T) {
 		t.Fatal("still unread")
 	}
 	// The app's key sees only its own notifications; support reads, never writes.
-	e.Get("/v1/users/"+m.ID+"/notifications?state=read", pa.Key).Expect(200)
-	e.Get("/v1/users/"+m.ID+"/notifications", e.Admin).Expect(200)
-	e.Post("/v1/users/"+m.ID+"/notifications/mark-read", e.Admin, map[string]any{}).ExpectErr(403, "forbidden")
+	e.Get("/users/"+m.ID+"/notifications?state=read", pa.Key).Expect(200)
+	e.Get("/users/"+m.ID+"/notifications", e.Admin).Expect(200)
+	e.Post("/users/"+m.ID+"/notifications/mark-read", e.Admin, map[string]any{}).ExpectErr(403, "forbidden")
 
 	// Export carries devices (never the token) and notifications.
-	ex := e.Get("/v1/users/me/export", m.Token).Expect(200)
+	ex := e.Get("/users/me/export", m.Token).Expect(200)
 	if strings.Contains(string(ex.Body), apntok()) || len(ex.JSON()["devices"].([]any)) != 1 || len(ex.JSON()["notifications"].([]any)) != 3 {
 		t.Fatalf("export = %s", ex.Body)
 	}
@@ -352,10 +352,10 @@ func TestPushOutcomes(t *testing.T) {
 	e := testenv.New(t)
 	pa := newPushApp(t, e)
 	send := func() string {
-		return e.Post("/v1/users/"+pa.Member.ID+"/notifications", pa.Key, map[string]any{"category": "c", "title": "hi"}).Expect(201).Str("id")
+		return e.Post("/users/"+pa.Member.ID+"/notifications", pa.Key, map[string]any{"category": "c", "title": "hi"}).Expect(201).Str("id")
 	}
 	note := func(id string) map[string]any {
-		return e.Get("/v1/users/me/notifications/"+id, pa.Member.Token).Expect(200).JSON()
+		return e.Get("/users/me/notifications/"+id, pa.Member.Token).Expect(200).JSON()
 	}
 
 	// A transient failure stays pending, with the attempt counted.
@@ -374,19 +374,19 @@ func TestPushOutcomes(t *testing.T) {
 	if p := note(id)["push"].(map[string]any); p["status"] != "failed" || p["devices_failed"] != float64(1) {
 		t.Fatalf("token gone = %v", p)
 	}
-	dev := e.Get("/v1/users/me/devices/"+pa.DeviceID, pa.Member.Token).Expect(200)
+	dev := e.Get("/users/me/devices/"+pa.DeviceID, pa.Member.Token).Expect(200)
 	if dev.Str("inactive_reason") != "unregistered" || len(appEvents(e, "device.deactivated", pa.ID)) != 1 ||
 		len(appEvents(e, "notification.push_failed", pa.ID)) != 1 {
 		t.Fatalf("device after 410 = %s", dev.Body)
 	}
 
 	// A rejected credential is marked failed, reported, and emailed.
-	e.Post("/v1/users/me/devices", pa.Member.Token, map[string]any{"application_id": pa.ID, "provider": "apns",
+	e.Post("/users/me/devices", pa.Member.Token, map[string]any{"application_id": pa.ID, "provider": "apns",
 		"token": apntok(), "environment": "production"}).Expect(200)
 	e.Push.Script(apntok(), push.Result{Outcome: push.CredentialRejected, Status: 403, Reason: "InvalidProviderToken"})
 	send()
 	e.DeliverPush()
-	cred := e.Get("/v1/applications/"+pa.ID+"/push-credentials/apns", pa.Owner.Token).Expect(200)
+	cred := e.Get("/applications/"+pa.ID+"/push-credentials/apns", pa.Owner.Token).Expect(200)
 	if cred.Str("status") != "failed" || cred.Str("failure_reason") != "InvalidProviderToken" || len(appEvents(e, "push_credential.failed", pa.ID)) != 1 {
 		t.Fatalf("credential = %s", cred.Body)
 	}
@@ -394,11 +394,11 @@ func TestPushOutcomes(t *testing.T) {
 		t.Error("the owner wasn't emailed")
 	}
 	// Further sends skip until it's fixed.
-	n := e.Post("/v1/users/"+pa.Member.ID+"/notifications", pa.Key, map[string]any{"category": "c", "title": "again"}).Expect(201)
+	n := e.Post("/users/"+pa.Member.ID+"/notifications", pa.Key, map[string]any{"category": "c", "title": "again"}).Expect(201)
 	if n.JSON()["push"].(map[string]any)["skip_reason"] != "credential_failed" {
 		t.Fatalf("after failure = %s", n.Body)
 	}
-	e.Patch("/v1/applications/"+pa.ID+"/push-credentials/apns", pa.Owner.Token, map[string]any{"status": "active"}).Expect(200)
+	e.Patch("/applications/"+pa.ID+"/push-credentials/apns", pa.Owner.Token, map[string]any{"status": "active"}).Expect(200)
 }
 
 // expireLease makes leased-but-retrying deliveries due now.
@@ -429,7 +429,7 @@ func TestPlatformAlerts(t *testing.T) {
 	m := pa.Member
 	alerts := func(token string) map[string]map[string]any {
 		out := map[string]map[string]any{}
-		for _, x := range e.Get("/v1/users/me/notifications?source=platform", token).Expect(200).JSON()["data"].([]any) {
+		for _, x := range e.Get("/users/me/notifications?source=platform", token).Expect(200).JSON()["data"].([]any) {
 			n := x.(map[string]any)
 			out[n["category"].(string)] = n
 		}
@@ -437,7 +437,7 @@ func TestPlatformAlerts(t *testing.T) {
 	}
 
 	// Without the opt-in, alerts land in the inbox but push nowhere.
-	e.Do(testenv.Req{Method: "POST", Path: "/v1/auth/login", Body: map[string]any{"email": m.Email, "password": m.Password},
+	e.Do(testenv.Req{Method: "POST", Path: "/auth/login", Body: map[string]any{"email": m.Email, "password": m.Password},
 		Header: map[string]string{"User-Agent": "TimeTrack/2.4 (iOS 19.0)"}}).Expect(200)
 	got := alerts(m.Token)
 	si, ok := got["security.new_sign_in"]
@@ -445,16 +445,16 @@ func TestPlatformAlerts(t *testing.T) {
 		t.Fatalf("new sign-in = %v", got)
 	}
 	// An app key never sees platform alerts.
-	if l := e.Get("/v1/users/"+m.ID+"/notifications?source=platform", pa.Key).Expect(200).JSON()["data"].([]any); len(l) != 0 {
+	if l := e.Get("/users/"+m.ID+"/notifications?source=platform", pa.Key).Expect(200).JSON()["data"].([]any); len(l) != 0 {
 		t.Fatal("an app key saw a platform alert")
 	}
 
 	// With the opt-in, a password reset's alert reaches the device even
 	// though the reset signs every session out.
-	e.Patch("/v1/applications/"+pa.ID, pa.Owner.Token, map[string]any{"receives_platform_notifications": true}).Expect(200)
+	e.Patch("/applications/"+pa.ID, pa.Owner.Token, map[string]any{"receives_platform_notifications": true}).Expect(200)
 	e.Push.Reset()
-	e.Post("/v1/auth/password/forgot", "", map[string]any{"email": m.Email}).Expect(202)
-	e.Post("/v1/auth/password/reset", "", map[string]any{"token": e.Token(m.Email, "password_reset"),
+	e.Post("/auth/password/forgot", "", map[string]any{"email": m.Email}).Expect(202)
+	e.Post("/auth/password/reset", "", map[string]any{"token": e.Token(m.Email, "password_reset"),
 		"new_password": "an entirely new passphrase"}).Expect(204)
 	e.DeliverPush()
 	msgs := e.Push.Sent()
@@ -462,7 +462,7 @@ func TestPlatformAlerts(t *testing.T) {
 		t.Fatalf("password alert pushes = %+v", msgs)
 	}
 	tok := e.Login(m.Email, "an entirely new passphrase").Token()
-	if d := e.Get("/v1/users/me/devices/"+pa.DeviceID, tok).Expect(200); d.Str("inactive_reason") != "session_revoked" {
+	if d := e.Get("/users/me/devices/"+pa.DeviceID, tok).Expect(200); d.Str("inactive_reason") != "session_revoked" {
 		t.Fatalf("device after reset = %s", d.Body)
 	}
 
@@ -480,8 +480,8 @@ func TestPlatformAlerts(t *testing.T) {
 	}
 
 	// An Organization invitation for an existing User.
-	org := e.Post("/v1/organizations", pa.Owner.Token, map[string]any{"name": "Acme"}).Expect(201).Str("id")
-	e.Post("/v1/organizations/"+org+"/members", pa.Owner.Token, map[string]any{"email": newbie.Email}).Expect(201)
+	org := e.Post("/organizations", pa.Owner.Token, map[string]any{"name": "Acme"}).Expect(201).Str("id")
+	e.Post("/organizations/"+org+"/members", pa.Owner.Token, map[string]any{"email": newbie.Email}).Expect(201)
 	if inv, ok := alerts(newbie.Token)["account.organization_invitation"]; !ok || inv["data"].(map[string]any)["organization_id"] != org {
 		t.Fatalf("invitation alert = %v", alerts(newbie.Token))
 	}
@@ -494,7 +494,7 @@ func TestPushMaintenance(t *testing.T) {
 	if err := e.Core.PushMaintenance(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	d := e.Get("/v1/users/me/devices/"+pa.DeviceID, pa.Member.Token).Expect(200)
+	d := e.Get("/users/me/devices/"+pa.DeviceID, pa.Member.Token).Expect(200)
 	if d.Str("inactive_reason") != "stale" {
 		t.Fatalf("stale = %s", d.Body)
 	}
@@ -502,7 +502,7 @@ func TestPushMaintenance(t *testing.T) {
 	if err := e.Core.PushMaintenance(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	e.Get("/v1/users/me/devices/"+pa.DeviceID, pa.Member.Token).ExpectErr(404, "device_not_found")
+	e.Get("/users/me/devices/"+pa.DeviceID, pa.Member.Token).ExpectErr(404, "device_not_found")
 }
 
 // appEvents is the outbox events of a type for one Application (tests in

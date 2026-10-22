@@ -71,7 +71,7 @@ func TestMCPEndToEnd(t *testing.T) {
 	e := testenv.New(t)
 	srv := httptest.NewServer(&mcp.Server{API: mcp.InProcess(e.Core.Handler()), BaseURL: "http://api.internal", Key: []byte("k")})
 	defer srv.Close()
-	agentKey := e.Post("/v1/api-keys", e.Admin, map[string]any{"name": "agent", "scope": "platform", "intended_use": "agent",
+	agentKey := e.Post("/api-keys", e.Admin, map[string]any{"name": "agent", "scope": "platform", "intended_use": "agent",
 		"permissions": []string{"users.list", "entitlements.manage", "audit.view"}}).Expect(201).Str("secret")
 	c := &client{t: t, url: srv.URL, token: agentKey}
 

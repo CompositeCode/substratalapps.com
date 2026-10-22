@@ -48,7 +48,7 @@ Decided 2026-10-06. The API is written in **Go**, deployed to **AWS Lambda**, an
 | Crypto | `golang.org/x/crypto/argon2` (Argon2id), standard-library HMAC/RSA, AWS KMS for JWT signing and secret encryption | Matches [Non-Functional Requirements → Security](https://compositecode.github.io/substratalapps.com/non-functional-requirements/) exactly, with no native add-ons. |
 | AWS access | AWS SDK for Go v2 (Data API, KMS, SQS, Secrets Manager, S3, SES) | |
 | Billing | `stripe-go`, Stripe's official Go library | |
-| MCP server | Go, implementing the buffered-JSON subset of MCP Streamable HTTP directly (`internal/mcp`). Tools are generated from `openapi.yaml` by `cmd/mcpgen`. | The spec requires a stateless, signed `Mcp-Session-Id` and one invocation per call; the official SDK keeps sessions in memory, which doesn't fit a stateless Lambda. It only proxies HTTPS calls to `/v1`. |
+| MCP server | Go, implementing the buffered-JSON subset of MCP Streamable HTTP directly (`internal/mcp`). Tools are generated from `openapi.yaml` by `cmd/mcpgen`. | The spec requires a stateless, signed `Mcp-Session-Id` and one invocation per call; the official SDK keeps sessions in memory, which doesn't fit a stateless Lambda. It only proxies HTTPS calls to the REST API, sending `Substratal-Version`. |
 | Infrastructure | **Terraform**, remote state in S3 (native S3 state locking, no DynamoDB table) | Language-neutral and widely known, and `terraform plan` output can be reviewed on the pull request before it reaches production. Works with OpenTofu too. |
 | CI/CD | **GitHub Actions**, deploying to AWS through **OIDC federation** | No long-lived AWS keys anywhere, per [infra/README.md → Cost principles](infra/README.md#cost-principles). |
 | Local services | **Docker Compose**: Postgres 16, LocalStack (SQS, KMS, Secrets Manager, S3), Mailpit (captures outgoing email) | The whole API runs on a laptop with no AWS account and no internet beyond Stripe test mode. |
@@ -141,7 +141,7 @@ A release is a pull request from `dev` into `main`. Merging it is the only way t
 3. **Assume the deploy role through OIDC.** The role's trust policy accepts only this repository, the `main` branch, and the `production` environment. A workflow on `dev`, a fork, or any other branch cannot get production credentials, no matter what its YAML says.
 4. **Run migrations** with `cmd/migrate` on the Data API backend, straight from the runner. The Data API is IAM-signed HTTPS, so no VPC access is needed. Migrations run **before** new code is deployed. That is safe because of the [expand/contract rule](#migrations-expand-then-contract).
 5. **`terraform apply`** of `infra/terraform/prod`. This applies infrastructure changes and points each function at its new artifact. Every function publishes a new version and moves its `live` alias to it, and API Gateway always invokes `live`.
-6. **Smoke test** the real deployment: `GET https://api.substratalapps.com/v1/health` must return `200`. A read-only `effective-permissions` check runs against a dedicated smoke-test User and Application seeded in production. If either fails, the job fails loudly, and [rollback](#rollback) is the next step.
+6. **Smoke test** the real deployment: `GET https://api.substratalapps.com/health` must return `200`. A read-only `effective-permissions` check runs against a dedicated smoke-test User and Application seeded in production. If either fails, the job fails loudly, and [rollback](#rollback) is the next step.
 7. **Docs ship in the same merge.** If the release touched `docs/`, `docs.yml` publishes a new docs version from the same commit. The live spec and the live API change together.
 
 What "enforced" means here. Set these up once, in repository settings, alongside Phase 0:
@@ -225,7 +225,7 @@ make seed                        # a local superadmin (ADMIN_EMAIL / ADMIN_PASSW
 make run                         # devserver on http://localhost:8080
 ```
 
-Then `make quickstart` runs the [Quickstart](https://compositecode.github.io/substratalapps.com/quickstart/) against it (it creates its own TimeTrack Application), and `curl` works as written with `SUBSTRATAL_API=http://localhost:8080/v1`. Integration tests need only `make up`: each test package creates, migrates, and drops its own database.
+Then `make quickstart` runs the [Quickstart](https://compositecode.github.io/substratalapps.com/quickstart/) against it (it creates its own TimeTrack Application), and `curl` works as written with `SUBSTRATAL_API=http://localhost:8080`. Integration tests need only `make up`: each test package creates, migrates, and drops its own database.
 
 ### What runs where
 
