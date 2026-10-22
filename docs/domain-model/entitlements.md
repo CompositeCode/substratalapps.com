@@ -63,7 +63,7 @@ The join between a User (or Organization) and an Application: does this party ow
 | A Subscription starts covering its holder (`active`, `trialing`, or `past_due`) | Grants a `subscription` row to each standard Application: personal for a User, org-wide with the Subscription's `member_scope` for an Organization. |
 | A Subscription stops covering (`canceled`, `unpaid`, `incomplete_expired`, `paused`) | Sets `ends_at` to now on its rows, which expires them. Resubscribing revives the same row while it's still live, or grants a new one. |
 | An org admin changes the Subscription's covered members | Updates `member_scope` / `member_overrides` on the Organization's rows. |
-| An Application is created, or its `access_tier` changes | Grants or ends rows for that Application to match. |
+| An Application is created approved, is approved, or its `access_tier` changes | Grants or ends rows for that Application to match. Only an Application that has been approved (`approved`, or `suspended`, since suspension doesn't cascade) gets them: never a submission still in review or rejected. |
 | Hourly | Repairs anything that drifted (`subscription-access` job). |
 
 Each change writes the usual Audit Event with actor `system`, fires the matching `entitlement.*` webhook, and fires `access.granted` / `access.revoked` for every User whose resolved access actually changed.

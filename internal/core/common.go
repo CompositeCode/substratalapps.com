@@ -239,6 +239,7 @@ type appRow struct {
 	OwnerOrganizationID *string         `json:"owner_organization_id"`
 	ReviewStatus        string          `json:"review_status"`
 	ReviewNotes         *string         `json:"review_notes"`
+	SelfRegistered      bool            `json:"self_registered"`
 	TenantID            string          `json:"tenant_id"`
 	TestMode            bool            `json:"test_mode"`
 	CreatedAt           time.Time       `json:"created_at"`

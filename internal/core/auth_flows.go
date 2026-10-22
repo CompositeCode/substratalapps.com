@@ -136,6 +136,13 @@ func (s *Server) AuthCreateAppToken(w http.ResponseWriter, r *http.Request) {
 		} else if !ok {
 			return httpx.NotFoundResource("application")
 		}
+		// A self-registered Application is third-party: it must never
+		// handle a Substratal password, so it uses the hosted flow
+		// (Auth → Getting an app token).
+		if a.SelfRegistered {
+			return httpx.E(403, "embedded_login_not_allowed",
+				"This Application must use the hosted sign-in flow, not embedded login.").With("application_id", a.ID)
+		}
 		u, err := c.findUser("u.id = :id", db.Args{"id": c.p.UserID})
 		if err != nil {
 			return err

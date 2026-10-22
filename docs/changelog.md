@@ -12,6 +12,20 @@ What's changed in this specification over time. Every decision is written into t
 
 ---
 
+## 2026-10-21 — Self-service Application registration
+
+`POST /v1/applications` is open to developers, not just staff. See [API Reference → Applications](../api-reference/applications/#post-v1applications) and [The review lifecycle](../domain-model/applications/#the-review-lifecycle). `openapi.yaml` is now at `1.0.0-draft.4`.
+
+- **Any User with a verified email** can submit an Application. It's owned by the caller, or by an Organization they're an `org_admin` of. It starts in `pending_review`, `public`, and `standard`, and the moderation fields are staff-only (`403 moderation_field_forbidden`). An unverified email is the new `403 email_not_verified`. Each User can submit 10 a day. Staff creation is unchanged.
+- **Applications gain `self_registered`** (read-only, migration `0006_self_registered_apps`). A self-registered Application is third-party, even once approved:
+  - `POST /v1/auth/app-tokens` refuses it with the new `403 embedded_login_not_allowed`, as [Auth → Getting an app token](../api-reference/auth/#getting-an-app-token) already required once self-service shipped. It must use the hosted flow.
+  - Only `applications.manage` can turn on its `receives_platform_notifications`, so platform security alerts never go out under an unvetted app.
+- **Platform-managed Entitlements wait for approval.** `free` and `subscription` rows are granted only to an Application that has been approved, and approving one grants them. Before this, a `standard` submission would have been granted to every Standard subscriber the moment it was created, firing `access.granted` to an unreviewed developer.
+
+Self-registered Applications still can't go live until the hosted sign-in page exists.
+
+---
+
 ## 2026-10-20 — Test-mode Users are time-limited
 
 Test mode already never counted toward billing (decision #36, confirmed on 2026-10-18). Now every **test-mode User expires**, so a test account can't stand in for a free production account. See [Auth → Test-mode Users → Lifetime](../api-reference/auth/#lifetime).

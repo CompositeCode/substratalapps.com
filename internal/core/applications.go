@@ -38,6 +38,7 @@ type application struct {
 	OwnerOrganizationID *string         `json:"owner_organization_id"`
 	ReviewStatus        string          `json:"review_status"`
 	ReviewNotes         *string         `json:"review_notes"`
+	SelfRegistered      bool            `json:"self_registered"`
 	TenantID            string          `json:"tenant_id"`
 	TestMode            bool            `json:"test_mode"`
 	CreatedAt           time.Time       `json:"created_at"`
@@ -69,7 +70,7 @@ func (a appRow) full(stats map[string]int) application {
 		SettingsSchemaStats: map[string]any{"stale_override_counts": stats}, Permissions: perms,
 		AvailableAppRoles: nonNil(a.AvailableAppRoles), DefaultAppRole: a.DefaultAppRole, Visibility: a.Visibility,
 		AccessTier: a.AccessTier, OwnerUserID: a.OwnerUserID, OwnerOrganizationID: a.OwnerOrganizationID, ReviewStatus: a.ReviewStatus,
-		ReviewNotes: a.ReviewNotes, TenantID: a.TenantID, TestMode: a.TestMode, CreatedAt: a.CreatedAt, UpdatedAt: a.UpdatedAt}
+		ReviewNotes: a.ReviewNotes, SelfRegistered: a.SelfRegistered, TenantID: a.TenantID, TestMode: a.TestMode, CreatedAt: a.CreatedAt, UpdatedAt: a.UpdatedAt}
 }
 
 func nonNil(s []string) []string {
@@ -363,14 +364,37 @@ func validateAppFields(p httpx.Patch, slug string, testMode bool, f *httpx.Field
 
 func (s *Server) ApplicationsCreate(w http.ResponseWriter, r *http.Request, params gen.ApplicationsCreateParams) {
 	s.serve(w, r, opts{op: "applications.create", idem: idemOptional}, func(c *Call) error {
-		if err := c.require("applications.manage"); err != nil {
-			return err
+		// applications.manage creates any Application (concierge onboarding).
+		// Any verified User may submit their own, into the review queue
+		// (Applications → The review lifecycle).
+		admin := c.can("applications.manage")
+		if !admin {
+			if !c.p.IsUser() {
+				return httpx.Forbidden("applications.manage")
+			}
+			if !c.p.EmailVerified {
+				return httpx.E(403, "email_not_verified", "Verify your email address before registering an Application.")
+			}
+			if err := c.hit("appcreate:"+c.p.UserID, perDay(10), false); err != nil {
+				return err
+			}
 		}
 		p, err := c.Patch()
 		if err != nil {
 			return err
 		}
-		if err := p.RejectReadOnly("id", "tenant_id", "created_at", "updated_at", "settings_schema_stats", "test_mode"); err != nil {
+		if !admin {
+			for _, mf := range []string{"visibility", "access_tier", "review_status", "review_notes"} {
+				if p.Has(mf) {
+					return httpx.E(403, "moderation_field_forbidden", "Only applications.manage can set "+mf+".").With("field", mf)
+				}
+			}
+			if err := platformAlertsForbidden(p); err != nil {
+				return err
+			}
+		}
+		if err := p.RejectReadOnly("id", "tenant_id", "created_at", "updated_at", "settings_schema_stats", "test_mode",
+			"self_registered"); err != nil {
 			return err
 		}
 		var f httpx.Fields
@@ -389,6 +413,11 @@ func (s *Server) ApplicationsCreate(w http.ResponseWriter, r *http.Request, para
 		}
 		ownerUser, _ := p.String("owner_user_id", &f)
 		ownerOrg, _ := p.String("owner_organization_id", &f)
+		if !admin {
+			if err := c.checkSelfServiceOwner(&ownerUser, ownerOrg); err != nil {
+				return err
+			}
+		}
 		if (ownerUser == nil) == (ownerOrg == nil) {
 			f.Add("owner_user_id", "required").Message = "exactly one of owner_user_id or owner_organization_id"
 		}
@@ -438,7 +467,9 @@ func (s *Server) ApplicationsCreate(w http.ResponseWriter, r *http.Request, para
 			accessTier = *in.AccessTier
 		}
 		review := "approved"
-		if in.ReviewStatus != nil {
+		if !admin {
+			review = "pending_review"
+		} else if in.ReviewStatus != nil {
 			review = *in.ReviewStatus
 		}
 		if (review == "rejected" || review == "suspended") && (in.ReviewNotes == nil || *in.ReviewNotes == "") {
@@ -469,14 +500,15 @@ func (s *Server) ApplicationsCreate(w http.ResponseWriter, r *http.Request, para
 		if _, err := c.q.Exec(c.ctx, `insert into applications (id, slug, name, description, icon_url, launch_url,
 				redirect_uris, support_url, email_from_name, settings_schema, permissions, available_app_roles,
 				default_app_role, visibility, access_tier, owner_user_id, owner_organization_id, review_status, review_notes,
-				tenant_id, test_mode, receives_platform_notifications)
+				tenant_id, test_mode, receives_platform_notifications, self_registered)
 			values (:id, :slug, :name, :desc, :icon, :launch, :redir::text[], :support, :from, :schema::jsonb,
-				:perms::jsonb, :roles::text[], :defrole, :vis, :tier, :ou, :oo, :rs, :rn, :t, :tm, :rpn)`,
+				:perms::jsonb, :roles::text[], :defrole, :vis, :tier, :ou, :oo, :rs, :rn, :t, :tm, :rpn, :self)`,
 			db.Args{"id": id, "slug": slug, "name": in.Name, "desc": in.Description, "icon": in.IconURL,
 				"launch": in.LaunchURL, "redir": db.TextArray(in.RedirectURIs), "support": in.SupportURL,
 				"from": in.EmailFromName, "schema": string(in.SettingsSchema), "perms": db.JSON(perms),
 				"roles": db.TextArray(roles), "defrole": in.DefaultAppRole, "vis": visibility, "tier": accessTier, "ou": ownerUser,
-				"oo": ownerOrg, "rs": review, "rn": in.ReviewNotes, "t": t.ID, "tm": c.testMode(), "rpn": in.ReceivesPlatform}); err != nil {
+				"oo": ownerOrg, "rs": review, "rn": in.ReviewNotes, "t": t.ID, "tm": c.testMode(), "rpn": in.ReceivesPlatform,
+				"self": !admin}); err != nil {
 			if _, ok := db.UniqueViolation(err); ok {
 				return httpx.Conflict("slug_taken", "An Application with this slug already exists.")
 			}
@@ -500,6 +532,47 @@ func (s *Server) ApplicationsCreate(w http.ResponseWriter, r *http.Request, para
 		c.Versioned(a.Version)
 		return c.Created(a.full(nil))
 	})
+}
+
+// platformAlertsForbidden keeps a self-registered Application from turning
+// on receives_platform_notifications: platform security alerts only go
+// out under an Application staff created.
+func platformAlertsForbidden(p httpx.Patch) error {
+	var on bool
+	if p.Has("receives_platform_notifications") && !p.IsNull("receives_platform_notifications") &&
+		json.Unmarshal(p["receives_platform_notifications"], &on) == nil && on {
+		return httpx.E(403, "moderation_field_forbidden",
+			"Only applications.manage can turn on platform notifications for a self-registered Application.").
+			With("field", "receives_platform_notifications")
+	}
+	return nil
+}
+
+// checkSelfServiceOwner applies a self-service submission's owner rule: the
+// caller themselves (the default), or an Organization they're an active
+// org_admin of. Anyone else's Application is a staff action.
+func (c *Call) checkSelfServiceOwner(ownerUser **string, ownerOrg *string) error {
+	if *ownerUser == nil && ownerOrg == nil {
+		me := c.p.UserID
+		*ownerUser = &me
+	}
+	if *ownerUser != nil && **ownerUser != c.p.UserID {
+		return httpx.E(403, "moderation_field_forbidden", "You can only register an Application you own.").
+			With("field", "owner_user_id")
+	}
+	if ownerOrg != nil {
+		var n int
+		if err := db.One(c.ctx, c.q, &n, `select to_jsonb(count(*)) from organization_memberships
+			where organization_id = :o and user_id = :me and role = 'org_admin' and status = 'active'`,
+			db.Args{"o": *ownerOrg, "me": c.p.UserID}); err != nil {
+			return err
+		}
+		if n == 0 {
+			return httpx.E(403, "moderation_field_forbidden", "Only an org_admin can register an Application for an Organization.").
+				With("field", "owner_organization_id")
+		}
+	}
+	return nil
 }
 
 // seedAppRoles creates the empty role_<slug>_<name> for each new name.
@@ -542,13 +615,19 @@ func (s *Server) ApplicationsUpdate(w http.ResponseWriter, r *http.Request, id s
 		if err != nil {
 			return err
 		}
-		if err := p.RejectReadOnly("id", "slug", "tenant_id", "created_at", "updated_at", "settings_schema_stats", "test_mode"); err != nil {
+		if err := p.RejectReadOnly("id", "slug", "tenant_id", "created_at", "updated_at", "settings_schema_stats", "test_mode",
+			"self_registered"); err != nil {
 			return err
 		}
 		if !admin {
 			for _, mf := range moderationFields {
 				if p.Has(mf) {
 					return httpx.E(403, "moderation_field_forbidden", "Only applications.manage can change "+mf+".").With("field", mf)
+				}
+			}
+			if a.SelfRegistered {
+				if err := platformAlertsForbidden(p); err != nil {
+					return err
 				}
 			}
 		}
@@ -755,7 +834,9 @@ func (s *Server) ApplicationsUpdate(w http.ResponseWriter, r *http.Request, id s
 				return err
 			}
 		}
-		if next.AccessTier != a.AccessTier {
+		// Platform-managed Entitlements follow access_tier, and exist only
+		// once an Application has been approved.
+		if next.AccessTier != a.AccessTier || reviewChanged {
 			if err := c.reconcileAccess(accessScope{AppID: a.ID}); err != nil {
 				return err
 			}
