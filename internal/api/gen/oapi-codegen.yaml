@@ -10,3 +10,5 @@ generate:
   std-http-server: true
 output-options:
   skip-prune: true
+  overlay:
+    path: overlay.yaml

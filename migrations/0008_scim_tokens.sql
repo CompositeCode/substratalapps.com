@@ -3,9 +3,10 @@
 -- One SCIM bearer token per Organization, for its identity provider. Only
 -- the SHA-256 of the secret is stored, like API Keys.
 --
--- Numbered after 0005_test_user_expiry, 0006_self_registered_apps, and
--- 0007_audit_exports, which ship first; the action list below keeps their
--- user.expired and audit.exported.
+-- This reached production before the test-user-expiry, self-registered
+-- apps, and audit-export migrations, which were renumbered 0009–0011 to
+-- follow it. The action list below already includes their user.expired
+-- and audit.exported.
 
 create table scim_tokens (
   id text primary key,

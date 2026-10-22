@@ -63,9 +63,12 @@ var (
 	ErrUnsupportedAPIVersion = func(supported []string) *Error {
 		return E(400, "unsupported_api_version", "The Substratal-Version header names a version this API doesn't serve.").With("supported", supported)
 	}
-	ErrUnauthenticated = func() *Error { return E(401, "unauthenticated", "Missing, malformed, or expired credentials.") }
-	ErrSessionRevoked  = func() *Error { return E(401, "session_revoked", "This session has been logged out or revoked.") }
-	ErrNotFound        = func() *Error { return E(404, "not_found", "No route matches this path.") }
+	ErrUnauthenticated  = func() *Error { return E(401, "unauthenticated", "Missing, malformed, or expired credentials.") }
+	ErrSessionRevoked   = func() *Error { return E(401, "session_revoked", "This session has been logged out or revoked.") }
+	ErrNotFound         = func() *Error { return E(404, "not_found", "No route matches this path.") }
+	ErrMethodNotAllowed = func(allowed []string) *Error {
+		return E(405, "method_not_allowed", "This path doesn't support that method.").With("allowed", allowed)
+	}
 	ErrPayloadTooLarge = func() *Error { return E(413, "payload_too_large", "Request body exceeds 1 MB.") }
 	ErrInternal        = func() *Error {
 		return E(500, "internal_error", "Unexpected server error. Quote the X-Request-Id to support.")

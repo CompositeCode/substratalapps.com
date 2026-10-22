@@ -16,7 +16,7 @@ This repository is split deliberately, by audience:
 Root-level documents:
 
 - **[plan-remaining.md](plan-remaining.md)** — everything specified but not built yet: the first-party web pages, Phase 3, dedicated tenancy infrastructure, scale-out triggers, and the rules every change follows.
-- **[remaining_manual_steps.md](remaining_manual_steps.md)** — one-time setup still to do by hand to go live: the Lambda quota, the superadmin password, SES production access, Stripe, and legal.
+- **[`[bespoke]` issues](https://github.com/CompositeCode/substratalapps.com/issues?q=is%3Aissue+%22%5Bbespoke%5D%22+sort%3Acreated-asc)** — the one-time setup still to do by hand to go live, as numbered GitHub issues in the order to do them (#18–#28): the Lambda quota, redeploy, the superadmin password, alert emails, SES production access, Stripe, push credentials, registering Applications, the plan job, legal, and the optional domain transfer.
 - **[infra/README.md](infra/README.md)** — the deployment architecture as built: AWS infrastructure (cost-capped, Aurora Serverless v2, Lambda, no VPC/NAT at Tier 0), the account setup, Stripe Billing, email, webhook and push delivery, audit archival, and local development.
 - **[LICENSE](LICENSE)** — MIT.
 
@@ -187,7 +187,7 @@ For an urgent fix while `dev` holds unreleased work:
 
 ### One-time setup (Phase 0)
 
-The steps above assume these exist. They're done once, by hand; what's still left of them is tracked in [remaining_manual_steps.md](remaining_manual_steps.md):
+The steps above assume these exist. They're done once, by hand; what's still left of them is tracked as the numbered [`[bespoke]` issues](https://github.com/CompositeCode/substratalapps.com/issues?q=is%3Aissue+%22%5Bbespoke%5D%22+sort%3Acreated-asc):
 
 1. A dedicated AWS account in `us-east-1` ([infra/README.md → AWS account & region](infra/README.md#aws-account--region)), with its default VPC in place (Aurora's subnets come from it; Lambda never joins a VPC), and a Route 53 hosted zone for `substratalapps.com`.
 2. From your own machine, with admin credentials: `cd infra/terraform/bootstrap && terraform init && terraform apply -var billing_email=you@example.com`. This creates the **cost guardrails first** (warn and hard budgets with a circuit-breaker action, Cost Anomaly Detection, a billing alarm), then the state and artifact buckets, the GitHub OIDC provider, and the read-only `plan` and `deploy` roles. It's the only Terraform ever applied from a laptop.

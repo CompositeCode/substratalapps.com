@@ -1,6 +1,6 @@
 # Plan: what's left to build
 
-Everything specified for the Platform API that isn't built yet, in one place. What *is* built is described by the [API specification](https://compositecode.github.io/substratalapps.com/) (the system of record), [README.md](README.md) (code, CI/CD, local development), and [infra/README.md](infra/README.md) (deployment architecture as built). One-time setup that has to be done by hand, rather than built, is in [remaining_manual_steps.md](remaining_manual_steps.md).
+Everything specified for the Platform API that isn't built yet, in one place. What *is* built is described by the [API specification](https://compositecode.github.io/substratalapps.com/) (the system of record), [README.md](README.md) (code, CI/CD, local development), and [infra/README.md](infra/README.md) (deployment architecture as built). One-time setup that has to be done by hand, rather than built, is in the [`[bespoke]` issues](https://github.com/CompositeCode/substratalapps.com/issues?q=is%3Aissue+%22%5Bbespoke%5D%22+sort%3Acreated-asc).
 
 This replaces `PLAN.md`, `DEPLOYMENT.md`, and `ORIGINAL-SPEC-DRAFT.md`, which were retired on 2026-10-20 once everything else in them was built and documented where it belongs. They remain in git history.
 
@@ -18,13 +18,13 @@ This replaces `PLAN.md`, `DEPLOYMENT.md`, and `ORIGINAL-SPEC-DRAFT.md`, which we
 
 ## Status
 
-As of 2026-10-21, every operation in `openapi.yaml` is implemented, including subscriber billing, push notifications, the hosted PKCE endpoints, and test-mode User expiry. SSO returns `501 not_implemented` until the broker integration, as specified. Production infrastructure exists in AWS (`substratal-prod`, `us-east-1`); the first deploy is finishing (see [remaining_manual_steps.md](remaining_manual_steps.md)). No product decisions are open: each is written into the spec page it governs and recorded in the [Changelog](https://compositecode.github.io/substratalapps.com/changelog/).
+As of 2026-10-22, every operation in `openapi.yaml` is implemented, including subscriber billing, push notifications, the hosted PKCE endpoints, and test-mode User expiry. SSO returns `501 not_implemented` until the broker integration, as specified. Production infrastructure exists in AWS (`substratal-prod`, `us-east-1`); the first deploy is finishing (see the [`[bespoke]` issues](https://github.com/CompositeCode/substratalapps.com/issues?q=is%3Aissue+%22%5Bbespoke%5D%22+sort%3Acreated-asc)). No product decisions are open: each is written into the spec page it governs and recorded in the [Changelog](https://compositecode.github.io/substratalapps.com/changelog/).
 
 ## Verify the build in production
 
 The phase exit criteria have only been checked against the local devserver. Once production is up, check them there:
 
-- **Phase 0:** `GET /health` returns `200` through the real Lambda and API Gateway path. (It returned `200` at the old `/v1/health` on 2026-10-20. Check `/health` again after the first deploy without the `/v1` prefix.)
+- **Phase 0:** `GET /health` returns `200` through the real Lambda and API Gateway path. (Done: it returns `200` in production, verified 2026-10-22.)
 - **Phase 1:** the [Quickstart](https://compositecode.github.io/substratalapps.com/quickstart/) runs end to end against production: create a user, grant an app, check access, turn it off. Run `scripts/quickstart.sh` with `SUBSTRATAL_API=https://api.substratalapps.com` and a test-mode key.
 - **Phase 2:** a third-party-shaped app signs a user in through the embedded flow, receives `access.revoked` and kills the session, calls introspection, has its `settings_schema` validated and typed on write, and receives a push sent through its app key. A test-mode User and a test-mode Organization subscribe to Standard through Checkout (needs a Stripe test-mode key in a non-production environment, or temporarily in production), gain the standard Applications, and lapse back to Free.
 
@@ -32,7 +32,7 @@ The phase exit criteria have only been checked against the local devserver. Once
 
 The API is complete, but the user-facing pages its emails and redirects point to don't exist yet. Both are clients of the API, not part of it:
 
-- **Dashboard** (`dashboard.substratalapps.com`, `DASHBOARD_URL`): the email-verification, password-reset, invitation-acceptance, and email-change links land here. Also where a User subscribes to Standard and manages their account, devices, and inbox, and where org admins manage members and the Organization's subscription. It's the first-party browser origin in the API's CORS allow-list. **At minimum, the verify-email and reset-password pages are needed before email-based signup works for real users.**
+- **Dashboard** (`dashboard.substratalapps.com`, `DASHBOARD_URL`): **being built now, outside this repository, and tracked there.** It's part of the management app, which has web, macOS, Windows, iOS, Android, and Linux versions. The email-verification, password-reset, invitation-acceptance, and email-change links land here. It's also where a User subscribes to Standard and manages their account, devices, and inbox, and where org admins manage members and the Organization's subscription. Its web version is the first-party browser origin in the API's CORS allow-list. The verify-email and reset-password pages are the minimum needed before email-based signup works for real users. Nothing for it is built in this repository; this API only needs to keep serving what those pages call.
 - **Hosted sign-in** (`auth.substratalapps.com/authorize`, `AUTHORIZE_URL`): the page behind the hosted authorization-code + PKCE flow ([Auth → Getting an app token](https://compositecode.github.io/substratalapps.com/api-reference/auth/#getting-an-app-token)). The endpoints are built; only the page is missing. Needed before any third-party Application, and by any first-party app that prefers it to embedded login.
 
 ## Phase 3: marketplace and scale features

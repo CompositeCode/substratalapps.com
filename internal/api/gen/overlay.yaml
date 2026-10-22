@@ -1,0 +1,13 @@
+# Applied to docs/openapi.yaml before generation only. Substratal-Version is
+# enforced by the versioning middleware (internal/core/server.go) ahead of
+# every generated route, so the generated handlers don't bind it: removing
+# it here keeps every handler signature free of an unused parameter. The
+# published spec still declares it on every operation.
+overlay: 1.0.0
+info:
+  title: Generate without the version header
+  version: 1.0.0
+actions:
+  - target: "$.paths.*.*.parameters[?(@['$ref'] == '#/components/parameters/ApiVersion')]"
+    description: Drop the Substratal-Version header parameter from every operation
+    remove: true
