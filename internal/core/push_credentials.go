@@ -548,7 +548,7 @@ func (s *Server) emailCredentialOwners(ctx context.Context, app, provider, reaso
 		if err := s.Email.Send(ctx, email.Message{To: to, Kind: "push_credential_failed",
 			Subject: "A push credential for " + app + " was rejected",
 			Text: "The " + provider + " push credential for " + app + " was rejected by the provider (" + reason + "). " +
-				"Pushes to that provider are paused until you replace it: PATCH /v1/applications/" + app + "/push-credentials/" + provider + "."}); err != nil {
+				"Pushes to that provider are paused until you replace it: PATCH /applications/" + app + "/push-credentials/" + provider + "."}); err != nil {
 			s.Log.Error("email push credential owner", "application", app, "err", err)
 		}
 	}

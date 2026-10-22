@@ -1,4 +1,4 @@
-// Command api is the REST API Lambda: every /v1 route plus the
+// Command api is the REST API Lambda: every REST route plus the
 // /.well-known endpoints, behind API Gateway (HTTP API).
 package main
 

@@ -150,10 +150,10 @@ See the [API spec's MCP Server page](https://compositecode.github.io/substratala
 
 ### Tier 0
 
-A dedicated Lambda (shown in the [Tier 0 diagram](#first-deployment-tier-0) above as `MCP`), behind the same API Gateway, at a new `/mcp` route alongside the existing `/v1/*` routes — no new domain, no new certificate, no new hosted zone. On each MCP tool call, this Lambda:
+A dedicated Lambda (shown in the [Tier 0 diagram](#first-deployment-tier-0) above as `MCP`), behind the same API Gateway, at a new `/mcp` route alongside the existing `/*` routes — no new domain, no new certificate, no new hosted zone. On each MCP tool call, this Lambda:
 
 1. Validates the `Mcp-Session-Id` (a signed, self-contained token) and decodes the JSON-RPC request.
-2. Maps the requested tool name back to its `operationId` and calls the matching `/v1/...` route on the **same** API Gateway, forwarding the caller's own `Authorization` header unchanged.
+2. Maps the requested tool name back to its `operationId` and calls the matching `/...` route on the **same** API Gateway, forwarding the caller's own `Authorization` header unchanged.
 3. Translates the REST response into the MCP result shape and returns a single, buffered JSON response.
 
 This Lambda never talks to Aurora, Secrets Manager, or SQS directly — it only ever calls the existing API handlers over HTTPS, so its IAM execution role needs no data-plane permissions at all. It's the cheapest possible shape for this component: pure compute, pay-per-call, the same free-tier coverage as the main API handlers' Lambda.
@@ -185,7 +185,7 @@ Specified in full in [Database Schema → subscriptions](https://compositecode.g
 POST /internal/stripe/webhook
 ```
 
-Not under `/v1`, the same reasoning as the MCP server's `/mcp` route: it isn't a REST resource a caller invokes, it's an inbound event sink with its own Stripe-defined contract and versioning. It's not Bearer-authenticated either. It verifies the `Stripe-Signature` header against the raw body with the webhook secret (a 5-minute tolerance), the same shape as this API's own outbound [webhook signatures](https://compositecode.github.io/substratalapps.com/api-reference/webhooks/#verifying-the-signature).
+Not versioned by `Substratal-Version`, the same reasoning as the MCP server's `/mcp` route: it isn't a REST resource a caller invokes, it's an inbound event sink with its own Stripe-defined contract and versioning. It's not Bearer-authenticated either. It verifies the `Stripe-Signature` header against the raw body with the webhook secret (a 5-minute tolerance), the same shape as this API's own outbound [webhook signatures](https://compositecode.github.io/substratalapps.com/api-reference/webhooks/#verifying-the-signature).
 
 **Processing model:** insert the Stripe event id into `stripe_events` (on conflict do nothing, so a duplicate returns `200` immediately), process it in the same invocation, and return `200`. A failure leaves `processed_at` null, and the `stripe-events` job (every 10 minutes) re-fetches and reprocesses it. Processing is one Stripe read and one transaction, well inside Stripe's timeout, and the retry job gives the same durability a queue would. Each handler **re-fetches the Subscription from Stripe** rather than trusting the event payload, which makes out-of-order delivery harmless: whatever arrives last, the row ends up matching Stripe's current state.
 
@@ -227,6 +227,8 @@ Native auth sends email: verification, password reset, invitations, MFA and pass
 ## Webhook dispatch
 
 Outbound webhooks use a **transactional outbox**. Every state-changing transaction inserts its `webhook_events` rows in the same commit (see [Database Schema](https://compositecode.github.io/substratalapps.com/domain-model/database-schema/#webhook_subscriptions-webhook_events-webhook_deliveries)). A dispatcher Lambda, triggered every few seconds by an EventBridge Scheduler rule and also invoked directly after commit as a fast path, fans each event out to matching subscriptions as SQS messages. Delivery workers POST with a 5-second timeout, and failed attempts are re-enqueued with SQS delay (up to 15 minutes) or EventBridge Scheduler one-shot schedules for the 2-hour and 12-hour retries. No always-on component, consistent with the [cost principles](#cost-principles).
+
+The delivery worker reserves 5 concurrent executions, so a burst of deliveries can't starve the API. A new AWS account's Lambda concurrency limit is only 10, and AWS requires 10 to stay unreserved, so Terraform reads the account's applied limit (Service Quotas, `L-B99A9384`) on every deploy and reserves the 5 only when the limit is at least 100. Until then, the worker shares the account's concurrency with everything else.
 
 ## Push delivery
 

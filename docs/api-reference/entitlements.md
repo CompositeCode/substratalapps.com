@@ -20,14 +20,14 @@ The on/off switch for a user's access to an app. See [Domain Model → Entitleme
 
 | Method | Path | Requires | Purpose |
 |---|---|---|---|
-| `GET` | `/v1/users/{id}/entitlements` | self, `entitlements.manage`, or app-confined `entitlements.manage`/`users.list` | A user's entitlements, personal and org-sourced — what a dashboard renders as "your apps." |
-| `POST` | `/v1/users/{id}/entitlements` | `entitlements.manage` (platform or app-confined), or the Application's owner | Grant a personal Entitlement. |
-| `GET` | `/v1/entitlements` | `entitlements.manage` (platform or app-confined), or the Application's owner | Cross-user list: "who has app X." |
-| `GET` | `/v1/entitlements/{id}` | self, a member of the holding Organization, `entitlements.manage`, or the Application's owner | Fetch one Entitlement. |
-| `PATCH` | `/v1/entitlements/{id}` | `entitlements.manage` (platform or app-confined), or the Application's owner; an org admin may change only `status` (`active` ⇄ `disabled`) and `member_scope`/`member_overrides` on their own Organization's `org_seat` row | **The toggle.** Change status, term, or org-grant scope. |
-| `DELETE` | `/v1/entitlements/{id}` | `entitlements.manage` (platform or app-confined), or the Application's owner | Hard-remove a grant made in error. |
+| `GET` | `/users/{id}/entitlements` | self, `entitlements.manage`, or app-confined `entitlements.manage`/`users.list` | A user's entitlements, personal and org-sourced — what a dashboard renders as "your apps." |
+| `POST` | `/users/{id}/entitlements` | `entitlements.manage` (platform or app-confined), or the Application's owner | Grant a personal Entitlement. |
+| `GET` | `/entitlements` | `entitlements.manage` (platform or app-confined), or the Application's owner | Cross-user list: "who has app X." |
+| `GET` | `/entitlements/{id}` | self, a member of the holding Organization, `entitlements.manage`, or the Application's owner | Fetch one Entitlement. |
+| `PATCH` | `/entitlements/{id}` | `entitlements.manage` (platform or app-confined), or the Application's owner; an org admin may change only `status` (`active` ⇄ `disabled`) and `member_scope`/`member_overrides` on their own Organization's `org_seat` row | **The toggle.** Change status, term, or org-grant scope. |
+| `DELETE` | `/entitlements/{id}` | `entitlements.manage` (platform or app-confined), or the Application's owner | Hard-remove a grant made in error. |
 
-Org-wide grants are created through [`POST /v1/organizations/{id}/entitlements`](../organizations/#post-v1organizationsidentitlements). Once created, they're read and changed through `/v1/entitlements/{id}` like any other Entitlement.
+Org-wide grants are created through [`POST /organizations/{id}/entitlements`](../organizations/#post-organizationsidentitlements). Once created, they're read and changed through `/entitlements/{id}` like any other Entitlement.
 
 **App-confined callers.** An app-scoped [API Key](../api-keys/#app-confined-permissions) holding `entitlements.manage` can do everything on this page, but only for Entitlements whose `application_id` is its own Application. That includes its own Application's org-wide grants (a developer's backend reflecting a team purchase). Anything else returns `404 entitlement_not_found`, so other apps' rows aren't revealed. This is how an Application developer reflects their own billing outcome. See [Workflows → Purchase → access](../../workflows/#purchase--access).
 
@@ -57,7 +57,7 @@ Org-wide grants are created through [`POST /v1/organizations/{id}/entitlements`]
 
 `order_id` is the developer's own opaque reference (up to 255 characters, often their Stripe subscription id). It isn't a resource of this API. See [Orders & Audit → Order references](../../domain-model/orders-and-audit/#order).
 
-## `GET /v1/users/{id}/entitlements`
+## `GET /users/{id}/entitlements`
 
 ```json
 // Response — 200
@@ -108,9 +108,9 @@ Org-wide grants are created through [`POST /v1/organizations/{id}/entitlements`]
 - Filters: `application_id`, `status`, `source`.
 - An app-confined caller sees only rows for its own Application.
 
-The question "does this user have access to app X right now?" is answered by [effective-permissions](../roles-and-permissions/#get-v1usersidappsappideffective-permissions), not by scanning this list.
+The question "does this user have access to app X right now?" is answered by [effective-permissions](../roles-and-permissions/#get-usersidappsappideffective-permissions), not by scanning this list.
 
-## `POST /v1/users/{id}/entitlements`
+## `POST /users/{id}/entitlements`
 
 ```json
 // Request — an admin comp
@@ -156,10 +156,10 @@ The question "does this user have access to app X right now?" is answered by [ef
 - The user must exist and not be `deleted`. Granting to an `invited` user is allowed: access starts when they activate.
 - Effects, in one transaction: writes Audit Event `entitlement.granted`, emits the `entitlement.granted` webhook, and emits `access.granted` if this flips the user's resolved access to the app on.
 
-## `GET /v1/entitlements`
+## `GET /entitlements`
 
 ```
-GET /v1/entitlements?application_id=app_invoicer&status=active
+GET /entitlements?application_id=app_invoicer&status=active
 ```
 ```json
 // Response — 200
@@ -183,11 +183,11 @@ GET /v1/entitlements?application_id=app_invoicer&status=active
 
 Filters: `application_id`, `status`, `user_id`, `organization_id`, `source`, `order_id` (exact match, for a developer reconciling against their own billing), `ends_before` (find trials about to lapse), and `include_inactive`. This is the support-dashboard query ("who currently has app X", "every Entitlement disabled in the last billing dispute"). The per-user list above doesn't support it. Org-wide grants appear as single rows here (`user_id: null`), not expanded per member.
 
-## `GET /v1/entitlements/{id}`
+## `GET /entitlements/{id}`
 
 Returns the Entitlement object. Self may fetch their own personal rows, plus org rows of Organizations they belong to (with `granted_via`). An org admin may fetch their Organization's rows.
 
-## `PATCH /v1/entitlements/{id}` — the toggle
+## `PATCH /entitlements/{id}` — the toggle
 
 **Platform-managed rows** (`source: free` or `subscription`) accept only `status` (`active` ⇄ `disabled`) and `disabled_reason`, from `entitlements.manage` or the Application's owner. Anything else returns `409 entitlement_platform_managed`, and so does `DELETE`. See [Platform-managed Entitlements](../../domain-model/entitlements/#platform-managed-entitlements).
 
@@ -265,7 +265,7 @@ Returns the Entitlement object. Self may fetch their own personal rows, plus org
 {: .important }
 `revoked` is terminal. You can't `PATCH` a `revoked` entitlement back to `active`; grant a new one instead. `disabled` is the reversible switch, and re-enabling restores exactly the prior state (Roles, AppProfile, AppSettings untouched).
 
-## `DELETE /v1/entitlements/{id}`
+## `DELETE /entitlements/{id}`
 
 ```json
 // Response — 204

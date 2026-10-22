@@ -45,7 +45,7 @@ var checkoutBody = map[string]any{"plan": "standard", "success_url": "https://ap
 
 func allowed(e *testenv.Env, userID, appID string) bool {
 	e.T.Helper()
-	return e.Get("/v1/users/"+userID+"/apps/"+appID+"/effective-permissions", e.Admin).Expect(200).JSON()["allowed"] == true
+	return e.Get("/users/"+userID+"/apps/"+appID+"/effective-permissions", e.Admin).Expect(200).JSON()["allowed"] == true
 }
 
 // activate plays Stripe's part after a completed Checkout.
@@ -63,7 +63,7 @@ func TestFreeAndStandardAccess(t *testing.T) {
 	before := e.Signup()
 	free := e.App(system, map[string]any{"access_tier": "free"})
 	standard := e.App(system, nil)
-	if tier := e.Get("/v1/applications/"+standard, e.Admin).Str("access_tier"); tier != "standard" {
+	if tier := e.Get("/applications/"+standard, e.Admin).Str("access_tier"); tier != "standard" {
 		t.Fatalf("default access_tier = %s", tier)
 	}
 
@@ -74,23 +74,23 @@ func TestFreeAndStandardAccess(t *testing.T) {
 			t.Fatalf("%s: free=%v standard=%v", u.ID, allowed(e, u.ID, free), allowed(e, u.ID, standard))
 		}
 	}
-	page := e.Get("/v1/applications?access_tier=free", e.Admin).JSON()["data"].([]any)
+	page := e.Get("/applications?access_tier=free", e.Admin).JSON()["data"].([]any)
 	for _, a := range page {
 		if a.(map[string]any)["access_tier"] != "free" {
 			t.Fatalf("access_tier filter returned %v", a)
 		}
 	}
-	me := e.Get("/v1/users/me/subscription", after.Token).Expect(200).JSON()
+	me := e.Get("/users/me/subscription", after.Token).Expect(200).JSON()
 	if me["plan"] != "free" || me["subscription"] != nil || len(me["plan_sources"].([]any)) != 0 {
 		t.Fatalf("free user subscription = %v", me)
 	}
 
 	// The platform owns free rows: an admin can only disable or re-enable.
-	ents := e.Get("/v1/users/"+after.ID+"/entitlements?application_id="+free, e.Admin).JSON()["data"].([]any)
+	ents := e.Get("/users/"+after.ID+"/entitlements?application_id="+free, e.Admin).JSON()["data"].([]any)
 	if len(ents) != 1 || ents[0].(map[string]any)["source"] != "free" {
 		t.Fatalf("free entitlements = %v", ents)
 	}
-	ep := "/v1/entitlements/" + ents[0].(map[string]any)["id"].(string)
+	ep := "/entitlements/" + ents[0].(map[string]any)["id"].(string)
 	e.Patch(ep, e.Admin, map[string]any{"ends_at": "2030-01-01T00:00:00Z"}).ExpectErr(409, "entitlement_platform_managed")
 	e.Patch(ep, e.Admin, map[string]any{"status": "revoked", "disabled_reason": "x"}).ExpectErr(409, "entitlement_platform_managed")
 	e.Delete(ep, e.Admin).ExpectErr(409, "entitlement_platform_managed")
@@ -99,20 +99,20 @@ func TestFreeAndStandardAccess(t *testing.T) {
 		t.Fatal("a disabled free row should turn access off")
 	}
 	e.Patch(ep, e.Admin, map[string]any{"status": "active"}).Expect(200)
-	e.PostIdem("/v1/users/"+after.ID+"/entitlements", e.Admin, testenv.Unique(),
+	e.PostIdem("/users/"+after.ID+"/entitlements", e.Admin, testenv.Unique(),
 		map[string]any{"application_id": free, "source": "free"}).ExpectErr(422, "invalid_source")
 
 	// Standard, individually.
-	e.PostIdem("/v1/users/me/billing/checkout-sessions", after.Token, testenv.Unique(),
+	e.PostIdem("/users/me/billing/checkout-sessions", after.Token, testenv.Unique(),
 		map[string]any{"plan": "business", "success_url": "https://x.example.com", "cancel_url": "https://x.example.com"}).
 		ExpectErr(422, "plan_requires_sales")
-	e.Post("/v1/users/me/billing/portal-sessions", after.Token, map[string]any{"return_url": "https://x.example.com"}).
+	e.Post("/users/me/billing/portal-sessions", after.Token, map[string]any{"return_url": "https://x.example.com"}).
 		ExpectErr(409, "no_billing_account")
-	co := e.PostIdem("/v1/users/me/billing/checkout-sessions", after.Token, testenv.Unique(), checkoutBody).Expect(201)
+	co := e.PostIdem("/users/me/billing/checkout-sessions", after.Token, testenv.Unique(), checkoutBody).Expect(201)
 	if co.Str("url") == "" || stripe.last().Quantity != 1 || stripe.last().Subscriber.Type != "user" {
 		t.Fatalf("checkout = %s, %+v", co.Body, stripe.last())
 	}
-	pending := e.Get("/v1/users/me/subscription", after.Token).Expect(200).JSON()
+	pending := e.Get("/users/me/subscription", after.Token).Expect(200).JSON()
 	sub := pending["subscription"].(map[string]any)
 	if pending["plan"] != "free" || sub["status"] != "incomplete" || sub["unit_amount"].(float64) != 600 {
 		t.Fatalf("pending subscription = %v", pending)
@@ -122,17 +122,17 @@ func TestFreeAndStandardAccess(t *testing.T) {
 	if !allowed(e, after.ID, standard) || !allowed(e, after.ID, free) {
 		t.Fatal("Standard should unlock standard Applications and keep free ones")
 	}
-	u := e.Get("/v1/users/"+after.ID, e.Admin).JSON()
+	u := e.Get("/users/"+after.ID, e.Admin).JSON()
 	if u["plan"] != "standard" || len(u["plan_sources"].([]any)) != 1 {
 		t.Fatalf("user = %v", u)
 	}
 	if accessEventsFor(e, "access.granted", after.ID, standard) != 1 {
 		t.Fatal("subscribing should fire access.granted")
 	}
-	e.PostIdem("/v1/users/me/billing/checkout-sessions", after.Token, testenv.Unique(), checkoutBody).
+	e.PostIdem("/users/me/billing/checkout-sessions", after.Token, testenv.Unique(), checkoutBody).
 		ExpectErr(409, "subscription_exists")
-	e.Post("/v1/users/me/billing/portal-sessions", after.Token, map[string]any{"return_url": "https://x.example.com"}).Expect(201)
-	e.Get("/v1/users/"+after.ID+"/subscription", before.Token).ExpectErr(403, "forbidden")
+	e.Post("/users/me/billing/portal-sessions", after.Token, map[string]any{"return_url": "https://x.example.com"}).Expect(201)
+	e.Get("/users/"+after.ID+"/subscription", before.Token).ExpectErr(403, "forbidden")
 
 	// A developer grant coexists with the subscription row.
 	e.Grant(e.Admin, before.ID, standard)
@@ -144,8 +144,8 @@ func TestFreeAndStandardAccess(t *testing.T) {
 		t.Fatal("the developer grant should keep access after the subscription ends")
 	}
 	other := e.Signup()
-	e.PostIdem("/v1/users/me/billing/checkout-sessions", other.Token, testenv.Unique(), checkoutBody).Expect(201)
-	osid := e.Get("/v1/users/me/subscription", other.Token).JSON()["subscription"].(map[string]any)["id"].(string)
+	e.PostIdem("/users/me/billing/checkout-sessions", other.Token, testenv.Unique(), checkoutBody).Expect(201)
+	osid := e.Get("/users/me/subscription", other.Token).JSON()["subscription"].(map[string]any)["id"].(string)
 	activate(t, e, osid, "active")
 	activate(t, e, osid, "past_due")
 	if !allowed(e, other.ID, standard) {
@@ -158,11 +158,11 @@ func TestFreeAndStandardAccess(t *testing.T) {
 	if accessEventsFor(e, "access.revoked", other.ID, standard) != 1 {
 		t.Fatal("lapsing should fire access.revoked")
 	}
-	if e.Get("/v1/users/me", other.Token).Str("plan") != "free" {
+	if e.Get("/users/me", other.Token).Str("plan") != "free" {
 		t.Fatal("plan after lapse")
 	}
 	// Resubscribing (a new Stripe subscription) revives the same row.
-	e.PostIdem("/v1/users/me/billing/checkout-sessions", other.Token, testenv.Unique(), checkoutBody).Expect(201)
+	e.PostIdem("/users/me/billing/checkout-sessions", other.Token, testenv.Unique(), checkoutBody).Expect(201)
 	if _, err := e.Core.ApplyStripeSubscription(context.Background(), core.StripeSubscription{
 		ID: "sub_new_" + osid, SubscriptionID: osid, Status: "active"}); err != nil {
 		t.Fatal(err)
@@ -175,7 +175,7 @@ func TestFreeAndStandardAccess(t *testing.T) {
 	if !allowed(e, other.ID, standard) {
 		t.Fatal("a stale event from the replaced subscription must not end coverage")
 	}
-	live := e.Get("/v1/users/"+other.ID+"/entitlements?application_id="+standard+"&source=subscription", e.Admin).JSON()["data"].([]any)
+	live := e.Get("/users/"+other.ID+"/entitlements?application_id="+standard+"&source=subscription", e.Admin).JSON()["data"].([]any)
 	if len(live) != 1 {
 		t.Fatalf("one live subscription row, got %v", live)
 	}
@@ -189,13 +189,13 @@ func TestAccessTierChanges(t *testing.T) {
 	if allowed(e, u.ID, app) {
 		t.Fatal("standard by default")
 	}
-	e.Patch("/v1/applications/"+app, owner.Token, map[string]any{"access_tier": "free"}).ExpectErr(403, "moderation_field_forbidden")
-	e.Patch("/v1/applications/"+app, e.Admin, map[string]any{"access_tier": "gold"}).ExpectErr(422, "validation_failed")
-	e.Patch("/v1/applications/"+app, e.Admin, map[string]any{"access_tier": "free"}).Expect(200)
+	e.Patch("/applications/"+app, owner.Token, map[string]any{"access_tier": "free"}).ExpectErr(403, "moderation_field_forbidden")
+	e.Patch("/applications/"+app, e.Admin, map[string]any{"access_tier": "gold"}).ExpectErr(422, "validation_failed")
+	e.Patch("/applications/"+app, e.Admin, map[string]any{"access_tier": "free"}).Expect(200)
 	if !allowed(e, u.ID, app) || !allowed(e, owner.ID, app) {
 		t.Fatal("making an Application free grants it to every User")
 	}
-	e.Patch("/v1/applications/"+app, e.Admin, map[string]any{"access_tier": "standard"}).Expect(200)
+	e.Patch("/applications/"+app, e.Admin, map[string]any{"access_tier": "standard"}).Expect(200)
 	if allowed(e, u.ID, app) {
 		t.Fatal("moving back to standard ends free access")
 	}
@@ -213,24 +213,24 @@ func TestOrganizationSubscription(t *testing.T) {
 	e := testenv.NewWith(t, testenv.Options{Billing: stripe, OwnDatabase: true})
 	standard := e.App(system, nil)
 	admin := e.Signup()
-	oid := e.Post("/v1/organizations", admin.Token, map[string]any{"name": "Acme " + testenv.Unique()}).Expect(201).Str("id")
+	oid := e.Post("/organizations", admin.Token, map[string]any{"name": "Acme " + testenv.Unique()}).Expect(201).Str("id")
 	join := func() testenv.User {
 		m := e.Signup()
-		e.Post("/v1/organizations/"+oid+"/members", admin.Token, map[string]any{"email": m.Email}).Expect(201)
-		e.Post("/v1/organizations/"+oid+"/members/me/accept", m.Token, map[string]any{}).Expect(200)
+		e.Post("/organizations/"+oid+"/members", admin.Token, map[string]any{"email": m.Email}).Expect(201)
+		e.Post("/organizations/"+oid+"/members/me/accept", m.Token, map[string]any{}).Expect(200)
 		return m
 	}
 	m1, m2 := join(), join()
 	stranger := e.Signup()
 
-	sp := "/v1/organizations/" + oid + "/subscription"
+	sp := "/organizations/" + oid + "/subscription"
 	if body := e.Get(sp, admin.Token).Expect(200).JSON(); body["plan"] != "free" || body["subscription"] != nil {
 		t.Fatalf("org before = %v", body)
 	}
 	e.Get(sp, m1.Token).ExpectErr(403, "forbidden")
 	e.Get(sp, stranger.Token).ExpectErr(404, "organization_not_found")
 	e.Patch(sp, admin.Token, map[string]any{"member_scope": "all_members"}).ExpectErr(404, "subscription_not_found")
-	co := "/v1/organizations/" + oid + "/billing/checkout-sessions"
+	co := "/organizations/" + oid + "/billing/checkout-sessions"
 	e.PostIdem(co, m1.Token, testenv.Unique(), checkoutBody).ExpectErr(403, "forbidden")
 
 	body := map[string]any{"member_scope": "allowlist", "member_overrides": []string{m1.ID}}
@@ -246,7 +246,7 @@ func TestOrganizationSubscription(t *testing.T) {
 	if !allowed(e, m1.ID, standard) || allowed(e, m2.ID, standard) || allowed(e, admin.ID, standard) {
 		t.Fatal("the allowlist decides who's covered")
 	}
-	src := e.Get("/v1/users/me", m1.Token).JSON()["plan_sources"].([]any)
+	src := e.Get("/users/me", m1.Token).JSON()["plan_sources"].([]any)
 	if len(src) != 1 || src[0].(map[string]any)["type"] != "organization" || src[0].(map[string]any)["id"] != oid {
 		t.Fatalf("plan_sources = %v", src)
 	}
@@ -272,7 +272,7 @@ func TestOrganizationSubscription(t *testing.T) {
 	}
 
 	// Leaving the Organization ends that member's Standard access.
-	e.Delete("/v1/organizations/"+oid+"/members/"+m2.ID, admin.Token).Expect(204)
+	e.Delete("/organizations/"+oid+"/members/"+m2.ID, admin.Token).Expect(204)
 	if allowed(e, m2.ID, standard) {
 		t.Fatal("a former member isn't covered")
 	}
@@ -287,18 +287,18 @@ func TestOrganizationSubscription(t *testing.T) {
 func TestTestModeCheckoutNeedsStripeTestMode(t *testing.T) {
 	signupTest := func(e *testenv.Env) string {
 		addr := "tm+" + testenv.Unique() + "@example.com"
-		return e.Post("/v1/auth/signup", "", map[string]any{"email": addr, "password": "a long enough test passphrase",
+		return e.Post("/auth/signup", "", map[string]any{"email": addr, "password": "a long enough test passphrase",
 			"test_mode": true}).Expect(201).Token()
 	}
 	live := testenv.NewWith(t, testenv.Options{Billing: &fakeStripe{live: true}})
-	live.PostIdem("/v1/users/me/billing/checkout-sessions", signupTest(live), testenv.Unique(), checkoutBody).
+	live.PostIdem("/users/me/billing/checkout-sessions", signupTest(live), testenv.Unique(), checkoutBody).
 		ExpectErr(409, "test_mode_billing_unavailable")
-	live.PostIdem("/v1/users/me/billing/checkout-sessions", live.Signup().Token, testenv.Unique(), checkoutBody).Expect(201)
+	live.PostIdem("/users/me/billing/checkout-sessions", live.Signup().Token, testenv.Unique(), checkoutBody).Expect(201)
 
 	test := testenv.NewWith(t, testenv.Options{Billing: &fakeStripe{}})
 	tok := signupTest(test)
-	test.PostIdem("/v1/users/me/billing/checkout-sessions", tok, testenv.Unique(), checkoutBody).Expect(201)
-	if sub := test.Get("/v1/users/me/subscription", tok).JSON()["subscription"].(map[string]any); sub["test_mode"] != true {
+	test.PostIdem("/users/me/billing/checkout-sessions", tok, testenv.Unique(), checkoutBody).Expect(201)
+	if sub := test.Get("/users/me/subscription", tok).JSON()["subscription"].(map[string]any); sub["test_mode"] != true {
 		t.Fatalf("test-mode subscription = %v", sub)
 	}
 }

@@ -3,19 +3,20 @@
 # (default: the local devserver). It's the Phase 1 acceptance test from
 # plan-remaining.md, so CI and `make quickstart` run it on every change.
 #
-#   SUBSTRATAL_API=http://localhost:8080/v1 TOKEN=<superadmin token> scripts/quickstart.sh
+#   SUBSTRATAL_API=http://localhost:8080 TOKEN=<superadmin token> scripts/quickstart.sh
 #
 # Without TOKEN it signs in with ADMIN_EMAIL / ADMIN_PASSWORD.
 set -euo pipefail
 
-API="${SUBSTRATAL_API:-http://localhost:8080/v1}"
+API="${SUBSTRATAL_API:-http://localhost:8080}"
+VERSION="Substratal-Version: 1"
 need() { command -v "$1" >/dev/null || { echo "quickstart: $1 is required" >&2; exit 1; }; }
 need curl
 need jq
 
 call() { # method path [json]
   local method=$1 path=$2 body=${3:-}
-  local args=(-sS -X "$method" "$API$path" -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json"
+  local args=(-sS -X "$method" "$API$path" -H "$VERSION" -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json"
     -w '\n%{http_code}')
   [[ -n "$body" ]] && args+=(-d "$body")
   [[ "$method" == POST && "$path" == */entitlements ]] && args+=(-H "Idempotency-Key: $(uuidgen 2>/dev/null || date +%s%N)")
@@ -32,7 +33,7 @@ expect() { # status jq-filter expected
 step() { printf '\n== %s\n' "$*"; }
 
 if [[ -z "${TOKEN:-}" ]]; then
-  TOKEN=$(curl -sS "$API/auth/login" -H "Content-Type: application/json" \
+  TOKEN=$(curl -sS "$API/auth/login" -H "$VERSION" -H "Content-Type: application/json" \
     -d "$(jq -n --arg e "${ADMIN_EMAIL:?set TOKEN or ADMIN_EMAIL/ADMIN_PASSWORD}" --arg p "${ADMIN_PASSWORD:?}" '{email:$e,password:$p}')" |
     jq -r .access_token)
 fi

@@ -76,29 +76,46 @@ locals {
 
 # ── Application secret (cursor key, Stripe keys) ───────────────────────
 
-resource "random_password" "cursor" {
-  length  = 48
-  special = false
-}
-
 resource "random_password" "mcp_session" {
   length  = 48
   special = false
 }
 
+# Terraform manages the secret, never its value: the Stripe keys are set by
+# hand, and a tracked secret version would make every plan read them, which
+# the read-only plan role can't (and shouldn't) do. A new stack gets a
+# starting value (a random cursor_secret, empty Stripe keys) from the
+# initializer below, which writes only when no current version exists.
 resource "aws_secretsmanager_secret" "app" {
   name        = "${local.prefix}/app"
-  description = "cursor_secret, stripe_secret_key, stripe_webhook_secret. Set the Stripe keys by hand; Terraform never overwrites them."
+  description = "cursor_secret, stripe_secret_key, stripe_webhook_secret. Set the Stripe keys by hand; Terraform never reads or writes the value."
 }
 
-resource "aws_secretsmanager_secret_version" "app" {
-  secret_id = aws_secretsmanager_secret.app.id
-  secret_string = jsonencode({
-    cursor_secret         = random_password.cursor.result
-    stripe_secret_key     = ""
-    stripe_webhook_secret = ""
-  })
-  lifecycle { ignore_changes = [secret_string] }
+resource "terraform_data" "app_secret_init" {
+  triggers_replace = [aws_secretsmanager_secret.app.arn]
+  provisioner "local-exec" {
+    environment = { SECRET_ID = aws_secretsmanager_secret.app.arn, AWS_REGION = var.region }
+    command     = <<-EOT
+      set -eu
+      current=$(aws secretsmanager list-secret-version-ids --secret-id "$SECRET_ID" \
+        --query 'length(Versions[?contains(VersionStages, `AWSCURRENT`)])' --output text)
+      [ "$current" = "0" ] || exit 0
+      aws secretsmanager put-secret-value --secret-id "$SECRET_ID" \
+        --secret-string "{\"cursor_secret\":\"$(openssl rand -hex 24)\",\"stripe_secret_key\":\"\",\"stripe_webhook_secret\":\"\"}" >/dev/null
+    EOT
+  }
+}
+
+# Stop tracking the version Terraform created originally, without touching
+# the secret's value in AWS.
+removed {
+  from = aws_secretsmanager_secret_version.app
+  lifecycle { destroy = false }
+}
+
+removed {
+  from = random_password.cursor
+  lifecycle { destroy = false }
 }
 
 # ── Queues and storage ─────────────────────────────────────────────────
@@ -234,7 +251,7 @@ module "api" {
 }
 
 # The MCP server holds no data-plane permissions at all: it only calls the
-# API's own /v1 routes over HTTPS with the caller's credential.
+# API's own REST routes over HTTPS with the caller's credential.
 module "mcp" {
   source          = "../modules/lambda_function"
   name            = "${local.prefix}-mcp"
@@ -259,6 +276,22 @@ module "stripe_webhook" {
   policy_statements = concat(local.data_api, local.secrets, local.verify_only, local.crypt)
 }
 
+# A new AWS account starts with a Lambda concurrency limit of 10, and AWS
+# keeps 10 unreserved, so reserving any concurrency fails until the limit is
+# raised (deploy error: "decreases account's UnreservedConcurrentExecution
+# below its minimum value of [10]"). Read the applied limit on every deploy
+# and reserve the worker's share only once there's room for it; after the
+# increase is approved, the next deploy turns the reservation on by itself.
+data "aws_servicequotas_service_quota" "lambda_concurrency" {
+  service_code = "lambda"
+  quota_code   = "L-B99A9384" # Concurrent executions
+}
+
+locals {
+  lambda_concurrency_limit = data.aws_servicequotas_service_quota.lambda_concurrency.value
+  webhook_worker_reserved  = local.lambda_concurrency_limit >= 100 ? 5 : -1
+}
+
 module "webhook_worker" {
   source               = "../modules/lambda_function"
   name                 = "${local.prefix}-webhook-worker"
@@ -266,7 +299,7 @@ module "webhook_worker" {
   artifact_key         = local.artifact["webhook-worker"]
   memory_mb            = 256
   timeout_s            = 110
-  reserved_concurrency = 5 # isolates delivery load from the API's blast radius
+  reserved_concurrency = local.webhook_worker_reserved # isolates delivery load from the API's blast radius, once the account allows it
   environment          = local.common_env
   policy_statements = concat(local.data_api, local.secrets, local.verify_only, local.crypt, local.email, [{
     Effect   = "Allow"
@@ -330,7 +363,6 @@ locals {
     stripe = module.stripe_webhook
   }
   routes = {
-    "ANY /v1/{proxy+}"              = "api"
     "GET /.well-known/{proxy+}"     = "api"
     "$default"                      = "api"
     "POST /mcp"                     = "mcp"

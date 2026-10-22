@@ -20,7 +20,7 @@ nav_order: 10
 - **MFA:** optional TOTP (RFC 6238) for `password` identities, with 10 single-use recovery codes. TOTP secrets are encrypted with KMS at rest. An SSO identity's MFA belongs to its IdP.
 - **Service-to-service:** billing → hub, app → hub, and any other backend caller authenticates with a scoped [API Key](../api-reference/api-keys/), never user credentials. mTLS isn't offered.
 - **Secrets at rest:** every bearer credential (refresh tokens, API Key secrets, emailed tokens, recovery codes) is stored only as a hash. Webhook signing secrets, TOTP secrets, and [push credentials](../api-reference/notifications/#push-credentials) must be usable by the server, so they're KMS-encrypted instead. So are push device tokens: they aren't credentials, but they're personal data the server has to send to.
-- **Bootstrapping:** the very first `superadmin` cannot be created through the public API — nothing can call `POST /v1/users/{id}/roles/{roleId}` with `roles.manage` before a `superadmin` exists to grant it. It's seeded directly against the database, not specified as an endpoint. Every deploy makes sure the platform owner's account (the `SUPERADMIN_EMAIL` deploy variable) exists as a **protected superadmin**: active, verified, holding `superadmin`, and impossible to suspend, delete, erase, re-address, or demote, through the API ([`409 user_protected`](../api-reference/users/#the-protected-superadmin)) or directly in the database. Its password is set with the one-time admin CLI (`cmd/admin bootstrap`) or the password-reset flow.
+- **Bootstrapping:** the very first `superadmin` cannot be created through the public API — nothing can call `POST /users/{id}/roles/{roleId}` with `roles.manage` before a `superadmin` exists to grant it. It's seeded directly against the database, not specified as an endpoint. Every deploy makes sure the platform owner's account (the `SUPERADMIN_EMAIL` deploy variable) exists as a **protected superadmin**: active, verified, holding `superadmin`, and impossible to suspend, delete, erase, re-address, or demote, through the API ([`409 user_protected`](../api-reference/users/#the-protected-superadmin)) or directly in the database. Its password is set with the one-time admin CLI (`cmd/admin bootstrap`) or the password-reset flow.
 - **MCP:** the [MCP Server](../mcp-server/) is not a separate auth surface — it carries and forwards the same Bearer credential (user token or API Key) as any other caller. No new rule in this section applies to it that doesn't already apply here.
 
 ## CORS
@@ -43,11 +43,11 @@ On the `shared` tier, Organization and Tenant scoping are enforced in the data-a
 
 ## Concurrency control
 
-Entitlement, Role assignment, and Settings writes can race — two support agents acting on the same user, or a webhook retry landing alongside a manual edit. Mutating endpoints on these resources accept an `If-Match` header carrying the resource's current version (returned as an `ETag` on every `GET`); a write with a stale or missing `ETag` where one was expected returns `409` with `code: "version_conflict"` rather than silently applying a last-write-wins update. `If-Match` is optional on every `PATCH`/`DELETE`; without it, the write is last-write-wins. Endpoints where sending it matters most: `PATCH /v1/entitlements/{id}`, `PATCH /v1/users/{id}/apps/{appId}/settings`, and `PATCH /v1/roles/{id}`. Role *assignment* needs no `If-Match`, because assign and remove are idempotent set operations that can't lose an update.
+Entitlement, Role assignment, and Settings writes can race — two support agents acting on the same user, or a webhook retry landing alongside a manual edit. Mutating endpoints on these resources accept an `If-Match` header carrying the resource's current version (returned as an `ETag` on every `GET`); a write with a stale or missing `ETag` where one was expected returns `409` with `code: "version_conflict"` rather than silently applying a last-write-wins update. `If-Match` is optional on every `PATCH`/`DELETE`; without it, the write is last-write-wins. Endpoints where sending it matters most: `PATCH /entitlements/{id}`, `PATCH /users/{id}/apps/{appId}/settings`, and `PATCH /roles/{id}`. Role *assignment* needs no `If-Match`, because assign and remove are idempotent set operations that can't lose an update.
 
 ## Transaction boundaries
 
-Any write described as "also creates" or "also assigns" elsewhere in this spec — most notably `POST /v1/users` creating a default Profile, Settings, and `member` Role assignment in one call — is one database transaction. A partial failure (e.g. the Role assignment insert fails) rolls back the whole call; the client sees a single error, not a half-created User. The same rule applies to `PATCH /v1/entitlements/{id}` and its [Audit Event](../domain-model/orders-and-audit/#audit-event): the state change and the audit record are written together or not at all — an Audit Event that doesn't actually correspond to a committed change is worse than no Audit Event.
+Any write described as "also creates" or "also assigns" elsewhere in this spec — most notably `POST /users` creating a default Profile, Settings, and `member` Role assignment in one call — is one database transaction. A partial failure (e.g. the Role assignment insert fails) rolls back the whole call; the client sees a single error, not a half-created User. The same rule applies to `PATCH /entitlements/{id}` and its [Audit Event](../domain-model/orders-and-audit/#audit-event): the state change and the audit record are written together or not at all — an Audit Event that doesn't actually correspond to a committed change is worse than no Audit Event.
 
 ## Audit
 
@@ -64,15 +64,15 @@ Per-API-key token bucket, returning `429` with a `Retry-After` header on exhaust
 | Scope | Limit |
 |---|---|
 | Default, all endpoints, per API Key or per User session | 100 requests/minute |
-| `POST /v1/entitlements`, `POST /v1/users` | 20 requests/minute — tighter, since these are the endpoints scripted abuse would hit first |
-| `GET /v1/users/{id}/apps/{appId}/effective-permissions`, `POST /v1/auth/app-tokens`, `POST /v1/auth/oauth/token` | 300 requests/minute — expected to be called on a hot path by downstream apps (see [Trust Model](../trust-model/)), so it's deliberately not bottlenecked at the default rate |
-| `POST /v1/auth/login`, `/signup`, `/mfa/verify` | 10 requests/minute per IP address, in addition to per-account lockout |
-| `POST /v1/auth/password/forgot`, `/email/verify/resend` | 5 requests/minute per IP address, and 3 per hour per email address |
-| `POST /v1/auth/token/refresh` | 30 requests/minute per session |
-| `GET /v1/users/{id}/export` | 5 per user per day |
-| `POST /v1/organizations` | 10 per user per day |
-| `POST /v1/users/{id}/notifications` | 600 requests/minute per API Key, and 60 notifications per recipient User per Application per rolling hour (`429 rate_limited`, `details.scope: "recipient"`). Platform alerts don't count toward the per-recipient limit. |
-| `POST /v1/users/{id}/devices/{deviceId}/test` | 10 per device per hour |
+| `POST /entitlements`, `POST /users` | 20 requests/minute — tighter, since these are the endpoints scripted abuse would hit first |
+| `GET /users/{id}/apps/{appId}/effective-permissions`, `POST /auth/app-tokens`, `POST /auth/oauth/token` | 300 requests/minute — expected to be called on a hot path by downstream apps (see [Trust Model](../trust-model/)), so it's deliberately not bottlenecked at the default rate |
+| `POST /auth/login`, `/signup`, `/mfa/verify` | 10 requests/minute per IP address, in addition to per-account lockout |
+| `POST /auth/password/forgot`, `/email/verify/resend` | 5 requests/minute per IP address, and 3 per hour per email address |
+| `POST /auth/token/refresh` | 30 requests/minute per session |
+| `GET /users/{id}/export` | 5 per user per day |
+| `POST /organizations` | 10 per user per day |
+| `POST /users/{id}/notifications` | 600 requests/minute per API Key, and 60 notifications per recipient User per Application per rolling hour (`429 rate_limited`, `details.scope: "recipient"`). Platform alerts don't count toward the per-recipient limit. |
+| `POST /users/{id}/devices/{deviceId}/test` | 10 per device per hour |
 
 Every response carries `RateLimit-Limit`, `RateLimit-Remaining`, and `RateLimit-Reset` (seconds until the bucket refills). A `429` also carries `Retry-After`.
 
@@ -97,10 +97,11 @@ Targets for the API itself, measured monthly at the API Gateway. They're publish
 
 ## Versioning
 
-- `/v1` now. Additive, backward-compatible changes (new optional fields, new endpoints) ship without a version bump.
-- A breaking change gets a new version prefix. The old version keeps working for a minimum 6-month deprecation window, announced in the [Changelog](../changelog/) the day the replacement ships, with a `Deprecation` and `Sunset` response header (RFC 8594) added to every response the old version serves from that point on.
-- Webhook payloads are versioned independently of the URL version, by a date string (`api_version`, currently `2026-10-05`) pinned on each subscription at creation. A breaking payload change ships as a new date. Existing subscriptions keep their pinned shape until their owner moves them forward with `PATCH`, and old payload versions are supported for at least 12 months. Additive payload fields don't get a new date.
-- The [MCP Server](../mcp-server/)'s protocol version (negotiated per MCP's own date-based scheme during `initialize`) is likewise independent of `/v1` — a protocol-version bump there doesn't imply a `/v2` here, and vice versa.
+- The API version is a whole number sent in the `Substratal-Version` request header, never in the URL. `1` is the only version today, and the header is required (`400 api_version_required` without it), so no client is ever on a version it didn't ask for. See [Conventions → Versioning](../api-reference/conventions/#versioning). Additive, backward-compatible changes (new optional fields, new endpoints) ship without a version bump.
+- A breaking change gets the next version number. The old version keeps working for a minimum 6-month deprecation window, announced in the [Changelog](../changelog/) the day the replacement ships. From then on, every response to a request that names the old version carries a `Deprecation` header (RFC 9745) and a `Sunset` header (RFC 8594) giving the retirement date. Once that date passes, the old version is removed from the supported list, and requests naming it get `400 unsupported_api_version`.
+- **What counts as breaking:** removing or renaming a field, endpoint, or query parameter; changing a field's type or format; making an optional request field required, or adding a new required one; changing the status code or error code for an existing condition; and changing a default or a behavior that existing callers depend on. Everything else, such as new endpoints, new optional fields, new enum values, and new error codes for new conditions, is additive.
+- Webhook payloads are versioned independently of the API version, by a date string (`api_version`, currently `2026-10-05`) pinned on each subscription at creation. A breaking payload change ships as a new date. Existing subscriptions keep their pinned shape until their owner moves them forward with `PATCH`, and old payload versions are supported for at least 12 months. Additive payload fields don't get a new date.
+- The [MCP Server](../mcp-server/)'s protocol version (negotiated per MCP's own date-based scheme during `initialize`) is likewise independent of the API version — a protocol-version bump there doesn't imply `Substratal-Version: 2` here, and vice versa.
 - **Enums can grow new values without a version bump.** `EntitlementStatus`, `UserStatus`, and similar closed-looking lists in [openapi.yaml](../openapi.yaml) are allowed to gain new members as additive, non-breaking changes. Clients — and any implementation — must treat an unrecognized enum value as "handle generically / no special case," never as an error to reject the response over. This is a contract, not just a suggestion: don't write a `switch` with no default case against any enum in this spec.
 
 ## Request tracing
@@ -133,7 +134,7 @@ This is also why the hot/cold split doesn't weaken [Audit trail vs. erasure tens
 
 ### Hard-delete cascade
 
-Triggered by `POST /v1/users/{id}/erasure-requests` (see [Users](../api-reference/users/#post-v1usersiderasure-requests)) and run by a scheduled job **7 days** after the request, well within GDPR Article 12(3)'s 30-day ceiling. The 7-day gap is a window to cancel a request made in error or under account takeover. Soft-delete (the `status: deleted` transition) happens immediately when the request arrives; this cascade is the follow-up. Runs in this order, each step committed before the next:
+Triggered by `POST /users/{id}/erasure-requests` (see [Users](../api-reference/users/#post-usersiderasure-requests)) and run by a scheduled job **7 days** after the request, well within GDPR Article 12(3)'s 30-day ceiling. The 7-day gap is a window to cancel a request made in error or under account takeover. Soft-delete (the `status: deleted` transition) happens immediately when the request arrives; this cascade is the follow-up. Runs in this order, each step committed before the next:
 
 1. Delete `password_hash`, `mfa_secret`, and `mfa_pending_secret` from every [UserIdentity](../domain-model/users-and-organizations/#useridentity) row the User holds, and delete their `mfa_recovery_codes`. The credential goes, not the row: the row's `method`/`created_at` stays as a record that an identity of that kind existed. Null `external_subject_id`.
 2. Delete the User's [Profile](../domain-model/profiles/) row outright, and every `sessions`, `refresh_tokens`, and `auth_tokens` row (sessions hold IP addresses and user agents). Delete every [Device](../domain-model/notifications/#device) (push tokens), [Notification](../domain-model/notifications/#notification), and notification delivery the User holds.
@@ -145,7 +146,7 @@ Triggered by `POST /v1/users/{id}/erasure-requests` (see [Users](../api-referenc
 
 Each step is idempotent, so a failed run resumes safely from the start.
 
-`GET /v1/users/{id}/export` (see [API Reference → Users](../api-reference/users/)) reads every table this cascade writes to, plus one it deliberately doesn't: global [Settings](../domain-model/settings/). Export answers "what do you have on me," so it includes everything keyed to the User. Erasure answers "stop having anything that identifies you," and global Settings (`locale`, `timezone`, `theme`, `notifications`) identifies no one once the User's email, Profile, and credentials are gone, so the row stays as a pseudonymous preference record. Every other table is symmetric: if export shows it, the cascade clears it.
+`GET /users/{id}/export` (see [API Reference → Users](../api-reference/users/)) reads every table this cascade writes to, plus one it deliberately doesn't: global [Settings](../domain-model/settings/). Export answers "what do you have on me," so it includes everything keyed to the User. Erasure answers "stop having anything that identifies you," and global Settings (`locale`, `timezone`, `theme`, `notifications`) identifies no one once the User's email, Profile, and credentials are gone, so the row stays as a pseudonymous preference record. Every other table is symmetric: if export shows it, the cascade clears it.
 
 ## Availability expectations on the trust model
 
