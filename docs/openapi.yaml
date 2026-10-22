@@ -105,6 +105,7 @@ paths:
                 display_name: { type: string, minLength: 1, maxLength: 100 }
                 application_id: { type: string, description: "Informational: records which app the signup came from. Grants nothing." }
                 test_mode: { type: boolean, default: false, description: "Create a test-mode User." }
+                expires_at: { type: string, format: date-time, description: "Test mode only: when the account stops working. Default 24 hours from now; at least 15 minutes away, at most 30 days. 422 expires_at_out_of_range, or live_user when test_mode is false." }
       responses:
         "400": { $ref: "#/components/responses/BadRequest" }
         "201":
@@ -178,6 +179,7 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/AuthSession" }
         "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
 
   /auth/token/refresh:
@@ -206,6 +208,7 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/AuthSession" }
         "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
 
   /auth/logout:
     post:
@@ -701,6 +704,7 @@ paths:
                 display_name: { type: string, maxLength: 100 }
                 status: { type: string, enum: [invited, active], default: invited }
                 send_invitation: { type: boolean, default: true }
+                expires_at: { type: string, format: date-time, description: "Test-mode keys only: when the User stops working. Default 24 hours from now; at least 15 minutes away, at most 30 days. 422 expires_at_out_of_range, or live_user with a live key." }
       responses:
         "400": { $ref: "#/components/responses/BadRequest" }
         "201":
@@ -750,6 +754,7 @@ paths:
               properties:
                 email: { type: string, format: email }
                 status: { type: string, enum: [active, suspended], description: "users.manage only. active on a deleted User restores it." }
+                expires_at: { type: string, format: date-time, description: "users.manage only, test-mode Users only. At least 15 minutes from now and at most 30 days after created_at. Moving it later on an expired User brings them back and fires access.granted (test_user_extended)." }
       responses:
         "400": { $ref: "#/components/responses/BadRequest" }
         "200":
@@ -3237,6 +3242,7 @@ components:
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
         last_login_at: { type: [string, "null"], format: date-time }
+        expires_at: { type: [string, "null"], format: date-time, description: "When a test-mode User stops working (Auth → Test-mode Users → Lifetime). Always null for live Users." }
         plan: { $ref: "#/components/schemas/Plan" }
         plan_sources: { type: array, items: { $ref: "#/components/schemas/PlanSource" }, description: "What gives this User Standard: their own subscription, an Organization's, or both. Empty on Free." }
 
@@ -3784,6 +3790,7 @@ components:
         - user.suspended
         - user.reactivated
         - user.deleted
+        - user.expired
         - user.erasure_requested
         - user.erasure_cancelled
         - user.erased
@@ -3898,6 +3905,7 @@ components:
         - user.suspended
         - user.reactivated
         - user.deleted
+        - user.expired
         - organization.member_added
         - organization.member_removed
         - application.review_status_changed
@@ -3924,6 +3932,8 @@ components:
         - user_suspended
         - user_reactivated
         - user_deleted
+        - test_user_expired
+        - test_user_extended
 
     WebhookEventEnvelope:
       type: object
@@ -4044,7 +4054,7 @@ components:
 
     DeviceInactiveReason:
       type: string
-      enum: [unregistered, session_revoked, user_suspended, user_deleted, stale, limit, credential_removed]
+      enum: [unregistered, session_revoked, user_suspended, user_deleted, test_user_expired, stale, limit, credential_removed]
 
     WebPushSubscription:
       type: object

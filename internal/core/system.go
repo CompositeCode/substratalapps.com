@@ -123,6 +123,63 @@ func (s *Server) SweepEntitlements(ctx context.Context) (expired, started int, e
 	return
 }
 
+// ── Test-mode User expiry (runs with the entitlement sweep) ───────────
+
+// ExpireTestUsers processes every test-mode User whose expires_at has
+// passed, exactly once each (Auth → Test-mode Users → Lifetime). Their
+// tokens already stopped working at expires_at; this revokes sessions and
+// devices, fires access.revoked and user.expired, and writes the audit
+// event. status, Entitlements, Roles, and memberships are untouched.
+func (s *Server) ExpireTestUsers(ctx context.Context) (n int, err error) {
+	err = s.system(ctx, true, db.Settings{}, func(c *Call) error {
+		uids, err := db.All[string](ctx, c.q, `select to_jsonb(id) from users
+			where test_mode and expires_at <= :now::timestamptz and expired_processed_at is null
+			order by expires_at limit 500 for update skip locked`, db.Args{"now": db.Time(c.now)})
+		if err != nil {
+			return err
+		}
+		for _, id := range uids {
+			u, err := c.findUser("u.id = :id", db.Args{"id": id})
+			if err != nil {
+				return err
+			}
+			pairs, err := c.userAppPairs(u.ID)
+			if err != nil {
+				return err
+			}
+			// Resolution already treats the User as expired, so "before"
+			// is resolved as of the instant before expires_at.
+			now := c.now
+			c.now = u.ExpiresAt.Add(-time.Nanosecond)
+			watch, err := c.watchAccess(pairs)
+			c.now = now
+			if err != nil {
+				return err
+			}
+			if _, err := c.q.Exec(ctx, `update users set expired_processed_at = :now::timestamptz where id = :u`,
+				db.Args{"u": u.ID, "now": db.Time(c.now)}); err != nil {
+				return err
+			}
+			if err := c.revokeSessions(u.ID, "test_user_expired", ""); err != nil {
+				return err
+			}
+			if err := c.flip(watch, "test_user_extended", "test_user_expired"); err != nil {
+				return err
+			}
+			if err := c.emit("user.expired", nil, map[string]any{"user_id": u.ID, "expires_at": u.ExpiresAt}); err != nil {
+				return err
+			}
+			if err := c.audit(Audit{Action: "user.expired", TargetType: "user", TargetID: u.ID, TargetUserID: &u.ID,
+				After: map[string]any{"expires_at": u.ExpiresAt}}); err != nil {
+				return err
+			}
+			n++
+		}
+		return nil
+	})
+	return
+}
+
 // ── Erasure cascade (NFR → Hard-delete cascade) ────────────────────────
 
 // RunErasures runs every scheduled erasure whose 7 days have passed. Each
