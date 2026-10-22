@@ -2,6 +2,10 @@
 # scripts/docs-build.rb on main's GitHub build; each entry has a frozen
 # static copy at <version>/ on this branch, served at /versions/<version>/.
 versions:
+- version: 1.7.6
+  released: '2026-10-22'
+  commit: 2b624986f1c05f995601580c0f3ee897f504d054
+  summary: 'Merge pull request #61 from CompositeCode/feature/audit-export'
 - version: 1.7.5
   released: '2026-10-22'
   commit: 87741be7f3171fe5de6fa85008909c24f1532d18
