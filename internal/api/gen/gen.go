@@ -364,6 +364,8 @@ const (
 	AuditActionOrganizationMemberInvited         AuditAction = "organization.member_invited"
 	AuditActionOrganizationMemberRemoved         AuditAction = "organization.member_removed"
 	AuditActionOrganizationMemberRoleChanged     AuditAction = "organization.member_role_changed"
+	AuditActionOrganizationScimTokenCreated      AuditAction = "organization.scim_token_created"
+	AuditActionOrganizationScimTokenRevoked      AuditAction = "organization.scim_token_revoked"
 	AuditActionOrganizationUpdated               AuditAction = "organization.updated"
 	AuditActionProfileUpdated                    AuditAction = "profile.updated"
 	AuditActionPushCredentialCreated             AuditAction = "push_credential.created"
@@ -447,6 +449,10 @@ func (e AuditAction) Valid() bool {
 	case AuditActionOrganizationMemberRemoved:
 		return true
 	case AuditActionOrganizationMemberRoleChanged:
+		return true
+	case AuditActionOrganizationScimTokenCreated:
+		return true
+	case AuditActionOrganizationScimTokenRevoked:
 		return true
 	case AuditActionOrganizationUpdated:
 		return true
@@ -3224,6 +3230,21 @@ type RolePage struct {
 	Page PageInfo `json:"page"`
 }
 
+// ScimToken defines model for ScimToken.
+type ScimToken struct {
+	// BaseUrl The SCIM 2.0 base URL to give the identity provider.
+	BaseUrl        *string    `json:"base_url,omitempty"`
+	CreatedAt      *time.Time `json:"created_at,omitempty"`
+	CreatedBy      *string    `json:"created_by,omitempty"`
+	Id             *string    `json:"id,omitempty"`
+	LastUsedAt     *time.Time `json:"last_used_at,omitempty"`
+	OrganizationId *string    `json:"organization_id,omitempty"`
+	TestMode       *bool      `json:"test_mode,omitempty"`
+
+	// Token The secret (scim_…). Only in the response that creates it.
+	Token *string `json:"token,omitempty"`
+}
+
 // Session defines model for Session.
 type Session struct {
 	Amr       *[]string  `json:"amr,omitempty"`
@@ -4966,6 +4987,15 @@ type ServerInterface interface {
 	// OrganizationsUpdateMember Change a member's role
 	// (PATCH /organizations/{id}/members/{userId})
 	OrganizationsUpdateMember(w http.ResponseWriter, r *http.Request, id string, userId string)
+	// OrganizationsDeleteScimToken Turn SCIM off for the Organization
+	// (DELETE /organizations/{id}/scim-token)
+	OrganizationsDeleteScimToken(w http.ResponseWriter, r *http.Request, id string)
+	// OrganizationsGetScimToken Show the Organization's SCIM token (never its secret)
+	// (GET /organizations/{id}/scim-token)
+	OrganizationsGetScimToken(w http.ResponseWriter, r *http.Request, id string)
+	// OrganizationsCreateScimToken Create (or rotate) the Organization's SCIM token
+	// (POST /organizations/{id}/scim-token)
+	OrganizationsCreateScimToken(w http.ResponseWriter, r *http.Request, id string)
 	// BillingGetOrganizationSubscription An Organization's plan and Standard subscription (org admin or billing.manage)
 	// (GET /organizations/{id}/subscription)
 	BillingGetOrganizationSubscription(w http.ResponseWriter, r *http.Request, id string)
@@ -7269,6 +7299,84 @@ func (siw *ServerInterfaceWrapper) OrganizationsUpdateMember(w http.ResponseWrit
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.OrganizationsUpdateMember(w, r, id, userId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// OrganizationsDeleteScimToken operation middleware
+func (siw *ServerInterfaceWrapper) OrganizationsDeleteScimToken(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.OrganizationsDeleteScimToken(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// OrganizationsGetScimToken operation middleware
+func (siw *ServerInterfaceWrapper) OrganizationsGetScimToken(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.OrganizationsGetScimToken(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// OrganizationsCreateScimToken operation middleware
+func (siw *ServerInterfaceWrapper) OrganizationsCreateScimToken(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.OrganizationsCreateScimToken(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -10478,6 +10586,9 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/organizations/{id}/members/me/accept", wrapper.OrganizationsAcceptMembership)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/organizations/{id}/members/{userId}", wrapper.OrganizationsRemoveMember)
 	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/organizations/{id}/members/{userId}", wrapper.OrganizationsUpdateMember)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/organizations/{id}/scim-token", wrapper.OrganizationsDeleteScimToken)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/organizations/{id}/scim-token", wrapper.OrganizationsGetScimToken)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/organizations/{id}/scim-token", wrapper.OrganizationsCreateScimToken)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/organizations/{id}/entitlements", wrapper.OrganizationsListEntitlements)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/organizations/{id}/entitlements", wrapper.OrganizationsGrantEntitlement)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/tenants", wrapper.TenantsList)

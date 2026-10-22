@@ -34,6 +34,7 @@ const (
 	PushCredential       = "pcr_"
 	Notification         = "ntf_"
 	NotificationDelivery = "ndl_"
+	SCIMToken            = "sct_"
 	AuditExport          = "aex_"
 )
 
@@ -48,6 +49,7 @@ const (
 	WebhookSecret     = "whsec_"
 	APIKeyLive        = "satk_live_"
 	APIKeyTest        = "satk_test_"
+	SCIMSecret        = "scim_"
 	AccessTokenJTI    = "atk_"
 	AppTokenJTI       = "apt_"
 )

@@ -117,7 +117,9 @@ var APIVersions = []string{"1"}
 
 // unversioned are the generated routes callers can't be expected to send
 // Substratal-Version to: uptime checks, and the OAuth token endpoint that
-// standard OAuth libraries call (Conventions → Versioning).
+// standard OAuth libraries call (Conventions → Versioning). /scim/v2 is
+// exempt too, below: identity providers can't add the header, and SCIM
+// carries its own version in the path.
 var unversioned = map[string]bool{
 	"GET /health":            true,
 	"POST /auth/oauth/token": true,
@@ -135,6 +137,7 @@ func (s *Server) Handler() http.Handler {
 	})
 	mux.HandleFunc("GET /.well-known/jwks.json", s.jwks)
 	mux.HandleFunc("GET /.well-known/openid-configuration", s.openIDConfiguration)
+	mux.Handle("/scim/v2/", s.scimHandler())
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteError(w, httpx.ErrNotFound())
 	})
@@ -143,12 +146,13 @@ func (s *Server) Handler() http.Handler {
 
 // versioned requires Substratal-Version on every generated route before it
 // runs, so a missing version is reported ahead of any parameter or body
-// error. Unmatched paths, the well-known endpoints, and the unversioned
-// routes pass through.
+// error. Unmatched paths, the well-known endpoints, SCIM, and the
+// unversioned routes pass through.
 func versioned(mux *http.ServeMux) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, pattern := mux.Handler(r)
-		if pattern == "" || pattern == "/" || strings.HasPrefix(pattern, "GET /.well-known/") || unversioned[pattern] {
+		if pattern == "" || pattern == "/" || strings.HasPrefix(pattern, "GET /.well-known/") ||
+			strings.HasPrefix(pattern, "/scim/v2/") || unversioned[pattern] {
 			mux.ServeHTTP(w, r)
 			return
 		}

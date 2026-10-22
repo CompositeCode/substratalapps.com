@@ -456,6 +456,17 @@ No `updated_at`, no soft-delete column — this table is append-only by design (
 
 **Index:** `(created_at) where status in ('pending','running')` for the export worker, which claims one at a time with `for update skip locked` and picks up a `running` export again if its worker hasn't finished within 20 minutes.
 
+## scim_tokens
+
+| Column | Type | Constraint |
+|---|---|---|
+| `id` | `text` | PK, `sct_…` |
+| `organization_id` | `text` | FK → `organizations`, **unique**: at most one token per Organization |
+| `secret_hash` | `text` | not null, unique — SHA-256 of the `scim_…` secret, never the secret |
+| `created_by` | `text` | FK → `users` |
+| `test_mode` | `boolean` | the mode the token's calls run in; no mode policy, like `api_keys`, since it's resolved by hash first |
+| `created_at`, `last_used_at` | `timestamptz` | |
+
 ## webhook_subscriptions, webhook_events, webhook_deliveries
 
 ```sql

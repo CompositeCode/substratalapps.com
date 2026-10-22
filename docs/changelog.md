@@ -14,13 +14,22 @@ What's changed in this specification over time. Every decision is written into t
 
 ## 2026-10-21 — Audit Event exports
 
-The audit log can be exported to a file. See [API Reference → Audit → Exporting](../api-reference/audit/#exporting). `openapi.yaml` is now at `1.0.0-draft.5`, with 120 operations.
+The audit log can be exported to a file. See [API Reference → Audit → Exporting](../api-reference/audit/#exporting). `openapi.yaml` is now at `1.0.0-draft.8`, with 123 operations.
 
 - **`POST /audit-exports`** takes the same filters as `GET /audit-events`, as body fields, plus `format` (`ndjson` or `csv`). It confines the caller to the same scope as the list, requires `Idempotency-Key`, and returns `202`. A job writes the file, usually within a minute. Limited to 20 per caller per day.
 - **`GET /audit-exports/{id}`** shows the status, and once it's `ready`, a download link signed for 15 minutes. Only the requester and `audit.view` can see an export. Files and records are deleted after 7 days.
 - New audit action `audit.exported` (target type `audit_export`), written when the file is ready, with the requester as actor.
 - **Retention** needed no new code. It's already enforced: the one-year hot window, and the nightly archival of older events, shape-only, to indefinite cold storage ([Audit log lifecycle](../non-functional-requirements/#audit-log-lifecycle)).
-- Migration `0007_audit_exports`. Infrastructure: a private exports bucket with a 7-day lifecycle rule, and an `audit-exports` schedule every minute.
+- Migration `0011_audit_exports`. Infrastructure: a private exports bucket with a 7-day lifecycle rule, and an `audit-exports` schedule every minute.
+
+## 2026-10-21 — SCIM provisioning
+
+An Organization's identity provider can invite and remove its members with SCIM 2.0. See [API Reference → SCIM](../api-reference/scim/). `openapi.yaml` is now at `1.0.0-draft.5`, with 121 operations.
+
+- **Setting it up:** `POST`, `GET`, and `DELETE /organizations/{id}/scim-token` (org admin or `organizations.manage`). There's one token per Organization, and its secret is shown once. New audit actions `organization.scim_token_created` and `organization.scim_token_revoked`. Migration `0008_scim_tokens`.
+- **`/scim/v2`** serves `ServiceProviderConfig`, `ResourceTypes`, and `Users` (list with a `userName eq` filter, create, get, put, patch, delete), in SCIM's own response and error shapes. These endpoints follow RFC 7644, not `openapi.yaml`, like `/.well-known`, and are exempt from `Substratal-Version`: identity providers can't add the header, and SCIM versions itself in the path.
+- **The membership rules don't change.** Provisioning invites, so the person accepts before they join, whether or not they already had an account. Deprovisioning removes the membership, with `access.revoked`, and never touches the person's own account. The last-`org_admin` guard applies. Writes are audited with actor type `system` and the token's id.
+- Users only: no Groups, bulk, sorting, or ETags. Roles stay with org admins.
 
 ## 2026-10-21 — Versioning rules spelled out
 

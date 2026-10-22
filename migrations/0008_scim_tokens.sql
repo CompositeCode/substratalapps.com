@@ -1,38 +1,24 @@
--- 0007_audit_exports: asynchronous Audit Event exports
--- (API Reference → Audit → Exporting).
+-- 0008_scim_tokens: SCIM provisioning (API Reference → SCIM).
 --
--- A request stores the caller's forced scope and filters; the jobs worker
--- writes the file to private storage and marks it ready. Rows and files
--- are deleted 7 days after the request.
+-- One SCIM bearer token per Organization, for its identity provider. Only
+-- the SHA-256 of the secret is stored, like API Keys.
 --
--- Numbered after 0005_test_user_expiry and 0006_self_registered_apps,
--- which ship first; the action list below keeps 0005's user.expired.
+-- Numbered after 0005_test_user_expiry, 0006_self_registered_apps, and
+-- 0007_audit_exports, which ship first; the action list below keeps their
+-- user.expired and audit.exported.
 
-create table audit_exports (
+create table scim_tokens (
   id text primary key,
-  requested_by_type text not null check (requested_by_type in ('user','api_key')),
-  requested_by_id text not null,
-  scope jsonb not null,          -- the forced scope: {application_id | target_user_id | tenant_id}, or {}
-  filters jsonb not null,
-  format text not null check (format in ('ndjson','csv')),
-  status text not null default 'pending' check (status in ('pending','running','ready','failed')),
-  row_count integer,
-  object_key text,
-  error text,
+  organization_id text not null unique references organizations(id),
+  secret_hash text not null unique,
+  created_by text not null references users(id),
   test_mode boolean not null default false,
   created_at timestamptz not null default now(),
-  started_at timestamptz,
-  completed_at timestamptz,
-  expires_at timestamptz not null,
-  check ((status = 'ready') = (object_key is not null and row_count is not null)),
-  check ((status = 'failed') = (error is not null))
+  last_used_at timestamptz
 );
-create index audit_exports_due on audit_exports (created_at) where status in ('pending','running');
 
-alter table audit_exports enable row level security;
-alter table audit_exports force row level security;
-create policy audit_exports_mode on audit_exports
-  using (substratal_util.mode_visible(test_mode)) with check (substratal_util.mode_visible(test_mode));
+-- No mode policy, like api_keys: a token is resolved by its hash before
+-- the mode is known, and its test_mode is the mode its calls run in.
 
 alter table audit_events drop constraint audit_events_action_check;
 alter table audit_events add constraint audit_events_action_check check (action in (
@@ -46,6 +32,7 @@ alter table audit_events add constraint audit_events_action_check check (action 
     'application.created','application.updated','application.review_status_changed',
     'organization.created','organization.updated','organization.member_invited','organization.member_added',
     'organization.member_removed','organization.member_role_changed',
+    'organization.scim_token_created','organization.scim_token_revoked',
     'subscription.created','subscription.status_changed','subscription.members_changed',
     'tenant.tier_change_requested','tenant.tier_change_request_updated','tenant.tier_changed',
     'api_key.created','api_key.updated','api_key.rotated','api_key.revoked','api_key.restrict_destructive_disabled',
