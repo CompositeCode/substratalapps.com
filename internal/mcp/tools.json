@@ -975,6 +975,169 @@
       "x_accepts_if_match": true
     },
     {
+      "name": "substratal_audit_createExport",
+      "title": "Export Audit Events to a file (asynchronous)",
+      "description": "Export Audit Events to a file (asynchronous)\n\nExports every Audit Event matching the same filters as GET /v1/audit-events, in the caller's scope there, as NDJSON or CSV. Hot window only. Returns 202 at once; a job writes the file, usually within a minute. Poll GET /v1/audit-exports/{id} until status is ready, then download from download_url. Exports are kept 7 days. Writes audit.exported when the file is ready.\n\nREST: POST /v1/audit-exports",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "description": "The same filters as GET /v1/audit-events, as body fields, plus format.",
+            "properties": {
+              "action": {
+                "items": {
+                  "enum": [
+                    "user.created",
+                    "user.updated",
+                    "user.email_changed",
+                    "user.suspended",
+                    "user.reactivated",
+                    "user.deleted",
+                    "user.erasure_requested",
+                    "user.erasure_cancelled",
+                    "user.erased",
+                    "user.password_changed",
+                    "user.password_reset",
+                    "user.mfa_enabled",
+                    "user.mfa_disabled",
+                    "user.mfa_reset",
+                    "audit.exported",
+                    "entitlement.granted",
+                    "entitlement.disabled",
+                    "entitlement.revoked",
+                    "entitlement.expired",
+                    "entitlement.updated",
+                    "entitlement.member_scope_changed",
+                    "entitlement.deleted",
+                    "role.created",
+                    "role.updated",
+                    "role.deleted",
+                    "role.assigned",
+                    "role.removed",
+                    "profile.updated",
+                    "settings.updated",
+                    "application.created",
+                    "application.updated",
+                    "application.review_status_changed",
+                    "organization.created",
+                    "organization.updated",
+                    "organization.member_invited",
+                    "organization.member_added",
+                    "organization.member_removed",
+                    "organization.member_role_changed",
+                    "subscription.created",
+                    "subscription.status_changed",
+                    "subscription.members_changed",
+                    "tenant.tier_change_requested",
+                    "tenant.tier_change_request_updated",
+                    "tenant.tier_changed",
+                    "api_key.created",
+                    "api_key.updated",
+                    "api_key.rotated",
+                    "api_key.revoked",
+                    "api_key.restrict_destructive_disabled",
+                    "webhook.created",
+                    "webhook.updated",
+                    "webhook.deleted",
+                    "webhook.secret_rotated",
+                    "push_credential.created",
+                    "push_credential.updated",
+                    "push_credential.deleted",
+                    "device.deleted"
+                  ],
+                  "type": "string"
+                },
+                "maxItems": 100,
+                "type": "array"
+              },
+              "actor_id": {
+                "type": "string"
+              },
+              "actor_type": {
+                "enum": [
+                  "user",
+                  "api_key",
+                  "system"
+                ],
+                "type": "string"
+              },
+              "application_id": {
+                "type": "string"
+              },
+              "format": {
+                "default": "ndjson",
+                "enum": [
+                  "ndjson",
+                  "csv"
+                ],
+                "type": "string"
+              },
+              "organization_id": {
+                "type": "string"
+              },
+              "since": {
+                "format": "date-time",
+                "type": "string"
+              },
+              "target_id": {
+                "type": "string"
+              },
+              "target_type": {
+                "enum": [
+                  "user",
+                  "entitlement",
+                  "role",
+                  "role_assignment",
+                  "application",
+                  "organization",
+                  "subscription",
+                  "tenant",
+                  "tier_change_request",
+                  "api_key",
+                  "webhook",
+                  "push_credential",
+                  "device",
+                  "audit_export"
+                ],
+                "type": "string"
+              },
+              "target_user_id": {
+                "description": "A User id, or me.",
+                "type": "string"
+              },
+              "tenant_id": {
+                "type": "string"
+              },
+              "until": {
+                "format": "date-time",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "required": [
+          "body"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": false,
+        "title": "Export Audit Events to a file (asynchronous)"
+      },
+      "x_operation_id": "audit.createExport",
+      "x_method": "POST",
+      "x_path": "/v1/audit-exports",
+      "x_path_params": null,
+      "x_query_params": null,
+      "x_has_body": true,
+      "x_needs_idempotency_key": true,
+      "x_accepts_if_match": false
+    },
+    {
       "name": "substratal_audit_get",
       "title": "Fetch one Audit Event",
       "description": "Fetch one Audit Event\n\nREST: GET /v1/audit-events/{id}",
@@ -1009,6 +1172,40 @@
       "x_accepts_if_match": false
     },
     {
+      "name": "substratal_audit_getExport",
+      "title": "Fetch an export's status, and its download link once ready",
+      "description": "Fetch an export's status, and its download link once ready\n\nVisible to whoever requested it, and to audit.view. download_url is freshly signed on every call and valid for 15 minutes.\n\nREST: GET /v1/audit-exports/{id}",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "Fetch an export's status, and its download link once ready"
+      },
+      "x_operation_id": "audit.getExport",
+      "x_method": "GET",
+      "x_path": "/v1/audit-exports/{id}",
+      "x_path_params": [
+        "id"
+      ],
+      "x_query_params": null,
+      "x_has_body": false,
+      "x_needs_idempotency_key": false,
+      "x_accepts_if_match": false
+    },
+    {
       "name": "substratal_audit_list",
       "title": "Query the audit log (hot window only)",
       "description": "Query the audit log (hot window only)\n\nREST: GET /v1/audit-events",
@@ -1032,6 +1229,7 @@
                 "user.mfa_enabled",
                 "user.mfa_disabled",
                 "user.mfa_reset",
+                "audit.exported",
                 "entitlement.granted",
                 "entitlement.disabled",
                 "entitlement.revoked",
@@ -1126,7 +1324,8 @@
               "api_key",
               "webhook",
               "push_credential",
-              "device"
+              "device",
+              "audit_export"
             ],
             "type": "string"
           },

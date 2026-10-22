@@ -345,6 +345,7 @@ func (s *Server) Cleanup(ctx context.Context) error {
 			`delete from webhook_events e where created_at < now() - interval '30 days'
 				and not exists (select 1 from webhook_deliveries d where d.event_id = e.id)`,
 			`delete from stripe_events where received_at < now() - interval '90 days'`,
+			`delete from audit_exports where expires_at < now()`,
 		} {
 			if _, err := c.q.Exec(ctx, q, nil); err != nil {
 				return errf("cleanup %q: %w", strings.Fields(q)[2], err)

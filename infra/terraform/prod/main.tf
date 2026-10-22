@@ -140,6 +140,38 @@ resource "aws_s3_bucket_versioning" "audit_archive" {
   versioning_configuration { status = "Enabled" }
 }
 
+# Finished Audit Event exports (POST /v1/audit-exports). Private; the API
+# hands out 15-minute presigned GETs, and objects are deleted after 7 days,
+# when the export record is.
+resource "aws_s3_bucket" "audit_exports" {
+  bucket = "${local.prefix}-audit-exports-${data.aws_caller_identity.me.account_id}"
+}
+
+resource "aws_s3_bucket_public_access_block" "audit_exports" {
+  bucket                  = aws_s3_bucket.audit_exports.id
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "audit_exports" {
+  bucket = aws_s3_bucket.audit_exports.id
+  rule {
+    apply_server_side_encryption_by_default { sse_algorithm = "AES256" }
+  }
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "audit_exports" {
+  bucket = aws_s3_bucket.audit_exports.id
+  rule {
+    id     = "expire-exports"
+    status = "Enabled"
+    filter {}
+    expiration { days = 7 }
+  }
+}
+
 # ── Email (SES) ────────────────────────────────────────────────────────
 
 resource "aws_sesv2_email_identity" "mail" {
@@ -227,9 +259,13 @@ module "api" {
   environment = merge(local.common_env, {
     WEBHOOK_QUEUE_URL    = aws_sqs_queue.webhooks.url
     CORS_ALLOWED_ORIGINS = var.cors_origins
+    AUDIT_EXPORT_BUCKET  = aws_s3_bucket.audit_exports.bucket
   })
   policy_statements = concat(local.data_api, local.secrets, local.sign, local.crypt, local.email, [{
     Effect = "Allow", Action = ["sqs:SendMessage"], Resource = aws_sqs_queue.webhooks.arn
+    }, {
+    # Presigned download links are signed with this role.
+    Effect = "Allow", Action = ["s3:GetObject"], Resource = "${aws_s3_bucket.audit_exports.arn}/*"
   }])
 }
 
@@ -298,11 +334,14 @@ module "jobs" {
   artifact_key    = local.artifact["jobs"]
   memory_mb       = 512
   timeout_s       = 900
-  environment     = merge(local.common_env, { AUDIT_ARCHIVE_BUCKET = aws_s3_bucket.audit_archive.bucket })
+  environment = merge(local.common_env, {
+    AUDIT_ARCHIVE_BUCKET = aws_s3_bucket.audit_archive.bucket
+    AUDIT_EXPORT_BUCKET  = aws_s3_bucket.audit_exports.bucket
+  })
   policy_statements = concat(local.data_api, local.secrets, local.sign, local.crypt, local.email, [{
     Effect   = "Allow"
     Action   = ["s3:PutObject"]
-    Resource = "${aws_s3_bucket.audit_archive.arn}/*"
+    Resource = ["${aws_s3_bucket.audit_archive.arn}/*", "${aws_s3_bucket.audit_exports.arn}/*"]
   }])
 }
 
@@ -436,6 +475,7 @@ locals {
   schedules = {
     "entitlement-sweep"    = "rate(5 minutes)"
     "webhook-dispatch"     = "rate(1 minute)"
+    "audit-exports"        = "rate(1 minute)"
     "erasure-cascade"      = "rate(1 hour)"
     "webhook-health"       = "rate(1 hour)"
     "subscription-access"  = "rate(1 hour)"

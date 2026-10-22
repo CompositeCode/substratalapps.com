@@ -350,6 +350,7 @@ const (
 	AuditActionApplicationCreated                AuditAction = "application.created"
 	AuditActionApplicationReviewStatusChanged    AuditAction = "application.review_status_changed"
 	AuditActionApplicationUpdated                AuditAction = "application.updated"
+	AuditActionAuditExported                     AuditAction = "audit.exported"
 	AuditActionDeviceDeleted                     AuditAction = "device.deleted"
 	AuditActionEntitlementDeleted                AuditAction = "entitlement.deleted"
 	AuditActionEntitlementDisabled               AuditAction = "entitlement.disabled"
@@ -418,6 +419,8 @@ func (e AuditAction) Valid() bool {
 	case AuditActionApplicationReviewStatusChanged:
 		return true
 	case AuditActionApplicationUpdated:
+		return true
+	case AuditActionAuditExported:
 		return true
 	case AuditActionDeviceDeleted:
 		return true
@@ -520,10 +523,92 @@ func (e AuditAction) Valid() bool {
 	}
 }
 
+// Defines values for AuditExportFormat.
+const (
+	AuditExportFormatCsv    AuditExportFormat = "csv"
+	AuditExportFormatNdjson AuditExportFormat = "ndjson"
+)
+
+// Valid indicates whether the value is a known member of the AuditExportFormat enum.
+func (e AuditExportFormat) Valid() bool {
+	switch e {
+	case AuditExportFormatCsv:
+		return true
+	case AuditExportFormatNdjson:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AuditExportStatus.
+const (
+	AuditExportStatusFailed  AuditExportStatus = "failed"
+	AuditExportStatusPending AuditExportStatus = "pending"
+	AuditExportStatusReady   AuditExportStatus = "ready"
+	AuditExportStatusRunning AuditExportStatus = "running"
+)
+
+// Valid indicates whether the value is a known member of the AuditExportStatus enum.
+func (e AuditExportStatus) Valid() bool {
+	switch e {
+	case AuditExportStatusFailed:
+		return true
+	case AuditExportStatusPending:
+		return true
+	case AuditExportStatusReady:
+		return true
+	case AuditExportStatusRunning:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AuditExportRequestActorType.
+const (
+	AuditExportRequestActorTypeApiKey AuditExportRequestActorType = "api_key"
+	AuditExportRequestActorTypeSystem AuditExportRequestActorType = "system"
+	AuditExportRequestActorTypeUser   AuditExportRequestActorType = "user"
+)
+
+// Valid indicates whether the value is a known member of the AuditExportRequestActorType enum.
+func (e AuditExportRequestActorType) Valid() bool {
+	switch e {
+	case AuditExportRequestActorTypeApiKey:
+		return true
+	case AuditExportRequestActorTypeSystem:
+		return true
+	case AuditExportRequestActorTypeUser:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AuditExportRequestFormat.
+const (
+	AuditExportRequestFormatCsv    AuditExportRequestFormat = "csv"
+	AuditExportRequestFormatNdjson AuditExportRequestFormat = "ndjson"
+)
+
+// Valid indicates whether the value is a known member of the AuditExportRequestFormat enum.
+func (e AuditExportRequestFormat) Valid() bool {
+	switch e {
+	case AuditExportRequestFormatCsv:
+		return true
+	case AuditExportRequestFormatNdjson:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AuditTargetType.
 const (
 	AuditTargetTypeApiKey            AuditTargetType = "api_key"
 	AuditTargetTypeApplication       AuditTargetType = "application"
+	AuditTargetTypeAuditExport       AuditTargetType = "audit_export"
 	AuditTargetTypeDevice            AuditTargetType = "device"
 	AuditTargetTypeEntitlement       AuditTargetType = "entitlement"
 	AuditTargetTypeOrganization      AuditTargetType = "organization"
@@ -543,6 +628,8 @@ func (e AuditTargetType) Valid() bool {
 	case AuditTargetTypeApiKey:
 		return true
 	case AuditTargetTypeApplication:
+		return true
+	case AuditTargetTypeAuditExport:
 		return true
 	case AuditTargetTypeDevice:
 		return true
@@ -2402,6 +2489,62 @@ type AuditEventPage struct {
 	Page PageInfo     `json:"page"`
 }
 
+// AuditExport defines model for AuditExport.
+type AuditExport struct {
+	CompletedAt *time.Time `json:"completed_at,omitempty"`
+	CreatedAt   *time.Time `json:"created_at,omitempty"`
+
+	// DownloadUrl Set once ready. Signed, valid for 15 minutes; fetch the export again for a fresh one.
+	DownloadUrl          *string    `json:"download_url,omitempty"`
+	DownloadUrlExpiresAt *time.Time `json:"download_url_expires_at,omitempty"`
+
+	// Error Set when failed, e.g. too_many_rows.
+	Error *string `json:"error,omitempty"`
+
+	// ExpiresAt When the file and this record are deleted: 7 days after the request.
+	ExpiresAt *time.Time `json:"expires_at,omitempty"`
+
+	// Filters The filters as requested, with target_user_id me resolved to the caller's id.
+	Filters *map[string]interface{} `json:"filters,omitempty"`
+	Format  *AuditExportFormat      `json:"format,omitempty"`
+	Id      *string                 `json:"id,omitempty"`
+
+	// RowCount Set once ready.
+	RowCount *int               `json:"row_count,omitempty"`
+	Status   *AuditExportStatus `json:"status,omitempty"`
+	TestMode *bool              `json:"test_mode,omitempty"`
+}
+
+// AuditExportFormat defines model for AuditExport.Format.
+type AuditExportFormat string
+
+// AuditExportStatus defines model for AuditExport.Status.
+type AuditExportStatus string
+
+// AuditExportRequest The same filters as GET /v1/audit-events, as body fields, plus format.
+type AuditExportRequest struct {
+	Action         *[]AuditAction               `json:"action,omitempty"`
+	ActorId        *string                      `json:"actor_id,omitempty"`
+	ActorType      *AuditExportRequestActorType `json:"actor_type,omitempty"`
+	ApplicationId  *string                      `json:"application_id,omitempty"`
+	Format         *AuditExportRequestFormat    `json:"format,omitempty"`
+	OrganizationId *string                      `json:"organization_id,omitempty"`
+	Since          *time.Time                   `json:"since,omitempty"`
+	TargetId       *string                      `json:"target_id,omitempty"`
+	TargetType     *AuditTargetType             `json:"target_type,omitempty"`
+
+	// TargetUserId A User id, or me.
+	TargetUserId *string    `json:"target_user_id,omitempty"`
+	TenantId     *string    `json:"tenant_id,omitempty"`
+	Until        *time.Time `json:"until,omitempty"`
+}
+
+// AuditExportRequestActorType defines model for AuditExportRequest.ActorType.
+type AuditExportRequestActorType string
+
+// AuditExportRequestFormat defines model for AuditExportRequest.Format.
+type AuditExportRequestFormat string
+
 // AuditTargetType defines model for AuditTargetType.
 type AuditTargetType string
 
@@ -3567,6 +3710,12 @@ type AuditListParams struct {
 // AuditListParamsActorType defines parameters for AuditList.
 type AuditListParamsActorType string
 
+// AuditCreateExportParams defines parameters for AuditCreateExport.
+type AuditCreateExportParams struct {
+	// IdempotencyKey Client-generated, 1–255 characters; a UUID v4 is recommended. Remembered 24 hours per caller.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
 // AuthCreateAppTokenJSONBody defines parameters for AuthCreateAppToken.
 type AuthCreateAppTokenJSONBody struct {
 	ApplicationId string `json:"application_id"`
@@ -4193,6 +4342,9 @@ type PushCredentialsCreateJSONRequestBody = PushCredentialCreate
 // PushCredentialsUpdateJSONRequestBody defines body for PushCredentialsUpdate for application/json ContentType.
 type PushCredentialsUpdateJSONRequestBody = PushCredentialUpdate
 
+// AuditCreateExportJSONRequestBody defines body for AuditCreateExport for application/json ContentType.
+type AuditCreateExportJSONRequestBody = AuditExportRequest
+
 // AuthCreateAppTokenJSONRequestBody defines body for AuthCreateAppToken for application/json ContentType.
 type AuthCreateAppTokenJSONRequestBody AuthCreateAppTokenJSONBody
 
@@ -4712,6 +4864,12 @@ type ServerInterface interface {
 	// AuditGet Fetch one Audit Event
 	// (GET /audit-events/{id})
 	AuditGet(w http.ResponseWriter, r *http.Request, id string)
+	// AuditCreateExport Export Audit Events to a file (asynchronous)
+	// (POST /audit-exports)
+	AuditCreateExport(w http.ResponseWriter, r *http.Request, params AuditCreateExportParams)
+	// AuditGetExport Fetch an export's status, and its download link once ready
+	// (GET /audit-exports/{id})
+	AuditGetExport(w http.ResponseWriter, r *http.Request, id string)
 	// AuthCreateAppToken Mint a per-app JWT from a platform session (embedded login)
 	// (POST /auth/app-tokens)
 	AuthCreateAppToken(w http.ResponseWriter, r *http.Request)
@@ -5907,6 +6065,77 @@ func (siw *ServerInterfaceWrapper) AuditGet(w http.ResponseWriter, r *http.Reque
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.AuditGet(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AuditCreateExport operation middleware
+func (siw *ServerInterfaceWrapper) AuditCreateExport(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params AuditCreateExportParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AuditCreateExport(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AuditGetExport operation middleware
+func (siw *ServerInterfaceWrapper) AuditGetExport(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AuditGetExport(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -10266,6 +10495,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/organizations/{id}/billing/portal-sessions", wrapper.BillingCreateOrganizationPortalSession)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/audit-events", wrapper.AuditList)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/audit-events/{id}", wrapper.AuditGet)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/audit-exports", wrapper.AuditCreateExport)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/audit-exports/{id}", wrapper.AuditGetExport)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/webhooks", wrapper.WebhooksList)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/webhooks", wrapper.WebhooksCreate)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/webhooks/{id}", wrapper.WebhooksDelete)

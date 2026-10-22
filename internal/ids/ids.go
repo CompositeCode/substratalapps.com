@@ -34,6 +34,7 @@ const (
 	PushCredential       = "pcr_"
 	Notification         = "ntf_"
 	NotificationDelivery = "ndl_"
+	AuditExport          = "aex_"
 )
 
 // Credential prefixes. Never logged, never echoed after issuance.

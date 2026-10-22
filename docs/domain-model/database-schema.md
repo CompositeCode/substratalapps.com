@@ -438,6 +438,24 @@ No `updated_at`, no soft-delete column — this table is append-only by design (
 
 **Enforcement, not just storage:** the `restrict_destructive` check happens in the same request-handling layer as the permission check — both read from the authenticated key's row, both must pass. The classification of which operations count as destructive lives in exactly one place in the implementation (a lookup by HTTP method + the specific Entitlement/Role/Organization-member/Tenant-tier mutations named in [API Keys → Agent keys & `restrict_destructive`](../../api-reference/api-keys/#agent-keys--restrict_destructive)), shared by this check and by the MCP server's `destructiveHint` tool-annotation generation — not reimplemented twice and left to drift.
 
+## audit_exports
+
+| Column | Type | Constraint |
+|---|---|---|
+| `id` | `text` | PK, `aex_…` |
+| `requested_by_type`, `requested_by_id` | `text` | not null — `user` or `api_key`, and its id |
+| `scope` | `jsonb` | not null — the scope the requester was confined to (`application_id`, `target_user_id`, or `tenant_id`), or `{}` for `audit.view` |
+| `filters` | `jsonb` | not null — as requested, `me` resolved |
+| `format` | `text` | `ndjson` or `csv` |
+| `status` | `text` | `pending`, `running`, `ready`, or `failed` |
+| `row_count`, `object_key` | `integer`, `text` | set exactly when `ready` |
+| `error` | `text` | set exactly when `failed` |
+| `test_mode` | `boolean` | mode policy, like every other test-mode table |
+| `created_at`, `started_at`, `completed_at` | `timestamptz` | |
+| `expires_at` | `timestamptz` | not null — `created_at` + 7 days; the nightly cleanup deletes the row, and an S3 lifecycle rule the file |
+
+**Index:** `(created_at) where status in ('pending','running')` for the export worker, which claims one at a time with `for update skip locked` and picks up a `running` export again if its worker hasn't finished within 20 minutes.
+
 ## webhook_subscriptions, webhook_events, webhook_deliveries
 
 ```sql

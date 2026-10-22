@@ -50,6 +50,10 @@ type Config struct {
 	// (the local default, so no Apple or Google credentials are needed).
 	PushBackend string
 
+	// Audit exports: the private S3 bucket finished exports go to. Empty =
+	// a local directory (.dev/audit-exports).
+	AuditExportBucket string
+
 	// Stripe.
 	StripeSecretKey     string
 	StripeWebhookSecret string
@@ -97,6 +101,7 @@ func Load() (Config, error) {
 		EmailFrom:           get("EMAIL_FROM", "Substratal <no-reply@mail.substratalapps.com>"),
 		WebhookQueueURL:     os.Getenv("WEBHOOK_QUEUE_URL"),
 		PushBackend:         get("PUSH_BACKEND", "log"),
+		AuditExportBucket:   os.Getenv("AUDIT_EXPORT_BUCKET"),
 		StripeSecretKey:     os.Getenv("STRIPE_SECRET_KEY"),
 		StripeWebhookSecret: os.Getenv("STRIPE_WEBHOOK_SECRET"),
 		StripePrices: StripePrices{
