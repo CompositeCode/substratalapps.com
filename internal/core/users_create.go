@@ -9,7 +9,7 @@ import (
 	"github.com/CompositeCode/substratalapps.com/internal/ids"
 )
 
-// newUser is everything createUser needs. Signup, POST /v1/users, and an
+// newUser is everything createUser needs. Signup, POST /users, and an
 // Organization inviting an unknown email all create Users the same way.
 type newUser struct {
 	Email        string

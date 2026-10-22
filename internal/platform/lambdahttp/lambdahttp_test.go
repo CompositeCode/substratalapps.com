@@ -16,7 +16,7 @@ func TestAdapter(t *testing.T) {
 		w.WriteHeader(201)
 		_, _ = w.Write(b)
 	})
-	ev := events.APIGatewayV2HTTPRequest{RawPath: "/v1/users", RawQueryString: "limit=2", Body: `{"a":1}`,
+	ev := events.APIGatewayV2HTTPRequest{RawPath: "/users", RawQueryString: "limit=2", Body: `{"a":1}`,
 		Headers: map[string]string{"authorization": "Bearer x"}}
 	ev.RequestContext.HTTP.Method = "POST"
 	ev.RequestContext.HTTP.SourceIP = "203.0.113.24"
@@ -24,7 +24,7 @@ func TestAdapter(t *testing.T) {
 	if err != nil || resp.StatusCode != 201 || resp.Body != `{"a":1}` {
 		t.Fatalf("resp = %+v %v", resp, err)
 	}
-	if resp.Headers["X-Seen"] != "POST /v1/users?limit=2 Bearer x 203.0.113.24:0" {
+	if resp.Headers["X-Seen"] != "POST /users?limit=2 Bearer x 203.0.113.24:0" {
 		t.Fatalf("seen = %s", resp.Headers["X-Seen"])
 	}
 }

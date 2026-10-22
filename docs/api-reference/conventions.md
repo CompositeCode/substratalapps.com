@@ -23,12 +23,13 @@ Everything on this and the following pages is also available as a single [OpenAP
 ## Base URL
 
 ```
-https://api.substratalapps.com/v1
+https://api.substratalapps.com
+Substratal-Version: 1
 ```
 
-This is the production base URL. Two endpoints deliberately live outside `/v1`, at the host root: `GET /.well-known/jwks.json` and `GET /.well-known/openid-configuration` (see [Auth → Signing keys](../auth/#signing-keys-jwks)), because standard JWT and OAuth libraries look for them there. So does the [MCP Server](../../mcp-server/) at `/mcp`. The Stripe webhook sink at `/internal/stripe/webhook` is internal to Substratal and not part of the public contract.
+This is the production base URL. Every path is at the host root, with no version prefix: the API version goes in the `Substratal-Version` request header instead (see [Versioning](#versioning)). `GET /.well-known/jwks.json` and `GET /.well-known/openid-configuration` (see [Auth → Signing keys](../auth/#signing-keys-jwks)) are there because standard JWT and OAuth libraries look for them there, and so is the [MCP Server](../../mcp-server/) at `/mcp`. The Stripe webhook sink at `/internal/stripe/webhook` is internal to Substratal and not part of the public contract. `/.well-known`, `/mcp`, and `/internal` are reserved, so no resource will ever be named after them.
 
-Every request and response body is `application/json; charset=utf-8`. The one exception is `POST /v1/auth/oauth/token`, which also accepts `application/x-www-form-urlencoded` for OAuth-library compatibility.
+Every request and response body is `application/json; charset=utf-8`. The one exception is `POST /auth/oauth/token`, which also accepts `application/x-www-form-urlencoded` for OAuth-library compatibility.
 
 ## Authentication
 
@@ -64,9 +65,9 @@ Every resource ID is prefixed by type. Most are the prefix plus a ULID (26 Crock
 | `dvc_` | Device (a push-notification endpoint) — see [Push Notifications](../notifications/#devices) |
 | `pcr_` | Push credential — see [Push Notifications](../notifications/#push-credentials) |
 | `ntf_` | Notification — see [Push Notifications](../notifications/#sending-a-notification) |
-| `ndl_` | Notification delivery (one push to one device) — see [Push Notifications](../notifications/#get-v1usersidnotificationsnotificationid) |
+| `ndl_` | Notification delivery (one push to one device) — see [Push Notifications](../notifications/#get-usersidnotificationsnotificationid) |
 
-An [Erasure request](../users/#post-v1usersiderasure-requests) has no id of its own: there's at most one per User, so it's addressed by the User's id (`/v1/users/{id}/erasure-requests/current`).
+An [Erasure request](../users/#post-usersiderasure-requests) has no id of its own: there's at most one per User, so it's addressed by the User's id (`/users/{id}/erasure-requests/current`).
 
 `order_id` on an Entitlement is **not** a resource ID of this API. It's an opaque reference string the developer supplies from their own billing system (for example, their own Stripe subscription id), up to 255 characters. Examples on this site use Stripe-style subscription ids (`sub_…`), the most common case. See [Orders & Audit → Order references](../../domain-model/orders-and-audit/#order).
 
@@ -92,7 +93,7 @@ An [Erasure request](../users/#post-v1usersiderasure-requests) has no id of its 
 
 ## Addressing yourself: `me`
 
-Anywhere a path takes a `{id}` for a User, you may pass the literal string `me` instead of the caller's own `usr_…` id — `GET /v1/users/me`, `GET /v1/users/me/entitlements`, `GET /v1/users/me/apps/{appId}/settings`, `PATCH /v1/users/me/profile`, and so on. This resolves server-side from the auth token, so a client never needs to know its own user id just to read or update its own data. `me` only means something for a User's token. An [API Key](../api-keys/) has no User behind it, so `me` with an API Key returns `400 user_token_required`.
+Anywhere a path takes a `{id}` for a User, you may pass the literal string `me` instead of the caller's own `usr_…` id — `GET /users/me`, `GET /users/me/entitlements`, `GET /users/me/apps/{appId}/settings`, `PATCH /users/me/profile`, and so on. This resolves server-side from the auth token, so a client never needs to know its own user id just to read or update its own data. `me` only means something for a User's token. An [API Key](../api-keys/) has no User behind it, so `me` with an API Key returns `400 user_token_required`.
 
 ## Pagination
 
@@ -118,9 +119,9 @@ List endpoints that support filtering take plain query parameters named after th
 **Fetching by id** follows one rule:
 
 - A **terminal-state** record (a `revoked` or `expired` Entitlement, a revoked API Key, a `cancelled` tier-change request) is still fetchable by id by anyone allowed to see it, and shows its terminal state. Write operations on it return `409` with the resource's own code.
-- A **soft-deleted User** returns `404 user_not_found` to everyone except `users.manage` holders, so a deleted account's existence isn't leaked. `users.manage` can still fetch it (`status: deleted`), restore it, and manage its erasure request. See [Users → `DELETE`](../users/#delete-v1usersid).
+- A **soft-deleted User** returns `404 user_not_found` to everyone except `users.manage` holders, so a deleted account's existence isn't leaked. `users.manage` can still fetch it (`status: deleted`), restore it, and manage its erasure request. See [Users → `DELETE`](../users/#delete-usersid).
 
-**Boolean scoping parameters.** A few list filters aren't named after a field because they widen or narrow the default set rather than match a value: `include_inactive=true` (include terminal-state rows) and `owned=true` (only what the caller owns, on [Applications](../applications/#get-v1applications)). They're the only two, and they mean the same thing wherever they appear.
+**Boolean scoping parameters.** A few list filters aren't named after a field because they widen or narrow the default set rather than match a value: `include_inactive=true` (include terminal-state rows) and `owned=true` (only what the caller owns, on [Applications](../applications/#get-applications)). They're the only two, and they mean the same thing wherever they appear.
 
 ## Delete semantics: hard vs. soft
 
@@ -134,7 +135,7 @@ List endpoints that support filtering take plain query parameters named after th
 |---|---|
 | [User](../../domain-model/users-and-organizations/) | **Soft.** `status: deleted`; 404s afterward to everyone but `users.manage`, who can restore it until the erasure cascade (if one was requested) completes. A separate, two-stage hard-delete cascade exists for right-to-erasure requests specifically — see [Non-Functional Requirements → Hard-delete cascade](../../non-functional-requirements/#hard-delete-cascade). Not triggered by this call. |
 | [API Key](../api-keys/) | **Soft, but irreversible.** Sets `revoked_at`; the row and its usage history are retained, but unlike every other soft delete on this list, there is no un-revoke — a replacement means creating a new key. |
-| [Entitlement](../entitlements/) | **Hard** — but only for a grant with no `order_id`. Reserved for correcting a mistake (wrong user, wrong app, duplicate); real revocations use `PATCH status: revoked`/`disabled` instead, so the history survives. See [Entitlements → `DELETE`](../entitlements/#delete-v1entitlementsid). |
+| [Entitlement](../entitlements/) | **Hard** — but only for a grant with no `order_id`. Reserved for correcting a mistake (wrong user, wrong app, duplicate); real revocations use `PATCH status: revoked`/`disabled` instead, so the history survives. See [Entitlements → `DELETE`](../entitlements/#delete-entitlementsid). |
 | Organization member | **Hard.** The [OrganizationMembership](../../domain-model/users-and-organizations/#organizationmembership) join row is removed outright, whether it was `pending` or `active`. Membership has no "soft-removed" state of its own. |
 | Role assignment | **Hard.** The [UserRoleAssignment](../../domain-model/roles-and-permissions/#userroleassignment) join row is removed outright; idempotent (removing an already-gone assignment still returns `204`). |
 | [Webhook](../webhooks/) subscription | **Hard.** Unsubscribing removes the subscription and its delivery log. Deliveries already in the retry queue are dropped, and nothing new is enqueued. |
@@ -208,6 +209,8 @@ A single resource is returned as a bare JSON object — no envelope:
 | `invalid_cursor` | 400 | Pagination cursor expired, tampered with, or reused with different filters. |
 | `user_token_required` | 400 | An endpoint that acts *as a User* (`me`, `app-tokens`, password change, …) was called with an API Key. |
 | `idempotency_key_required` | 400 | A `POST` that requires `Idempotency-Key` was sent without one. |
+| `api_version_required` | 400 | No `Substratal-Version` header. `details.supported` lists the versions served. See [Versioning](#versioning). |
+| `unsupported_api_version` | 400 | `Substratal-Version` names a version this API doesn't serve. `details.supported` lists the ones it does. |
 | `unauthenticated` | 401 | No Bearer token, a malformed or expired one, or a revoked API Key. |
 | `session_revoked` | 401 | The token's session was logged out or revoked. |
 | `forbidden` | 403 | Authenticated, but the caller lacks the required permission. `details.required_permission` names it. |
@@ -261,7 +264,7 @@ The dividing line between `409` and `422` worth internalizing: `409` is about *s
 
 A single-field error (like `entitlement_required` above) skips the array and puts the relevant IDs directly in `details` — the array form is specifically for "more than one thing wrong with this request body."
 
-Each entry's `code` is one of a small fixed set: `required`, `invalid_format`, `too_short`, `too_long`, `out_of_range`, `enum_mismatch`, `not_unique`, `unknown_value`, `undeclared_key`. Entries carry whatever bound applies (`min`, `max`, `allowed`, `pattern`). A few resource pages show examples for their own rules: [Applications](../applications/#validation-errors), [Profiles](../profiles/#patch-v1usersidprofile), and [Settings](../settings/#patch-v1usersidsettings).
+Each entry's `code` is one of a small fixed set: `required`, `invalid_format`, `too_short`, `too_long`, `out_of_range`, `enum_mismatch`, `not_unique`, `unknown_value`, `undeclared_key`. Entries carry whatever bound applies (`min`, `max`, `allowed`, `pattern`). A few resource pages show examples for their own rules: [Applications](../applications/#validation-errors), [Profiles](../profiles/#patch-usersidprofile), and [Settings](../settings/#patch-usersidsettings).
 
 ### Plan limit errors
 
@@ -287,14 +290,14 @@ Idempotency-Key: <client-generated string, 1–255 characters; a UUID v4 is reco
 
 A repeated key with an identical body returns the original response (same status code, same body) instead of creating a duplicate. A repeated key with a *different* body returns `409`. Keys are remembered for 24 hours, scoped per API key/caller — after that window a repeated key is treated as new. A request that arrives while the first one with the same key is still in flight gets `409 idempotency_key_in_flight`; retry after a second. Responses replayed from the store carry `Idempotent-Replayed: true`.
 
-Endpoints that **require** `Idempotency-Key`: `POST /v1/users/{id}/entitlements`, `POST /v1/organizations/{id}/entitlements`, and both billing Checkout endpoints (`POST /v1/users/me/billing/checkout-sessions` and `POST /v1/organizations/{id}/billing/checkout-sessions`). Every other `POST` **accepts** it optionally and honors it the same way. See [Non-Functional Requirements → Idempotency & retries](../../non-functional-requirements/#idempotency--retries) for why this is mandatory rather than optional on those endpoints — billing webhooks retry, and a duplicate Entitlement is a real-money bug, not a cosmetic one.
+Endpoints that **require** `Idempotency-Key`: `POST /users/{id}/entitlements`, `POST /organizations/{id}/entitlements`, and both billing Checkout endpoints (`POST /users/me/billing/checkout-sessions` and `POST /organizations/{id}/billing/checkout-sessions`). Every other `POST` **accepts** it optionally and honors it the same way. See [Non-Functional Requirements → Idempotency & retries](../../non-functional-requirements/#idempotency--retries) for why this is mandatory rather than optional on those endpoints — billing webhooks retry, and a duplicate Entitlement is a real-money bug, not a cosmetic one.
 
 **Implementation note:** store `(caller_id, idempotency_key) → (request_body_hash, response_status, response_body, expires_at)`, written in the same transaction as the mutation it guards (see [Non-Functional Requirements → Transaction boundaries](../../non-functional-requirements/#transaction-boundaries)) so a crash between "wrote the Entitlement" and "recorded the idempotency key" can't produce a duplicate on retry. Compare the stored hash, not the raw body, to decide same-vs-different.
 
 ## Health check
 
 ```
-GET /v1/health
+GET /health
 ```
 ```json
 { "status": "ok" }
@@ -307,13 +310,27 @@ Unauthenticated, uncached, for uptime monitoring and load balancer health checks
 | Header | Meaning |
 |---|---|
 | `X-Request-Id` | Echoes the caller's `X-Request-Id` if sent (≤ 128 characters), otherwise a generated one. Quote it in support requests. |
+| `Substratal-Version` | The API version that served the request. See [Versioning](#versioning). |
 | `RateLimit-Limit`, `RateLimit-Remaining`, `RateLimit-Reset` | The caller's current token bucket — see [Rate limiting](../../non-functional-requirements/#rate-limiting). |
 | `ETag` | On single-resource responses — see [Concurrency](#concurrency-etag--if-match). |
 | `Deprecation`, `Sunset` | Only on a deprecated version — see [Versioning](#versioning). |
 
 ## Versioning
 
-`/v1` is the only version today. Additive changes (new optional fields, new endpoints) ship without a version bump; breaking changes get a new prefix and a deprecation window for the old one. See [Non-Functional Requirements → Versioning](../../non-functional-requirements/#versioning).
+Every request names the API version it was written against, in a header:
+
+```
+Substratal-Version: 1
+```
+
+Versions are whole numbers, and `1` is the only one today. The URL never carries a version, so a resource's path stays the same across versions.
+
+- **Required.** A request without the header is rejected with `400 api_version_required`, and an unknown value with `400 unsupported_api_version`. Both errors list the served versions in `details.supported`. There's no default version, so a client is never moved to a new one without asking for it. The check comes before authentication and every other validation.
+- **Echoed.** Every response to a versioned request carries `Substratal-Version` set to the version that served it.
+- **Exempt:** `GET /health`, so uptime monitors can call it as is; `POST /auth/oauth/token`, which standard OAuth libraries call without custom headers; and the `/.well-known` endpoints. They behave the same in every version. [MCP](../../mcp-server/) clients don't send it either: the MCP server calls the API with the version its tools describe.
+- **Browsers:** `Substratal-Version` is allowed in CORS requests and exposed on CORS responses.
+- **Changes.** Additive changes (new optional fields, new endpoints, new enum values) ship within a version. A breaking change ships as the next number, and the previous version keeps working for a deprecation window, with `Deprecation` and `Sunset` headers on every response it serves. See [Non-Functional Requirements → Versioning](../../non-functional-requirements/#versioning).
+- **Generated clients:** `openapi.yaml` doesn't declare the header on each operation, so configure your client to send it as a default header.
 
 ## Timestamps
 

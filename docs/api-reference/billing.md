@@ -31,13 +31,13 @@ Stripe tells this API about every change through its webhook. This API never tak
 
 | Method | Path | Requires | Purpose |
 |---|---|---|---|
-| `GET` | `/v1/users/{id}/subscription` | self, or `billing.manage` | A User's plan, what covers it, and their own subscription. |
-| `POST` | `/v1/users/me/billing/checkout-sessions` | self, User token | Start a Stripe Checkout to subscribe yourself to Standard. |
-| `POST` | `/v1/users/me/billing/portal-sessions` | self, User token | Open the Stripe Customer Portal for your own subscription. |
-| `GET` | `/v1/organizations/{id}/subscription` | `org_admin`, or `billing.manage` | The Organization's plan and subscription. |
-| `PATCH` | `/v1/organizations/{id}/subscription` | `org_admin` | Choose which members the subscription covers. |
-| `POST` | `/v1/organizations/{id}/billing/checkout-sessions` | `org_admin`, User token | Start a Stripe Checkout to subscribe the Organization to Standard. |
-| `POST` | `/v1/organizations/{id}/billing/portal-sessions` | `org_admin` or `billing.manage`, User token | Open the Stripe Customer Portal for the Organization's subscription. |
+| `GET` | `/users/{id}/subscription` | self, or `billing.manage` | A User's plan, what covers it, and their own subscription. |
+| `POST` | `/users/me/billing/checkout-sessions` | self, User token | Start a Stripe Checkout to subscribe yourself to Standard. |
+| `POST` | `/users/me/billing/portal-sessions` | self, User token | Open the Stripe Customer Portal for your own subscription. |
+| `GET` | `/organizations/{id}/subscription` | `org_admin`, or `billing.manage` | The Organization's plan and subscription. |
+| `PATCH` | `/organizations/{id}/subscription` | `org_admin` | Choose which members the subscription covers. |
+| `POST` | `/organizations/{id}/billing/checkout-sessions` | `org_admin`, User token | Start a Stripe Checkout to subscribe the Organization to Standard. |
+| `POST` | `/organizations/{id}/billing/portal-sessions` | `org_admin` or `billing.manage`, User token | Open the Stripe Customer Portal for the Organization's subscription. |
 
 Checkout and Portal act for a person, so they need a User token, not an API Key (`400 user_token_required`). An active member of the Organization who isn't an `org_admin` gets `403`; anyone else gets `404 organization_not_found`.
 
@@ -80,7 +80,7 @@ One row per subscriber, kept across lapses and resubscribes.
 
 Invoices and receipts aren't mirrored here. Stripe is the system of record for those, and the Portal shows them.
 
-## `GET /v1/users/{id}/subscription`
+## `GET /users/{id}/subscription`
 
 ```json
 // Response — 200, a User covered by their Organization
@@ -94,7 +94,7 @@ Invoices and receipts aren't mirrored here. Stripe is the system of record for t
 
 `plan` and `plan_sources` are the same read-only fields as on the [User object](../users/#the-user-object). `subscription` is the User's own individual subscription, if they've ever started one, and `null` otherwise. A User covered both individually and by an Organization lists both sources, so a client can suggest cancelling the individual one. Nothing is refunded automatically.
 
-## `GET /v1/organizations/{id}/subscription`
+## `GET /organizations/{id}/subscription`
 
 ```json
 // Response — 200
@@ -107,7 +107,7 @@ Invoices and receipts aren't mirrored here. Stripe is the system of record for t
 
 `plan` is `standard` while the subscription covers, and `free` otherwise. When a subscription exists, the response carries its `ETag`.
 
-## `PATCH /v1/organizations/{id}/subscription`
+## `PATCH /organizations/{id}/subscription`
 
 ```json
 // Request
@@ -118,7 +118,7 @@ Changes which members the subscription covers. Only `member_scope` and `member_o
 
 ## Checkout
 
-`POST /v1/users/me/billing/checkout-sessions` (yourself) and `POST /v1/organizations/{id}/billing/checkout-sessions` (an Organization).
+`POST /users/me/billing/checkout-sessions` (yourself) and `POST /organizations/{id}/billing/checkout-sessions` (an Organization).
 
 ```json
 // Request (the Organization form also accepts member_scope and member_overrides)
@@ -147,7 +147,7 @@ Changes which members the subscription covers. Only `member_scope` and `member_o
 
 ## Portal
 
-`POST /v1/users/me/billing/portal-sessions` and `POST /v1/organizations/{id}/billing/portal-sessions`.
+`POST /users/me/billing/portal-sessions` and `POST /organizations/{id}/billing/portal-sessions`.
 
 ```json
 // Request

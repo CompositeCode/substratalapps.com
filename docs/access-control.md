@@ -65,7 +65,7 @@ Hub endpoints themselves are authorized by a separate, simpler check, `has_platf
 
 `resolved_entitlement_status` is a union across every path the user has to this one Application — their own personal Entitlement, plus every Organization they belong to that holds an org-wide grant that includes them — not a single row lookup. See [Step 1](#step-1-entitlement-status) for why this is a union rather than a single answer, and [Organization vs. User precedence](#organization-vs-user-precedence) for how a conflict between an Organization's decision and a User's own standing resolves. `effective_permissions` itself is unaffected by any of this — Role is a separate axis from *how* the entitlement was resolved.
 
-This is the function exposed directly as [`GET /v1/users/{id}/apps/{appId}/effective-permissions`](../api-reference/roles-and-permissions/) — any service, including a downstream app, can ask the hub for the resolved answer instead of re-implementing the union above.
+This is the function exposed directly as [`GET /users/{id}/apps/{appId}/effective-permissions`](../api-reference/roles-and-permissions/) — any service, including a downstream app, can ask the hub for the resolved answer instead of re-implementing the union above.
 
 ## Step 1: Entitlement status
 
@@ -129,5 +129,5 @@ If `usr_jordan` were *not* a member of `org_acme` at all, the same call would re
 Don't re-derive this algorithm inside a downstream app. Three options, see [Trust Model](../trust-model/) for when to use which:
 
 - Decode the JWT issued at login/SSO — carries a pre-resolved `entitlement_status` and `effective_permissions` claim for that one app, cheap but can go stale within its TTL.
-- Call `GET /v1/users/{id}/apps/{appId}/effective-permissions` for a live answer.
+- Call `GET /users/{id}/apps/{appId}/effective-permissions` for a live answer.
 - Subscribe to the `access.revoked` and `role.removed` [webhooks](../api-reference/webhooks/#event-types) (required) to react immediately rather than poll.

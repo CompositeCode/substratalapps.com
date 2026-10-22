@@ -94,7 +94,7 @@ func tool(path, method string, op map[string]any, shared []any) Tool {
 	t := Tool{
 		Name:        "substratal_" + strings.ReplaceAll(id, ".", "_"),
 		Title:       str(op["summary"]),
-		OperationID: id, Method: method, Path: "/v1" + path,
+		OperationID: id, Method: method, Path: path,
 	}
 	desc := strings.TrimSpace(str(op["summary"]))
 	if d := strings.TrimSpace(str(op["description"])); d != "" {
