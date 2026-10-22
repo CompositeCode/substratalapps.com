@@ -37,8 +37,8 @@ Each of these is a join or credential record behind one of the relationships abo
 | [OrganizationMembership](users-and-organizations/#organizationmembership) | User ↔ Organization | Which Organizations a User belongs to, and their standing (`org_admin`/`member`) in each. |
 | [UserRoleAssignment](roles-and-permissions/#userroleassignment) | User ↔ Role | Which Roles a User holds, platform-wide or scoped to one Application. |
 | [Session](users-and-organizations/#session) | User ↔ login | One successful login. Every refresh token and app token minted from it carries its id (`sid`), so revoking it ends them all. |
-| [TierChangeRequest](../api-reference/tenancy/#post-v1tenantsidtier-change-requests) | Tenant ↔ migration | One support-run request to move a Tenant to a more isolated tier. |
-| [ErasureRequest](../api-reference/users/#post-v1usersiderasure-requests) | User ↔ erasure | A scheduled right-to-erasure request: at most one per User, run 7 days after it's made. |
+| [TierChangeRequest](../api-reference/tenancy/#post-tenantsidtier-change-requests) | Tenant ↔ migration | One support-run request to move a Tenant to a more isolated tier. |
+| [ErasureRequest](../api-reference/users/#post-usersiderasure-requests) | User ↔ erasure | A scheduled right-to-erasure request: at most one per User, run 7 days after it's made. |
 | [Webhook subscription](../api-reference/webhooks/) | Application (or the platform) ↔ endpoint | Where an Application's events (or, for a `platform` subscription, every event) are delivered, plus the delivery log. |
 | [API Key](../api-reference/api-keys/) | Application (or the platform) ↔ service | A long-lived credential for a backend or agent, scoped to one Application or to the platform, with no User behind it. |
 | [Device](notifications/#device) | User ↔ Application install | One install of an Application, signed in as one User, with the APNs, FCM, or Web Push token that reaches it. See [Notifications](notifications/). |

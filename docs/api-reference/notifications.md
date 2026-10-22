@@ -38,27 +38,27 @@ Push is a notification channel, not an access-control mechanism. It never grants
 
 | Method | Path | Requires | Purpose |
 |---|---|---|---|
-| `GET` | `/v1/applications/{id}/push-credentials` | the owner, the app's own key, or `applications.manage` | List the providers this Application has configured. Secrets are never returned. |
-| `POST` | `/v1/applications/{id}/push-credentials` | the owner or `applications.manage`, with a User token | Configure one provider. |
-| `GET` | `/v1/applications/{id}/push-credentials/{provider}` | as for the list | Fetch one provider's configuration. |
-| `PATCH` | `/v1/applications/{id}/push-credentials/{provider}` | the owner or `applications.manage`, with a User token | Replace key material, change non-secret fields, or re-enable a `failed` credential. |
-| `DELETE` | `/v1/applications/{id}/push-credentials/{provider}` | the owner or `applications.manage`, with a User token | Remove a provider. |
-| `GET` | `/v1/users/{id}/devices` | self, the app's own key, or `users.list` | List a User's devices. |
-| `POST` | `/v1/users/{id}/devices` | self or the app's own key | Register a device, or refresh an existing registration. |
-| `GET` | `/v1/users/{id}/devices/{deviceId}` | self, the app's own key, or `users.list` | Fetch one device. |
-| `PATCH` | `/v1/users/{id}/devices/{deviceId}` | self or the app's own key | Update a device's name, app version, or rotated token. |
-| `DELETE` | `/v1/users/{id}/devices/{deviceId}` | self, the app's own key, or `users.manage` | Unregister a device. |
-| `POST` | `/v1/users/{id}/devices/{deviceId}/test` | self or the app's own key | Send a test push to one device and wait for the provider's answer. |
-| `POST` | `/v1/users/{id}/notifications` | the app's own key with `notifications.send`, or platform `notifications.send` | Send one notification to one User. |
-| `GET` | `/v1/users/{id}/notifications` | self, the app's own key, or `users.list` | List the User's inbox. |
-| `GET` | `/v1/users/{id}/notifications/unread-count` | self or the app's own key | Count unread notifications. |
-| `POST` | `/v1/users/{id}/notifications/mark-read` | self or the app's own key | Mark many notifications read at once. |
-| `GET` | `/v1/users/{id}/notifications/{notificationId}` | self, the app's own key, or `users.list` | Fetch one notification, with its per-device delivery results. |
-| `PATCH` | `/v1/users/{id}/notifications/{notificationId}` | self or the app's own key | Mark one notification read, unread, or archived. |
+| `GET` | `/applications/{id}/push-credentials` | the owner, the app's own key, or `applications.manage` | List the providers this Application has configured. Secrets are never returned. |
+| `POST` | `/applications/{id}/push-credentials` | the owner or `applications.manage`, with a User token | Configure one provider. |
+| `GET` | `/applications/{id}/push-credentials/{provider}` | as for the list | Fetch one provider's configuration. |
+| `PATCH` | `/applications/{id}/push-credentials/{provider}` | the owner or `applications.manage`, with a User token | Replace key material, change non-secret fields, or re-enable a `failed` credential. |
+| `DELETE` | `/applications/{id}/push-credentials/{provider}` | the owner or `applications.manage`, with a User token | Remove a provider. |
+| `GET` | `/users/{id}/devices` | self, the app's own key, or `users.list` | List a User's devices. |
+| `POST` | `/users/{id}/devices` | self or the app's own key | Register a device, or refresh an existing registration. |
+| `GET` | `/users/{id}/devices/{deviceId}` | self, the app's own key, or `users.list` | Fetch one device. |
+| `PATCH` | `/users/{id}/devices/{deviceId}` | self or the app's own key | Update a device's name, app version, or rotated token. |
+| `DELETE` | `/users/{id}/devices/{deviceId}` | self, the app's own key, or `users.manage` | Unregister a device. |
+| `POST` | `/users/{id}/devices/{deviceId}/test` | self or the app's own key | Send a test push to one device and wait for the provider's answer. |
+| `POST` | `/users/{id}/notifications` | the app's own key with `notifications.send`, or platform `notifications.send` | Send one notification to one User. |
+| `GET` | `/users/{id}/notifications` | self, the app's own key, or `users.list` | List the User's inbox. |
+| `GET` | `/users/{id}/notifications/unread-count` | self or the app's own key | Count unread notifications. |
+| `POST` | `/users/{id}/notifications/mark-read` | self or the app's own key | Mark many notifications read at once. |
+| `GET` | `/users/{id}/notifications/{notificationId}` | self, the app's own key, or `users.list` | Fetch one notification, with its per-device delivery results. |
+| `PATCH` | `/users/{id}/notifications/{notificationId}` | self or the app's own key | Mark one notification read, unread, or archived. |
 
 "The app's own key" means any app-scoped [API Key](../api-keys/) scoped to that Application, as on [Settings](../settings/). An app key only ever sees its own Application's push credentials, devices, and notifications. Anything else returns `404`, as though it didn't exist. It never sees [platform alerts](#platform-alerts), which belong to the User. `{id}` may be `me` for a User token (see [Conventions → `me`](../conventions/#addressing-yourself-me)).
 
-**Two ways a client reaches these endpoints.** An Application using [embedded login](../auth/#getting-an-app-token) holds a platform access token and calls the `/v1/users/me/…` endpoints directly. An Application using the hosted flow holds only app tokens, which this API doesn't accept as a Bearer credential, so its client hands the provider token to its own backend, which registers the device with its app key. Both paths produce the same Device. The only difference is that a device registered by an app key isn't tied to a [session](#sessions-and-device-lifecycle).
+**Two ways a client reaches these endpoints.** An Application using [embedded login](../auth/#getting-an-app-token) holds a platform access token and calls the `/users/me/…` endpoints directly. An Application using the hosted flow holds only app tokens, which this API doesn't accept as a Bearer credential, so its client hands the provider token to its own backend, which registers the device with its app key. Both paths produce the same Device. The only difference is that a device registered by an app key isn't tied to a [session](#sessions-and-device-lifecycle).
 
 ## Push credentials
 
@@ -66,7 +66,7 @@ APNs, FCM, and browser push services deliver a push only when the sender proves 
 
 Push credentials are Application configuration, shared by test and live mode the same way the [Application](../applications/) row itself is. Test-mode notifications reach only test-mode devices, but they use the same credentials. APNs development builds are handled per device, by `environment: sandbox`, not by a separate credential.
 
-### `POST /v1/applications/{id}/push-credentials`
+### `POST /applications/{id}/push-credentials`
 
 ```json
 // Request — APNs, token-based authentication with a .p8 key
@@ -120,21 +120,21 @@ Push credentials are Application configuration, shared by test and live mode the
 | `web_push` | `subject` (a `mailto:` or `https:` contact URI, sent to browser push services per RFC 8292) | `subject`, `vapid_public_key` (base64url, uncompressed P-256 point) |
 
 - `private_key`, `service_account`, and the generated VAPID private key are **write-only**. They're stored KMS-encrypted, never returned by any endpoint, and never written to an Audit Event, the same treatment as a [webhook signing secret](../conventions/#ids).
-- The material is checked for shape on write (the key parses, the JSON has the required fields), and a failure is `422 invalid_push_credential`. It isn't checked against the provider, because that would make the request depend on Apple's or Google's availability. Use [`POST …/devices/{deviceId}/test`](#post-v1usersiddevicesdeviceidtest) to prove it end to end.
+- The material is checked for shape on write (the key parses, the JSON has the required fields), and a failure is `422 invalid_push_credential`. It isn't checked against the provider, because that would make the request depend on Apple's or Google's availability. Use [`POST …/devices/{deviceId}/test`](#post-usersiddevicesdeviceidtest) to prove it end to end.
 - `vapid_public_key` is what a web client passes as `applicationServerKey` to `PushManager.subscribe()`. The app's own key can read it, so a web client can fetch it from its backend.
 - A second credential for the same provider is `409 push_credential_exists`. Use `PATCH` to replace it.
 - Writes `push_credential.created`.
 
 Credential management is always done by a person, the same rule as [API Keys](../api-keys/#endpoints). An API Key, including the Application's own, can read credentials but never create, change, or remove them (`400 user_token_required`).
 
-### `GET /v1/applications/{id}/push-credentials`, `GET …/{provider}`
+### `GET /applications/{id}/push-credentials`, `GET …/{provider}`
 
 The list returns every configured provider as `{ "data": [ … ] }` with no pagination, since there are at most three. `{provider}` is `apns`, `fcm`, or `web_push`. `status` is one of:
 
 - `active`.
 - `failed`, after the provider rejected the credential itself (APNs `403 InvalidProviderToken`, FCM `401`/`403`). `failure_reason` holds the provider's reason code and `failed_at` when it happened. Sends to that provider's devices are skipped with `skip_reason: credential_failed` until the credential is fixed, the owner is emailed, and a [`push_credential.failed`](#webhook-events) webhook fires.
 
-### `PATCH /v1/applications/{id}/push-credentials/{provider}`
+### `PATCH /applications/{id}/push-credentials/{provider}`
 
 ```json
 // Request — rotate the APNs key
@@ -143,7 +143,7 @@ The list returns every configured provider as `{ "data": [ … ] }` with no pagi
 
 Writable: the same fields as on `POST` for that provider, plus `status` (only `failed → active`). Any change to key material also returns a `failed` credential to `active`. `provider` and `application_id` are fixed (`422 read_only_field`). The VAPID key pair can't be rotated in place, because every existing browser subscription is bound to it. Delete and recreate the credential instead. Writes `push_credential.updated`. Returns `200` with the credential.
 
-### `DELETE /v1/applications/{id}/push-credentials/{provider}`
+### `DELETE /applications/{id}/push-credentials/{provider}`
 
 `204`. Pending deliveries to that provider are skipped (each delivery's `error` is `credential_removed`), and new sends skip the provider (`skip_reason: no_credentials` when no other provider can reach the User). Devices are kept, because an APNs or FCM token stays valid and works again once a credential is configured. The exception is `web_push`: browser subscriptions are bound to the deleted VAPID key, so every `web_push` device of the Application becomes `inactive` with `inactive_reason: credential_removed`. Writes `push_credential.deleted`. Destructive. See [MCP Server → Tool annotations](../../mcp-server/#tool-annotations--safety).
 
@@ -151,7 +151,7 @@ Writable: the same fields as on `POST` for that provider, plus `status` (only `f
 
 A Device is one install of one Application, signed in as one User, with the provider token that reaches it. The same phone running two Applications is two Devices, because each app gets its own token from the OS.
 
-### `POST /v1/users/{id}/devices`
+### `POST /users/{id}/devices`
 
 Called on every app launch and whenever the OS issues a new token, so registration is an idempotent upsert, not a one-time create.
 
@@ -205,7 +205,7 @@ Called on every app launch and whenever the OS issues a new token, so registrati
 | `application_id` | Required. The User must have active access to it right now ([`allow()`](../../access-control/#the-algorithm)), otherwise `403 entitlement_required`. An app key may only pass its own Application. |
 | `provider` | Required. `apns`, `fcm`, or `web_push`. No credential needs to exist yet. A device registered before its credential is configured simply isn't reachable until it is. |
 | `token` | Required for `apns` (the device token as hex, 64–200 characters) and `fcm` (the registration token, 1–4,096 characters). Not allowed for `web_push`. |
-| `subscription` | Required for `web_push`, and only for it: `endpoint` (an `https` URL on a public host, the same SSRF rules as a [webhook URL](../webhooks/#post-v1webhooks)) and `keys.p256dh` and `keys.auth` (base64url). |
+| `subscription` | Required for `web_push`, and only for it: `endpoint` (an `https` URL on a public host, the same SSRF rules as a [webhook URL](../webhooks/#post-webhooks)) and `keys.p256dh` and `keys.auth` (base64url). |
 | `environment` | `apns` only, required: `production` or `sandbox` (a development build, delivered through `api.sandbox.push.apple.com`). |
 | `name`, `app_version` | Optional labels, up to 100 and 50 characters, for the User's own device list and for support. |
 
@@ -222,7 +222,7 @@ A malformed `token` or `subscription` is `422 invalid_device_token`.
 
 Self-service and app-key registrations write no Audit Event. They're ordinary account activity, the same as a login.
 
-### `GET /v1/users/{id}/devices`
+### `GET /users/{id}/devices`
 
 ```json
 // Response — 200
@@ -234,7 +234,7 @@ Self-service and app-key registrations write no Audit Event. They're ordinary ac
 
 Filters: `application_id`, `provider`, `status`, and `include_inactive=true`. Without an explicit `status` or `include_inactive`, only `active` devices are listed, per [Conventions → Filtering](../conventions/#filtering). An app key gets only its own Application's devices, whatever it passes.
 
-### `PATCH /v1/users/{id}/devices/{deviceId}`
+### `PATCH /users/{id}/devices/{deviceId}`
 
 ```json
 // Request — the OS rotated the token
@@ -243,11 +243,11 @@ Filters: `application_id`, `provider`, `status`, and `include_inactive=true`. Wi
 
 Writable: `name`, `app_version`, `environment` (`apns`), and the token (`token`, or `subscription` for `web_push`). If the new token is already registered as another Device of the same User and Application, that other registration is deleted, so one token never maps to two Devices. Writing a token reactivates an `inactive` device. `application_id`, `provider`, `user_id`, `session_id`, and `status` are read-only (`422 read_only_field`). Returns `200` with the Device.
 
-### `DELETE /v1/users/{id}/devices/{deviceId}`
+### `DELETE /users/{id}/devices/{deviceId}`
 
 `204`. Hard delete: the Device is removed, its pending deliveries are dropped, and `device.deleted` fires. Call this when the User turns notifications off in the app, or from the app's own sign-out if it registered the device with its app key. `users.manage` can delete anyone's device, which writes `device.deleted` to the audit log. Self-service and app-key deletes aren't audited. Destructive.
 
-### `POST /v1/users/{id}/devices/{deviceId}/test`
+### `POST /users/{id}/devices/{deviceId}/test`
 
 ```json
 // Request — optional overrides
@@ -273,7 +273,7 @@ Sends one push to one device through the real signing and delivery path, waits u
 
 ## Sending a notification
 
-### `POST /v1/users/{id}/notifications`
+### `POST /users/{id}/notifications`
 
 ```json
 // Request
@@ -365,7 +365,7 @@ The notification is in the User's inbox in every case. That's what makes the inb
 
 There's no separate preferences resource. Push follows the `push` channel in the User's existing [Settings](../settings/) `notifications` map, resolved per Application:
 
-- A resolved `notifications.push` of `false`, from global Settings or from this Application's [AppSettings override](../settings/#patch-v1usersidappsappidsettings), means no push for this Application. The inbox still gets the notification, with `skip_reason: push_disabled`.
+- A resolved `notifications.push` of `false`, from global Settings or from this Application's [AppSettings override](../settings/#patch-usersidappsappidsettings), means no push for this Application. The inbox still gets the notification, with `skip_reason: push_disabled`.
 - A missing `push` key counts as **on**. Registering a device follows the User granting the OS's own notification permission, which is the real opt-in.
 
 The OS-level permission stays the User's final word. If they revoke it on the device, the provider reports the token invalid on the next send, and the platform deactivates the device.
@@ -381,7 +381,7 @@ Two limits, on top of the [default per-key bucket](../../non-functional-requirem
 
 Every notification a User receives is kept for 90 days, whether or not its push arrived, so a client can always show what the User missed. A client renders it from these endpoints and keeps it in step with what the User does.
 
-### `GET /v1/users/{id}/notifications`
+### `GET /users/{id}/notifications`
 
 ```json
 // Response — 200
@@ -413,7 +413,7 @@ Who sees what:
 - **An app key** sees only its own Application's notifications. The `application_id` filter is forced, and `source=platform` returns nothing.
 - **`users.list`** (support) can read any User's inbox, for investigations.
 
-### `GET /v1/users/{id}/notifications/{notificationId}`
+### `GET /users/{id}/notifications/{notificationId}`
 
 The full Notification, as in the send response, plus `deliveries`, one entry per targeted device:
 
@@ -431,7 +431,7 @@ The full Notification, as in the send response, plus `deliveries`, one entry per
 
 `device_id` is `null` once that Device has been deleted. Delivery details are kept for 30 days, after which `deliveries` is `[]` and only the `push` summary remains.
 
-### `PATCH /v1/users/{id}/notifications/{notificationId}`
+### `PATCH /users/{id}/notifications/{notificationId}`
 
 ```json
 // Request
@@ -448,7 +448,7 @@ The full Notification, as in the send response, plus `deliveries`, one entry per
 
 Returns `200` with the Notification. No Audit Event: this is the User's own reading state, not an access change.
 
-### `POST /v1/users/{id}/notifications/mark-read`
+### `POST /users/{id}/notifications/mark-read`
 
 ```json
 // Request — everything from TimeTrack up to a point in time
@@ -461,7 +461,7 @@ Returns `200` with the Notification. No Audit Event: this is the User's own read
 
 Marks every `unread` notification matching the filters as `read`. Each filter is optional: `application_id`, `source`, `category`, and `before` (only notifications created at or before this time, so items that arrive while the User is looking aren't swept up). An empty body marks everything the caller can see. An app key's `application_id` is forced to its own.
 
-### `GET /v1/users/{id}/notifications/unread-count`
+### `GET /users/{id}/notifications/unread-count`
 
 ```json
 // Response — 200
@@ -483,11 +483,11 @@ The platform raises a small, fixed set of notifications itself, about the User's
 | `category` | `priority` | Raised when | `data` |
 |---|---|---|---|
 | `security.new_sign_in` | `high` | A login creates a session from a user agent not seen in the User's sessions during the last 90 days. A User's first session, at signup, raises nothing. | `session_id`, `user_agent`, `ip_address` |
-| `security.password_changed` | `high` | `POST /v1/users/{id}/password`, or a password reset. | — |
+| `security.password_changed` | `high` | `POST /users/{id}/password`, or a password reset. | — |
 | `security.email_changed` | `high` | An email change completes. | — |
 | `security.mfa_disabled` | `high` | TOTP is turned off by the User, or reset by support. | — |
-| `security.session_reuse_detected` | `high` | A reused refresh token revokes a session ([`refresh_token_reused`](../auth/#post-v1authtokenrefresh)). | `session_id` |
-| `account.organization_invitation` | `normal` | A `pending` membership is created for an existing User ([Organizations → Adding members](../organizations/#post-v1organizationsidmembers)). | `organization_id`, `invited_by` |
+| `security.session_reuse_detected` | `high` | A reused refresh token revokes a session ([`refresh_token_reused`](../auth/#post-authtokenrefresh)). | `session_id` |
+| `account.organization_invitation` | `normal` | A `pending` membership is created for an existing User ([Organizations → Adding members](../organizations/#post-organizationsidmembers)). | `organization_id`, `invited_by` |
 | `account.access_granted` | `normal` | The User gains resolved access to an Application (the same moment `access.granted` fires). Raised only for access a developer or admin grants (`purchase`, `trial`, `admin_grant`, or `org_seat`), never for [platform-managed](../../domain-model/entitlements/#platform-managed-entitlements) `free` or `subscription` Entitlements: signing up, subscribing to Standard, or a new free Application would otherwise push one alert per app. Also not raised within 60 seconds of signup. | `application_id` |
 
 `billing.` categories are reserved for [subscription](../billing/) alerts, such as a failed payment. None are sent yet; Stripe emails the customer directly.
@@ -546,7 +546,7 @@ A device a User registers with their own token is tied to the session that regis
 
 | Event | Effect on devices |
 |---|---|
-| Logout, or [revoking that session](../auth/#delete-v1usersidsessionssessionid) | Devices registered under that session become `inactive` (`session_revoked`). Logout from every session deactivates all of them. |
+| Logout, or [revoking that session](../auth/#delete-usersidsessionssessionid) | Devices registered under that session become `inactive` (`session_revoked`). Logout from every session deactivates all of them. |
 | Password reset, refresh-token reuse, or MFA reset (each revokes sessions) | The same, after the [`security.*` alert](#platform-alerts) is raised. |
 | The User is suspended or soft-deleted, or a test-mode User expires | Every device they hold becomes `inactive` (`user_suspended`, `user_deleted`, or `test_user_expired`), including devices an app key registered. |
 | The User signs in again on the same install | The client re-registers its token, which reactivates the device under the new session. |

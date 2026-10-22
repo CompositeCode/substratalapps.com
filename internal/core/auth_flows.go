@@ -503,7 +503,7 @@ func (s *Server) AuthForgotPassword(w http.ResponseWriter, r *http.Request) {
 				"Your account signs in through your organization's identity provider, so there's no password to reset.")
 			return c.Accepted(nil)
 		}
-		// An active User created without a password (POST /v1/users with
+		// An active User created without a password (POST /users with
 		// status active) sets their first one this way too.
 		tok, err := c.issueToken("password_reset", ids.PasswordReset, u.ID, time.Hour, nil)
 		if err != nil {

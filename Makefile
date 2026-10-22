@@ -54,7 +54,7 @@ test-integration: ## Integration + contract tests against Postgres (needs `make 
 test-contract: test-integration ## Contract tests run inside the integration suite (every response is validated)
 
 quickstart: ## docs/quickstart.md as a script, against the running devserver
-	SUBSTRATAL_API=$${SUBSTRATAL_API:-http://localhost$(LISTEN_ADDR)/v1} scripts/quickstart.sh
+	SUBSTRATAL_API=$${SUBSTRATAL_API:-http://localhost$(LISTEN_ADDR)} scripts/quickstart.sh
 
 fmt-check:
 	@test -z "$$(gofmt -l cmd internal migrations)" || (gofmt -l cmd internal migrations; exit 1)

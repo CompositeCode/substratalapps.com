@@ -360,7 +360,7 @@ func validateAppFields(p httpx.Patch, slug string, testMode bool, f *httpx.Field
 	return sch, nil
 }
 
-// ── POST /v1/applications ──────────────────────────────────────────────
+// ── POST /applications ─────────────────────────────────────────────────
 
 func (s *Server) ApplicationsCreate(w http.ResponseWriter, r *http.Request, params gen.ApplicationsCreateParams) {
 	s.serve(w, r, opts{op: "applications.create", idem: idemOptional}, func(c *Call) error {
@@ -587,7 +587,7 @@ func (c *Call) seedAppRoles(appID string, names []string) error {
 	return nil
 }
 
-// ── PATCH /v1/applications/{id} ────────────────────────────────────────
+// ── PATCH /applications/{id} ───────────────────────────────────────────
 
 var ownerFields = []string{"name", "description", "icon_url", "launch_url", "redirect_uris", "support_url",
 	"email_from_name", "settings_schema", "permissions", "available_app_roles", "default_app_role",

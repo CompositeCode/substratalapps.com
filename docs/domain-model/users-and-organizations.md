@@ -48,9 +48,9 @@ The database row also carries `version` (the source of the `ETag`) and `deleted_
                                               hard-deleted (cascade, `user.erased`)
 ```
 
-Signup (`POST /v1/auth/signup`) creates a User directly in `active`. An admin invite (`POST /v1/users`) or an org-membership invite by email creates an `invited` one. Suspension and deletion revoke every session, deactivate every push [Device](../notifications/#device), and fire `access.revoked` for every Application the user had active access to. A test-mode User's expiry does the same, without changing `status`; see [Auth → Test-mode Users → Lifetime](../../api-reference/auth/#lifetime).
+Signup (`POST /auth/signup`) creates a User directly in `active`. An admin invite (`POST /users`) or an org-membership invite by email creates an `invited` one. Suspension and deletion revoke every session, deactivate every push [Device](../notifications/#device), and fire `access.revoked` for every Application the user had active access to. A test-mode User's expiry does the same, without changing `status`; see [Auth → Test-mode Users → Lifetime](../../api-reference/auth/#lifetime).
 
-An `invited` user has an account shell (so an Entitlement or Role can be assigned before they've logged in once) but can't authenticate until they complete signup. `suspended` blocks login but preserves every record — Entitlements, Roles, Profile, Settings — unlike `deleted`, which is the start of actual data removal. A soft-deleted User can still be **restored** by `users.manage` (`PATCH status: active`) as long as no erasure request is scheduled and their email hasn't been taken by a new signup; once the erasure cascade completes, there's nothing to restore. See [Users → `PATCH`](../../api-reference/users/#patch-v1usersid). See [Non-Functional Requirements → Data retention](../../non-functional-requirements/#data-retention).
+An `invited` user has an account shell (so an Entitlement or Role can be assigned before they've logged in once) but can't authenticate until they complete signup. `suspended` blocks login but preserves every record — Entitlements, Roles, Profile, Settings — unlike `deleted`, which is the start of actual data removal. A soft-deleted User can still be **restored** by `users.manage` (`PATCH status: active`) as long as no erasure request is scheduled and their email hasn't been taken by a new signup; once the erasure cascade completes, there's nothing to restore. See [Users → `PATCH`](../../api-reference/users/#patch-usersid). See [Non-Functional Requirements → Data retention](../../non-functional-requirements/#data-retention).
 
 ### Example
 
@@ -87,7 +87,7 @@ How a User actually authenticates isn't a field on `User` either, for the same r
 | `mfa_enabled` | boolean | TOTP, opt-in, meaningful only alongside `method: password` — an SSO connection's own MFA policy is that provider's concern, not re-implemented here. |
 | `last_used_at` | timestamp, nullable | Which method a User actually logs in with, in practice — not just which they've set up. |
 
-**One User, multiple UserIdentity rows** is the normal case, not an edge case — the same person might hold a `password` identity *and* an `sso` identity through their employer's Organization, choosing either at login. [`POST /v1/auth/login`](../../api-reference/auth/) accepts whichever credential matches an existing row; there's no "primary" method to designate.
+**One User, multiple UserIdentity rows** is the normal case, not an edge case — the same person might hold a `password` identity *and* an `sso` identity through their employer's Organization, choosing either at login. [`POST /auth/login`](../../api-reference/auth/) accepts whichever credential matches an existing row; there's no "primary" method to designate.
 
 ### Session
 
@@ -116,7 +116,7 @@ The other half of [native auth and per-Organization SSO](../../api-reference/aut
 | `status` | enum | `active` \| `inactive`. |
 
 {: .note }
-This table is deliberately thin — scoped to *that* a User can authenticate via their Organization's SSO, not *how* the broker integration works, which is explicitly deferred (see [Auth → Native auth and per-Organization SSO](../../api-reference/auth/#native-auth-and-per-organization-sso)). **There is no API for SSOConnection yet**: no endpoint creates, lists, or changes one. Its management endpoints (under `/v1/organizations/{id}/sso-connections`, org-admin owned) ship with the broker integration, alongside the fields and domain-verification flow they need. Until then, the table exists so the schema doesn't need a breaking migration later.
+This table is deliberately thin — scoped to *that* a User can authenticate via their Organization's SSO, not *how* the broker integration works, which is explicitly deferred (see [Auth → Native auth and per-Organization SSO](../../api-reference/auth/#native-auth-and-per-organization-sso)). **There is no API for SSOConnection yet**: no endpoint creates, lists, or changes one. Its management endpoints (under `/organizations/{id}/sso-connections`, org-admin owned) ship with the broker integration, alongside the fields and domain-verification flow they need. Until then, the table exists so the schema doesn't need a breaking migration later.
 
 ---
 
@@ -146,7 +146,7 @@ The join record between a User and an Organization — a User can belong to any 
 |---|---|---|
 | `user_id` | string | |
 | `organization_id` | string | |
-| `status` | enum | `pending` \| `active`. A membership added by email starts `pending` and becomes `active` when the person accepts. Only an `active` membership counts for anything: org-wide grants, `org_admin` standing, `member_overrides`. See [Organizations → Adding members](../../api-reference/organizations/#post-v1organizationsidmembers). |
+| `status` | enum | `pending` \| `active`. A membership added by email starts `pending` and becomes `active` when the person accepts. Only an `active` membership counts for anything: org-wide grants, `org_admin` standing, `member_overrides`. See [Organizations → Adding members](../../api-reference/organizations/#post-organizationsidmembers). |
 | `role` | enum | `org_admin` \| `member`. Standing *within this one Organization* — independent of any [PlatformRole](../roles-and-permissions/#platformrole) or [AppRole](../roles-and-permissions/#approle) the same User holds. Being `org_admin` of one Organization says nothing about standing in another, the same independence pattern [AppRole](../roles-and-permissions/#approle) already uses across Applications. |
 | `invited_by` | string, nullable | The User who added this membership by email. `null` for a direct add by `organizations.manage` and for the creator. |
 | `invited_at` | timestamp | When the membership row was created. |

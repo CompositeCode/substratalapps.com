@@ -15,10 +15,10 @@ A runnable walkthrough: create a user, grant them an app, check their access, th
 
 ---
 
-All requests below assume the [Conventions](../api-reference/conventions/) base URL and an admin bearer token:
+All requests below assume the [Conventions](../api-reference/conventions/) base URL and an admin bearer token, and send the API version in the `Substratal-Version` header (see [Conventions → Versioning](../api-reference/conventions/#versioning)):
 
 ```
-export SUBSTRATAL_API=https://api.substratalapps.com/v1
+export SUBSTRATAL_API=https://api.substratalapps.com
 export TOKEN=<an access token for a superadmin or support user>
 ```
 
@@ -26,6 +26,7 @@ export TOKEN=<an access token for a superadmin or support user>
 
 ```bash
 curl -s -X POST "$SUBSTRATAL_API/users" \
+  -H "Substratal-Version: 1" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{ "email": "jordan@example.com", "status": "invited" }'
@@ -46,6 +47,7 @@ See [Users](../api-reference/users/). A default [Profile](../api-reference/profi
 
 ```bash
 curl -s "$SUBSTRATAL_API/users/usr_01JAG3Z9X8QS3F6K2M4N5P6R7S/entitlements" \
+  -H "Substratal-Version: 1" \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -59,6 +61,7 @@ In production, the Application developer's own backend does this with its app-sc
 
 ```bash
 curl -s -X POST "$SUBSTRATAL_API/users/usr_01JAG3Z9X8QS3F6K2M4N5P6R7S/entitlements" \
+  -H "Substratal-Version: 1" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: $(uuidgen)" \
@@ -81,6 +84,7 @@ See [Entitlements](../api-reference/entitlements/). `status: active` is the whol
 
 ```bash
 curl -s "$SUBSTRATAL_API/users/usr_01JAG3Z9X8QS3F6K2M4N5P6R7S/apps/app_timetrack/effective-permissions" \
+  -H "Substratal-Version: 1" \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -102,6 +106,7 @@ curl -s "$SUBSTRATAL_API/users/usr_01JAG3Z9X8QS3F6K2M4N5P6R7S/apps/app_timetrack
 
 ```bash
 curl -s -X PATCH "$SUBSTRATAL_API/users/usr_01JAG3Z9X8QS3F6K2M4N5P6R7S" \
+  -H "Substratal-Version: 1" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{ "status": "active" }'
@@ -115,6 +120,7 @@ Check again: `allowed: true`, `entitlement_status: "active"`.
 
 ```bash
 curl -s -X POST "$SUBSTRATAL_API/users/usr_01JAG3Z9X8QS3F6K2M4N5P6R7S/roles/role_timetrack_admin" \
+  -H "Substratal-Version: 1" \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -124,6 +130,7 @@ Repeat step 4 and `effective_permissions` now includes whatever `role_timetrack_
 
 ```bash
 curl -s -X PATCH "$SUBSTRATAL_API/entitlements/ent_01JAGA1B2C3D4E5F6G7H8J9K01" \
+  -H "Substratal-Version: 1" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{ "status": "disabled", "disabled_reason": "quickstart_demo" }'

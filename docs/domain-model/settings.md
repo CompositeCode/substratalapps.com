@@ -70,7 +70,7 @@ An Application can't declare a reserved key, and global Settings holds nothing b
 
 ### Schema validation
 
-Validated on write against `Application.settings_schema` (see [Applications](../applications/)). The schema is on file with the hub: each Application registers its own JSON Schema, and the hub validates every write against it rather than storing an opaque blob. Centralized validation is why `GET /v1/users/{id}/apps/{appId}/settings` can promise a resolved, valid object instead of whatever was last written. The same schema also tells the storage layer which declared fields to back with typed, indexed columns; see [Database Schema → Typed fields](../database-schema/#typed-fields-per-application-views-and-expression-indexes).
+Validated on write against `Application.settings_schema` (see [Applications](../applications/)). The schema is on file with the hub: each Application registers its own JSON Schema, and the hub validates every write against it rather than storing an opaque blob. Centralized validation is why `GET /users/{id}/apps/{appId}/settings` can promise a resolved, valid object instead of whatever was last written. The same schema also tells the storage layer which declared fields to back with typed, indexed columns; see [Database Schema → Typed fields](../database-schema/#typed-fields-per-application-views-and-expression-indexes).
 
 ### Example
 
@@ -79,7 +79,7 @@ Write (only the override):
 { "overrides": { "week_start": "monday" } }
 ```
 
-Read, resolved (`GET /v1/users/{id}/apps/{appId}/settings`):
+Read, resolved (`GET /users/{id}/apps/{appId}/settings`):
 ```json
 {
   "user_id": "usr_01JAG3Z9X8QS3F6K2M4N5P6R7S",
@@ -110,7 +110,7 @@ Here, all four reserved keys fell through to global [Settings](#settings-global)
 
 ## Resolution rules
 
-The exact algorithm behind `GET /v1/users/{id}/apps/{appId}/settings`. Implementations and tests should follow it literally.
+The exact algorithm behind `GET /users/{id}/apps/{appId}/settings`. Implementations and tests should follow it literally.
 
 There are two disjoint key spaces:
 
@@ -133,7 +133,7 @@ valid_override(key) := overrides[key] if it is valid right now, else
                        treat as absent and list key in stale_overrides
 
 "valid right now" means:
-  reserved key  → passes the same platform rules as PATCH /v1/users/{id}/settings
+  reserved key  → passes the same platform rules as PATCH /users/{id}/settings
                   (BCP 47 locale, IANA timezone, theme enum, notifications channel map)
   declared key  → validates against that property in the Application's CURRENT settings_schema
 ```
@@ -142,7 +142,7 @@ The Application's declared default is the JSON Schema `default` keyword on each 
 
 ### `settings_schema` rules
 
-The rules an Application's schema must follow. They're checked on `POST`/`PATCH /v1/applications`, and a violation returns `422 invalid_settings_schema` with per-path details.
+The rules an Application's schema must follow. They're checked on `POST`/`PATCH /applications`, and a violation returns `422 invalid_settings_schema` with per-path details.
 
 - JSON Schema **draft 2020-12**. The root must be `{"type": "object", "properties": {...}}`. The server always treats `additionalProperties` as `false`, whatever the schema says.
 - At most 200 properties, at most 64 KB serialized, and property names must match `^[a-z][a-z0-9_]{0,62}$`.
@@ -150,21 +150,21 @@ The rules an Application's schema must follow. They're checked on `POST`/`PATCH 
 - `$ref` is supported only within the document, and remote `$ref` is rejected.
 - A `default`, if present, must itself validate against its property.
 - **`x-pii: true`** on a property marks it as personal data. The [hard-delete cascade](../../non-functional-requirements/#hard-delete-cascade) removes PII-marked keys from a deleted user's overrides and leaves the rest, such as a `week_start` preference. A schema without `x-pii` marks is treated as having no PII.
-- **Changing a schema never rewrites stored data.** Removing a property, or changing its type, makes existing overrides for it *stale* (see `stale_overrides` above). It doesn't make them errors. The Application's owner can see how many users hold stale values per key in `GET /v1/applications/{id}` → `settings_schema_stats`.
+- **Changing a schema never rewrites stored data.** Removing a property, or changing its type, makes existing overrides for it *stale* (see `stale_overrides` above). It doesn't make them errors. The Application's owner can see how many users hold stale values per key in `GET /applications/{id}` → `settings_schema_stats`.
 
 ### Example: a schema change makes an override stale
 
 TimeTrack's schema declares `week_start` as a string, and a user overrides it:
 
 ```json
-// PATCH /v1/users/usr_01JAG3Z9X8QS3F6K2M4N5P6R7S/apps/app_timetrack/settings
+// PATCH /users/usr_01JAG3Z9X8QS3F6K2M4N5P6R7S/apps/app_timetrack/settings
 { "overrides": { "week_start": "monday" } }
 ```
 
 Later, the owner changes `week_start` to an integer day number (0 = Sunday) with a default of `0`:
 
 ```json
-// PATCH /v1/applications/app_timetrack
+// PATCH /applications/app_timetrack
 { "settings_schema": { "type": "object", "properties": {
     "default_billable": { "type": "boolean", "default": true },
     "week_start": { "type": "integer", "minimum": 0, "maximum": 6, "default": 0 }
@@ -174,7 +174,7 @@ Later, the owner changes `week_start` to an integer day number (0 = Sunday) with
 Nothing stored is rewritten. The user's next read skips the stale value and falls back to the new default:
 
 ```json
-// GET /v1/users/usr_01JAG3Z9X8QS3F6K2M4N5P6R7S/apps/app_timetrack/settings (excerpt)
+// GET /users/usr_01JAG3Z9X8QS3F6K2M4N5P6R7S/apps/app_timetrack/settings (excerpt)
 {
   "resolved": { "default_billable": true, "week_start": 0, "...": "..." },
   "sources": { "default_billable": "app_default", "week_start": "app_default", "...": "..." },
@@ -186,7 +186,7 @@ Nothing stored is rewritten. The user's next read skips the stale value and fall
 The owner sees the count across all users on the Application:
 
 ```json
-// GET /v1/applications/app_timetrack (excerpt)
+// GET /applications/app_timetrack (excerpt)
 { "settings_schema_stats": { "stale_override_counts": { "week_start": 1 } } }
 ```
 

@@ -33,9 +33,9 @@ func TestLimitAndFilters(t *testing.T) {
 	if Limit(nil) != 25 {
 		t.Error("default limit is 25")
 	}
-	a := Filters(httptest.NewRequest("GET", "/v1/users?status=active&limit=5&cursor=x", nil))
-	b := Filters(httptest.NewRequest("GET", "/v1/users?status=active", nil))
-	c := Filters(httptest.NewRequest("GET", "/v1/users?status=invited", nil))
+	a := Filters(httptest.NewRequest("GET", "/users?status=active&limit=5&cursor=x", nil))
+	b := Filters(httptest.NewRequest("GET", "/users?status=active", nil))
+	c := Filters(httptest.NewRequest("GET", "/users?status=invited", nil))
 	if a != b || a == c {
 		t.Fatal("filters ignore limit/cursor and nothing else")
 	}
