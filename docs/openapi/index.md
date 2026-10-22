@@ -55,10 +55,10 @@ Operations are grouped by tag, and each tag matches an API Reference page that e
 | Applications | 4 | [Applications](../api-reference/applications/) |
 | Entitlements | 6 | [Entitlements](../api-reference/entitlements/) |
 | Roles & Permissions | 10 | [Roles & Permissions](../api-reference/roles-and-permissions/) |
-| Organizations | 11 | [Organizations](../api-reference/organizations/) |
+| Organizations | 14 | [Organizations](../api-reference/organizations/) |
 | Tenancy | 6 | [Tenancy](../api-reference/tenancy/) |
 | Billing | 7 | [Billing](../api-reference/billing/) |
-| Audit | 2 | [Audit](../api-reference/audit/) |
+| Audit | 4 | [Audit](../api-reference/audit/) |
 | Webhooks | 9 | [Webhooks](../api-reference/webhooks/) |
 | Notifications | 17 | [Push Notifications](../api-reference/notifications/) |
 | API Keys | 6 | [API Keys](../api-reference/api-keys/) |
@@ -67,6 +67,7 @@ Some endpoints aren't in the document's `paths`, because they follow external st
 
 - `GET /.well-known/jwks.json` and `GET /.well-known/openid-configuration`: signing keys and discovery, for verifying app tokens with any standard JWT library. See [Auth → Signing keys](../api-reference/auth/#signing-keys-jwks).
 - `/mcp`: the [MCP Server](../mcp-server/), generated from this document's `operationId`s.
+- `/scim/v2/…`: [SCIM 2.0](../api-reference/scim/) provisioning, following RFC 7644.
 
 ## Authentication in the spec
 
@@ -131,7 +132,7 @@ To explore by hand, import `openapi.yaml` into Postman, Insomnia, Bruno, or any 
 
 ## Versioning and change policy
 
-The API version is the `Substratal-Version` request header (currently `1`), not part of the base URL. The document doesn't declare it on each operation, so configure a generated client to send it as a default header; the Interactive Reference sends it for you. `info.version` in the document (currently a `1.0.0-draft` pre-release) is the version of the document itself.
+The API version is the `Substratal-Version` request header (currently `1`), not part of the base URL. Every versioned operation declares it as the shared `ApiVersion` header parameter (`components.parameters.ApiVersion`), so generated clients include it, and the Interactive Reference sends it for you. Most generators let you set it once as a default header instead of passing it per call. `info.version` in the document (currently a `1.0.0-draft` pre-release) is the version of the document itself.
 
 - **Additive changes** (new optional fields, new operations, new enum values) ship within the current version. Write clients to ignore fields they don't know, and to handle enum values they don't recognize.
 - **Breaking changes** ship as the next version number, and the previous version keeps working for at least 6 months. See [Non-Functional Requirements → Versioning](../non-functional-requirements/#versioning) for what counts as breaking.

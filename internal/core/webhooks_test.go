@@ -342,7 +342,13 @@ func TestPagination(t *testing.T) {
 }
 
 func TestRateLimits(t *testing.T) {
-	e := testenv.NewWith(t, testenv.Options{RateLimits: true})
+	// Limits count per clock minute, so the API's clock starts at the top
+	// of one: all 11 logins land in the same window however slow the run.
+	// Its own database keeps the counters from leaking between runs.
+	start := time.Now()
+	minute := start.Truncate(time.Minute)
+	e := testenv.NewWith(t, testenv.Options{RateLimits: true, OwnDatabase: true,
+		Now: func() time.Time { return minute.Add(time.Since(start)) }})
 	var last *testenv.Resp
 	for i := 0; i < 11; i++ {
 		last = e.Post("/auth/login", "", map[string]any{"email": "rl+" + testenv.Unique() + "@example.com", "password": "whatever passphrase"})

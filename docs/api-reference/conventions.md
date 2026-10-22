@@ -217,6 +217,7 @@ A single resource is returned as a bare JSON object — no envelope:
 | `tenant_suspended` | 403 | The Tenant that owns the data being written (or the Application an app token is requested for) is `suspended` by the platform. See [Tenancy](../../domain-model/tenancy/#fields). |
 | `destructive_operation_restricted` | 403 | A `restrict_destructive` API Key attempted a destructive operation — see [API Keys](../api-keys/#agent-keys--restrict_destructive). |
 | `not_found` | 404 | Generic not-found for a path that matches no route. Resource pages define their own `<resource>_not_found` codes. |
+| `method_not_allowed` | 405 | The path exists, but not for this method. The `Allow` header and `details.allowed` list the methods it does support. |
 | `version_conflict` | 409 | `If-Match` didn't match the current `ETag`. |
 | `idempotency_key_reused` | 409 | Same `Idempotency-Key`, different request body. |
 | `idempotency_key_in_flight` | 409 | The first request with this `Idempotency-Key` is still being processed. Retry after a second. |
@@ -331,7 +332,7 @@ Versions are whole numbers, and `1` is the only one today. The URL never carries
 - **Browsers:** `Substratal-Version` is allowed in CORS requests and exposed on CORS responses.
 - **Changes.** Additive changes (new optional fields, new endpoints, new enum values) ship within a version. A breaking change ships as the next number, and the previous version keeps working for at least 6 months, with `Deprecation` and `Sunset` headers on every response to a request that names it. After its `Sunset` date it's retired, and requests naming it get `400 unsupported_api_version`. See [Non-Functional Requirements → Versioning](../../non-functional-requirements/#versioning) for what counts as breaking.
 - **Not the webhook version.** A webhook subscription's `api_version` (a date, such as `2026-10-05`) fixes the shape of the payloads it receives, and is versioned separately. See [Webhooks → Payload versions](../webhooks/#payload-versions).
-- **Generated clients:** `openapi.yaml` doesn't declare the header on each operation, so configure your client to send it as a default header.
+- **In `openapi.yaml`:** every versioned operation declares the header as the shared `ApiVersion` parameter, and documents the `400` it returns without one, so generated clients know to send it. The exempt operations don't declare it.
 
 ## Timestamps
 

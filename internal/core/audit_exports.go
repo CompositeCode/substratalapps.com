@@ -26,9 +26,15 @@ type ExportStore interface {
 }
 
 const (
-	auditExportTTL      = 7 * 24 * time.Hour
-	auditExportURLTTL   = 15 * time.Minute
-	auditExportMaxRows  = 1_000_000
+	auditExportTTL    = 7 * 24 * time.Hour
+	auditExportURLTTL = 15 * time.Minute
+	// The jobs Lambda writes the file to its 512 MB /tmp before uploading,
+	// so both caps keep a large export from filling it.
+	auditExportMaxRows  = 200_000
+	auditExportMaxBytes = 400 << 20
+	// The worker stops claiming new exports after this, well inside the
+	// jobs Lambda's 15-minute timeout; the next run picks them up.
+	auditExportBudget   = 10 * time.Minute
 	auditExportPageSize = 1000
 	// A running export whose worker died is picked up again after this.
 	auditExportStale = 20 * time.Minute
@@ -189,8 +195,9 @@ func (s *Server) RunAuditExports(ctx context.Context) (done int, err error) {
 	if s.Exports == nil {
 		return 0, nil
 	}
+	start := time.Now()
 	err = eachMode(func(tm bool) error {
-		for {
+		for time.Since(start) < auditExportBudget {
 			var claimed []auditExportRow
 			if err := s.system(ctx, tm, db.Settings{}, func(c *Call) error {
 				var err error
@@ -206,11 +213,17 @@ func (s *Server) RunAuditExports(ctx context.Context) (done int, err error) {
 			if len(claimed) == 0 {
 				return nil
 			}
+			// A failure ends that export as failed rather than leaving it
+			// running to be retried forever; the caller can request again.
 			if err := s.runAuditExport(ctx, tm, claimed[0]); err != nil {
-				return err
+				s.Log.Error("audit export failed", "export_id", claimed[0].ID, "err", err)
+				if err := s.failAuditExport(context.WithoutCancel(ctx), tm, claimed[0], "internal_error"); err != nil {
+					return err
+				}
 			}
 			done++
 		}
+		return nil
 	})
 	return
 }
@@ -227,19 +240,20 @@ func (s *Server) runAuditExport(ctx context.Context, tm bool, x auditExportRow) 
 	}
 	defer func() { _ = file.Close(); _ = os.Remove(file.Name()) }()
 
+	out := &countingWriter{w: file}
 	var write func(auditEvent) error
 	var flush func() error
 	contentType, ext := "application/x-ndjson", "ndjson"
 	if x.Format == "csv" {
 		contentType, ext = "text/csv", "csv"
-		cw := csv.NewWriter(file)
+		cw := csv.NewWriter(out)
 		if err := cw.Write(auditCSVHeader); err != nil {
 			return err
 		}
 		write = func(e auditEvent) error { return cw.Write(auditCSVRow(e)) }
 		flush = func() error { cw.Flush(); return cw.Error() }
 	} else {
-		enc := json.NewEncoder(file)
+		enc := json.NewEncoder(out)
 		write = func(e auditEvent) error { return enc.Encode(e) }
 		flush = func() error { return nil }
 	}
@@ -275,6 +289,9 @@ func (s *Server) runAuditExport(ctx context.Context, tm bool, x auditExportRow) 
 		count += len(page)
 		if count > auditExportMaxRows {
 			return s.failAuditExport(ctx, tm, x, "too_many_rows")
+		}
+		if out.n > auditExportMaxBytes {
+			return s.failAuditExport(ctx, tm, x, "too_large")
 		}
 		if len(page) < auditExportPageSize {
 			break
@@ -334,9 +351,35 @@ var auditCSVHeader = []string{"id", "timestamp", "action", "actor_type", "actor_
 	"target_user_id", "application_id", "organization_id", "tenant_id", "request_id", "before", "after"}
 
 func auditCSVRow(e auditEvent) []string {
-	return []string{e.ID, e.Timestamp.UTC().Format(time.RFC3339Nano), e.Action, e.Actor.Type, e.Actor.ID,
+	row := []string{e.ID, e.Timestamp.UTC().Format(time.RFC3339Nano), e.Action, e.Actor.Type, e.Actor.ID,
 		e.Target.Type, e.Target.ID, deref(e.TargetUserID), deref(e.ApplicationID), deref(e.OrganizationID),
 		deref(e.TenantID), deref(e.RequestID), jsonCell(e.Before), jsonCell(e.After)}
+	for i, v := range row {
+		row[i] = csvSafe(v)
+	}
+	return row
+}
+
+// csvSafe keeps a cell from being read as a formula when the file is
+// opened in a spreadsheet (CSV injection). request_id comes from the
+// caller's X-Request-Id header, so a cell can start with anything.
+func csvSafe(v string) string {
+	if v != "" && strings.ContainsRune("=+-@\t\r", rune(v[0])) {
+		return "'" + v
+	}
+	return v
+}
+
+// countingWriter counts the bytes written through it.
+type countingWriter struct {
+	w io.Writer
+	n int64
+}
+
+func (c *countingWriter) Write(p []byte) (int, error) {
+	n, err := c.w.Write(p)
+	c.n += int64(n)
+	return n, err
 }
 
 func jsonCell(raw json.RawMessage) string {

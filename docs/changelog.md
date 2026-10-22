@@ -12,7 +12,7 @@ What's changed in this specification over time. Every decision is written into t
 
 ---
 
-## 2026-10-21 — Audit Event exports
+## 2026-10-22 — Audit Event exports
 
 The audit log can be exported to a file. See [API Reference → Audit → Exporting](../api-reference/audit/#exporting). `openapi.yaml` is now at `1.0.0-draft.8`, with 123 operations.
 
@@ -21,6 +21,11 @@ The audit log can be exported to a file. See [API Reference → Audit → Export
 - New audit action `audit.exported` (target type `audit_export`), written when the file is ready, with the requester as actor.
 - **Retention** needed no new code. It's already enforced: the one-year hot window, and the nightly archival of older events, shape-only, to indefinite cold storage ([Audit log lifecycle](../non-functional-requirements/#audit-log-lifecycle)).
 - Migration `0011_audit_exports`. Infrastructure: a private exports bucket with a 7-day lifecycle rule, and an `audit-exports` schedule every minute.
+
+## 2026-10-22 — Version header declared in `openapi.yaml`; 405 for a wrong method
+
+- **`openapi.yaml` declares `Substratal-Version`.** Every versioned operation now carries the shared `ApiVersion` header parameter (`Substratal-Version`, enum `1`) and documents its `400` (`api_version_required`, `unsupported_api_version`). Generated clients learn the header from the spec instead of needing it configured by hand. `GET /health` and `POST /auth/oauth/token` don't declare it, because they're exempt. Nothing changes on the wire: the API already required the header ([Conventions → Versioning](../api-reference/conventions/#versioning)).
+- **`405 method_not_allowed`.** Calling a path that exists with a method it doesn't support (for example `PUT /health`) now returns `405` with an `Allow` header and `details.allowed`, instead of the catch-all `404 not_found`. See [Conventions → Errors](../api-reference/conventions/#errors).
 
 ## 2026-10-21 — SCIM provisioning
 

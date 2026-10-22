@@ -1,6 +1,6 @@
 # Deployment Architecture
 
-Where the platform API runs, as built, and how it's billed. This is a deployment and operations document, not part of the [API specification](https://compositecode.github.io/substratalapps.com/), so it lives next to the Terraform that implements it (`infra/terraform/`) rather than on the docs site: an API consumer never needs to know how this is hosted to build against it. Work that isn't built yet (scale-out, dedicated tenancy infrastructure, MCP streaming) is in [plan-remaining.md](../plan-remaining.md); one-time setup steps still to do by hand are in [remaining_manual_steps.md](../remaining_manual_steps.md).
+Where the platform API runs, as built, and how it's billed. This is a deployment and operations document, not part of the [API specification](https://compositecode.github.io/substratalapps.com/), so it lives next to the Terraform that implements it (`infra/terraform/`) rather than on the docs site: an API consumer never needs to know how this is hosted to build against it. Work that isn't built yet (scale-out, dedicated tenancy infrastructure, MCP streaming) is in [plan-remaining.md](../plan-remaining.md); one-time setup steps still to do by hand are in the [`[bespoke]` issues](https://github.com/CompositeCode/substratalapps.com/issues?q=is%3Aissue+%22%5Bbespoke%5D%22+sort%3Acreated-asc).
 
 Chosen and configured around one constraint above all others: **predictable, capped cost, with no surprises.**
 

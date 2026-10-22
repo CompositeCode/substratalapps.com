@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/csv"
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/CompositeCode/substratalapps.com/internal/testenv"
@@ -86,6 +87,28 @@ func TestAuditExport(t *testing.T) {
 	rows, err := csv.NewReader(bytes.NewReader(download(t, e, runExport(t, e, e.Admin, a)))).ReadAll()
 	if err != nil || len(rows) != len(want)+1 || rows[0][0] != "id" || rows[0][2] != "action" {
 		t.Fatalf("csv: %d rows, %v", len(rows), err)
+	}
+
+	// A cell that would start a spreadsheet formula is neutralized:
+	// request_id is whatever the caller sent as X-Request-Id.
+	e.Do(testenv.Req{Method: "PATCH", Path: "/users/" + u.ID + "/profile", Token: e.Admin,
+		Body: map[string]any{"display_name": "Again"}, Header: map[string]string{"X-Request-Id": "=HYPERLINK(\"x\")"}}).Expect(200)
+	inj := e.PostIdem("/audit-exports", e.Admin, testenv.Unique(), map[string]any{"format": "csv", "target_user_id": u.ID}).Expect(202).Str("id")
+	irows, err := csv.NewReader(bytes.NewReader(download(t, e, runExport(t, e, e.Admin, inj)))).ReadAll()
+	if err != nil {
+		t.Fatalf("csv: %v", err)
+	}
+	found := false
+	for _, r := range irows[1:] {
+		if strings.Contains(r[11], "HYPERLINK") {
+			found = true
+			if r[11] != `'=HYPERLINK("x")` {
+				t.Fatalf("request_id cell = %q", r[11])
+			}
+		}
+	}
+	if !found {
+		t.Fatal("the planted request_id isn't in the export")
 	}
 
 	// Validation.
