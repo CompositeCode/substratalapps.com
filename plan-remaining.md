@@ -1,6 +1,6 @@
 # Plan: what's left to build
 
-Everything specified for the Platform API that isn't built yet, in one place. What *is* built is described by the [API specification](https://compositecode.github.io/substratalapps.com/) (the system of record), [README.md](README.md) (code, CI/CD, local development), and [infra/README.md](infra/README.md) (deployment architecture as built). One-time setup that has to be done by hand, rather than built, is in [remaining_manual_steps.md](remaining_manual_steps.md).
+Everything specified for the Platform API that isn't built yet, in one place. What *is* built is described by the [API specification](https://compositecode.github.io/substratalapps.com/) (the system of record), [README.md](README.md) (code, CI/CD, local development), and [infra/README.md](infra/README.md) (deployment architecture as built). One-time setup that has to be done by hand, rather than built, is in the [`[bespoke]` issues](https://github.com/CompositeCode/substratalapps.com/issues?q=is%3Aissue+%22%5Bbespoke%5D%22+sort%3Acreated-asc).
 
 This replaces `PLAN.md`, `DEPLOYMENT.md`, and `ORIGINAL-SPEC-DRAFT.md`, which were retired on 2026-10-20 once everything else in them was built and documented where it belongs. They remain in git history.
 
@@ -19,7 +19,7 @@ This replaces `PLAN.md`, `DEPLOYMENT.md`, and `ORIGINAL-SPEC-DRAFT.md`, which we
 
 ## Status
 
-As of 2026-10-20, every operation in `openapi.yaml` is implemented, including subscriber billing, push notifications, and the hosted PKCE endpoints. SSO returns `501 not_implemented` until the broker integration, as specified. Production infrastructure exists in AWS (`substratal-prod`, `us-east-1`); the first deploy is finishing (see [remaining_manual_steps.md](remaining_manual_steps.md)). No product decisions are open: each is written into the spec page it governs and recorded in the [Changelog](https://compositecode.github.io/substratalapps.com/changelog/).
+As of 2026-10-20, every operation in `openapi.yaml` is implemented, including subscriber billing, push notifications, and the hosted PKCE endpoints. SSO returns `501 not_implemented` until the broker integration, as specified. Production infrastructure exists in AWS (`substratal-prod`, `us-east-1`); the first deploy is finishing (see the [`[bespoke]` issues](https://github.com/CompositeCode/substratalapps.com/issues?q=is%3Aissue+%22%5Bbespoke%5D%22+sort%3Acreated-asc)). No product decisions are open: each is written into the spec page it governs and recorded in the [Changelog](https://compositecode.github.io/substratalapps.com/changelog/).
 
 ## Verify the build in production
 
