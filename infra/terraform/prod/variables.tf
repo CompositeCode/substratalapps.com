@@ -47,7 +47,7 @@ variable "cors_origins" {
 variable "alarm_email" {
   description = "Where operational alarms go (empty: create the topic only)"
   type        = string
-  default     = ""
+  default     = "adronhall@proton.me"
 }
 
 variable "db_min_acu" {
