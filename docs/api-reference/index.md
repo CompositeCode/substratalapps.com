@@ -8,7 +8,7 @@ has_children: true
 # API Reference
 {: .no_toc }
 
-Resource-oriented REST, JSON, versioned at `/v1`. Read [Conventions](conventions/) first — every other page here assumes it. The same contract is available as OpenAPI 3.1 in [OpenAPI Specification](../openapi/), with an interactive Swagger UI reference.
+Resource-oriented REST, JSON, versioned by the `Substratal-Version` request header (currently `1`). Read [Conventions](conventions/) first — every other page here assumes it. The same contract is available as OpenAPI 3.1 in [OpenAPI Specification](../openapi/), with an interactive Swagger UI reference.
 {: .fs-6 .fw-300 }
 
 | Group | Covers |

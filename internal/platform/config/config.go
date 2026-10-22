@@ -26,7 +26,7 @@ type Config struct {
 
 	// Public identity of the API.
 	Issuer          string // JWT iss, e.g. https://api.substratalapps.com
-	PublicBaseURL   string // where /v1 lives, e.g. https://api.substratalapps.com
+	PublicBaseURL   string // the API's base URL, e.g. https://api.substratalapps.com
 	AuthorizeURL    string // hosted sign-in page (OAuth authorization endpoint)
 	DashboardURL    string // links in emails (verify, reset, invitation)
 	ListenAddr      string // devserver only

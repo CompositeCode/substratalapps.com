@@ -357,7 +357,7 @@ func (r *Resp) ExpectErr(status int, code string) *Resp {
 type Req struct {
 	Method, Path, Token string
 	Body                any
-	Header              map[string]string
+	Header              map[string]string // an empty value removes a default header (Substratal-Version)
 }
 
 // Do sends a request and validates the response against the spec.
@@ -381,7 +381,12 @@ func (e *Env) Do(rq Req) *Resp {
 	if rq.Token != "" {
 		req.Header.Set("Authorization", "Bearer "+rq.Token)
 	}
+	req.Header.Set("Substratal-Version", "1")
 	for k, v := range rq.Header {
+		if v == "" {
+			req.Header.Del(k)
+			continue
+		}
 		req.Header.Set(k, v)
 	}
 	resp, err := http.DefaultClient.Do(req)
@@ -391,7 +396,8 @@ func (e *Env) Do(rq Req) *Resp {
 	defer func() { _ = resp.Body.Close() }()
 	b, _ := io.ReadAll(resp.Body)
 	r := &Resp{T: e.T, Status: resp.StatusCode, Body: b, Header: resp.Header}
-	if e.Validate && strings.HasPrefix(rq.Path, "/v1/") {
+	if e.Validate && !strings.HasPrefix(rq.Path, "/.well-known/") && !strings.HasPrefix(rq.Path, "/mcp") &&
+		!strings.HasPrefix(rq.Path, "/internal/") {
 		e.contract(rq, raw, resp, b)
 	}
 	return r
@@ -484,7 +490,7 @@ func (e *Env) PostIdem(path, token, key string, body any) *Resp {
 
 // Login signs in and returns the AuthSession response.
 func (e *Env) Login(emailAddr, password string) *Resp {
-	return e.Post("/v1/auth/login", "", map[string]any{"email": emailAddr, "password": password}).Expect(200)
+	return e.Post("/auth/login", "", map[string]any{"email": emailAddr, "password": password}).Expect(200)
 }
 
 // User is a signed-up test user.
@@ -496,7 +502,7 @@ type User struct {
 func (e *Env) Signup() User {
 	e.T.Helper()
 	u := User{Email: "user+" + Unique() + "@example.com", Password: "a long enough test passphrase"}
-	r := e.Post("/v1/auth/signup", "", map[string]any{"email": u.Email, "password": u.Password}).Expect(201)
+	r := e.Post("/auth/signup", "", map[string]any{"email": u.Email, "password": u.Password}).Expect(201)
 	u.ID, u.Token, u.Refresh = r.Str("user_id"), r.Token(), r.Str("refresh_token")
 	return u
 }
@@ -511,14 +517,14 @@ func (e *Env) App(ownerID string, extra map[string]any) string {
 	for k, v := range extra {
 		body[k] = v
 	}
-	r := e.Post("/v1/applications", e.Admin, body).Expect(201)
+	r := e.Post("/applications", e.Admin, body).Expect(201)
 	return r.Str("id")
 }
 
 // Grant gives userID a personal admin_grant Entitlement to appID.
 func (e *Env) Grant(token, userID, appID string) string {
 	e.T.Helper()
-	return e.PostIdem("/v1/users/"+userID+"/entitlements", token, Unique(),
+	return e.PostIdem("/users/"+userID+"/entitlements", token, Unique(),
 		map[string]any{"application_id": appID, "source": "admin_grant"}).Expect(201).Str("id")
 }
 

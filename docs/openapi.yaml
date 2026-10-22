@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Substratal Apps — Platform API
-  version: "1.0.0-draft.4"
+  version: "1.0.0-draft.5"
   summary: >-
     User accounts, auth, roles, per-app entitlements (the on/off access
     switch), profiles, settings, organizations, tenancy, subscription billing,
@@ -11,6 +11,15 @@ info:
     Full documentation: https://compositecode.github.io/substratalapps.com/ — read
     /api-reference/conventions/ first (IDs, pagination, PATCH semantics,
     ETag/If-Match, idempotency, error shape).
+
+    Every request must send the API version in a `Substratal-Version`
+    header (currently `1`, the only version); every response echoes the
+    version that served it. A missing header is `400 api_version_required`,
+    and an unknown version is `400 unsupported_api_version`, both with
+    `details.supported`. Exempt: `GET /health`, `POST /auth/oauth/token`
+    (called by standard OAuth libraries), and the `/.well-known` endpoints.
+    The header isn't declared on each operation, so generated clients
+    should send it as a default header. See /api-reference/conventions/#versioning.
 
     Vendor extensions used here:
     `x-substratal-destructive` (`always` | `conditional`) marks operations
@@ -27,7 +36,7 @@ externalDocs:
   description: Substratal Apps Platform API documentation
   url: https://compositecode.github.io/substratalapps.com/
 servers:
-  - url: https://api.substratalapps.com/v1
+  - url: https://api.substratalapps.com
     description: Production
 
 security:
@@ -2678,7 +2687,7 @@ components:
 
   responses:
     BadRequest:
-      description: "Malformed request (invalid_request, invalid_cursor, user_token_required, idempotency_key_required, token_invalid)"
+      description: "Malformed request (invalid_request, invalid_cursor, user_token_required, idempotency_key_required, api_version_required, unsupported_api_version, token_invalid)"
       content:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }

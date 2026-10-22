@@ -24,7 +24,7 @@ Both, not either/or: native in-house auth, architected from the start for plugga
 - **SSO is a per-Organization bridge**, not a platform-wide or per-Application choice. An Organization admin connects their own company's identity provider (Okta, Azure AD, Google Workspace, …) through a federation broker (leaning WorkOS, for exactly this "bring your own enterprise IdP" case), and it becomes available to every member of that Organization. See [Domain Model → SSOConnection](../../domain-model/users-and-organizations/#ssoconnection).
 - **A User can hold both at once**, a `password` identity and an `sso` identity, and choose either at login. See [Domain Model → UserIdentity](../../domain-model/users-and-organizations/#useridentity).
 - **MFA (TOTP) is optional and user-enabled** for native accounts, through [self-service enrollment](#mfa-totp). It isn't built for SSO identities, whose MFA policy belongs to the member's own IdP.
-- **Sequencing:** the `UserIdentity`/`SSOConnection` schema and the auth endpoints are built in this shape now, so adding a real SSO broker later is additive, not a breaking migration. The broker integration itself is explicitly **not** being built yet. [`POST /v1/auth/sso/{provider}/callback`](#post-v1authssoprovidercallback) exists as a route and returns `501 not_implemented` until it is.
+- **Sequencing:** the `UserIdentity`/`SSOConnection` schema and the auth endpoints are built in this shape now, so adding a real SSO broker later is additive, not a breaking migration. The broker integration itself is explicitly **not** being built yet. [`POST /auth/sso/{provider}/callback`](#post-authssoprovidercallback) exists as a route and returns `501 not_implemented` until it is.
 
 How an Application obtains its per-app JWT is covered under [Getting an app token](#getting-an-app-token): embedded login now, hosted authorization code + PKCE once Substratal's hosted sign-in page exists. That hosted page is required before any third-party Application goes live.
 
@@ -44,31 +44,31 @@ Every platform access token and app token is signed with a key published at `htt
 
 | Method | Path | Auth | Purpose |
 |---|---|---|---|
-| `POST` | `/v1/auth/signup` | none | Self-service account creation with email + password. |
-| `POST` | `/v1/auth/login` | none | Exchange email + password for a session (or an MFA challenge). |
-| `POST` | `/v1/auth/mfa/verify` | none (`mfa_token`) | Complete a login that returned an MFA challenge. |
-| `POST` | `/v1/auth/token/refresh` | none (`refresh_token`) | Rotate a platform refresh token for a new access token. |
-| `POST` | `/v1/auth/logout` | Bearer (user) | Revoke the current session, or every session. |
-| `POST` | `/v1/auth/app-tokens` | Bearer (user) | Mint a per-app JWT from a platform session (embedded login). |
-| `POST` | `/v1/auth/oauth/authorization-codes` | Bearer (user) | Mint a one-time authorization code for a hosted launch (PKCE). |
-| `POST` | `/v1/auth/oauth/token` | none (code / refresh token) | Exchange an authorization code or app refresh token for an app token. |
-| `POST` | `/v1/auth/email/verify` | none (token) | Confirm an email address from the link in a verification email. |
-| `POST` | `/v1/auth/email/verify/resend` | none | Re-send a verification email. Always `202`. |
-| `POST` | `/v1/auth/password/forgot` | none | Send a password-reset email. Always `202`. |
-| `POST` | `/v1/auth/password/reset` | none (token) | Set a new password from a reset token. |
-| `POST` | `/v1/auth/invitations/accept` | none (token) | Set a password on an `invited` account and activate it. |
-| `POST` | `/v1/auth/sso/{provider}/callback` | none | Complete an SSO login. `501` until the broker integration ships. |
-| `POST` | `/v1/users/{id}/password` | Bearer (self) | Change password, given the current one. |
-| `POST` | `/v1/users/{id}/mfa/totp` | Bearer (self) | Begin TOTP enrollment. |
-| `POST` | `/v1/users/{id}/mfa/totp/confirm` | Bearer (self) | Confirm enrollment with a first code; returns recovery codes. |
-| `POST` | `/v1/users/{id}/mfa/totp/disable` | Bearer (self) | Turn TOTP off, given a current code or recovery code. |
-| `DELETE` | `/v1/users/{id}/mfa/totp` | Bearer (`users.manage`) | Support reset for a user who lost their device. |
-| `GET` | `/v1/users/{id}/sessions` | Bearer (self or `users.manage`) | List active sessions. |
-| `DELETE` | `/v1/users/{id}/sessions/{sessionId}` | Bearer (self or `users.manage`) | Revoke one session. |
-| `GET` | `/.well-known/jwks.json` | none | Public signing keys. Outside `/v1`. |
-| `GET` | `/.well-known/openid-configuration` | none | Issuer metadata (issuer, JWKS URI, token endpoint). Outside `/v1`. |
+| `POST` | `/auth/signup` | none | Self-service account creation with email + password. |
+| `POST` | `/auth/login` | none | Exchange email + password for a session (or an MFA challenge). |
+| `POST` | `/auth/mfa/verify` | none (`mfa_token`) | Complete a login that returned an MFA challenge. |
+| `POST` | `/auth/token/refresh` | none (`refresh_token`) | Rotate a platform refresh token for a new access token. |
+| `POST` | `/auth/logout` | Bearer (user) | Revoke the current session, or every session. |
+| `POST` | `/auth/app-tokens` | Bearer (user) | Mint a per-app JWT from a platform session (embedded login). |
+| `POST` | `/auth/oauth/authorization-codes` | Bearer (user) | Mint a one-time authorization code for a hosted launch (PKCE). |
+| `POST` | `/auth/oauth/token` | none (code / refresh token) | Exchange an authorization code or app refresh token for an app token. |
+| `POST` | `/auth/email/verify` | none (token) | Confirm an email address from the link in a verification email. |
+| `POST` | `/auth/email/verify/resend` | none | Re-send a verification email. Always `202`. |
+| `POST` | `/auth/password/forgot` | none | Send a password-reset email. Always `202`. |
+| `POST` | `/auth/password/reset` | none (token) | Set a new password from a reset token. |
+| `POST` | `/auth/invitations/accept` | none (token) | Set a password on an `invited` account and activate it. |
+| `POST` | `/auth/sso/{provider}/callback` | none | Complete an SSO login. `501` until the broker integration ships. |
+| `POST` | `/users/{id}/password` | Bearer (self) | Change password, given the current one. |
+| `POST` | `/users/{id}/mfa/totp` | Bearer (self) | Begin TOTP enrollment. |
+| `POST` | `/users/{id}/mfa/totp/confirm` | Bearer (self) | Confirm enrollment with a first code; returns recovery codes. |
+| `POST` | `/users/{id}/mfa/totp/disable` | Bearer (self) | Turn TOTP off, given a current code or recovery code. |
+| `DELETE` | `/users/{id}/mfa/totp` | Bearer (`users.manage`) | Support reset for a user who lost their device. |
+| `GET` | `/users/{id}/sessions` | Bearer (self or `users.manage`) | List active sessions. |
+| `DELETE` | `/users/{id}/sessions/{sessionId}` | Bearer (self or `users.manage`) | Revoke one session. |
+| `GET` | `/.well-known/jwks.json` | none | Public signing keys. No `Substratal-Version` needed. |
+| `GET` | `/.well-known/openid-configuration` | none | Issuer metadata (issuer, JWKS URI, token endpoint). No `Substratal-Version` needed. |
 
-All unauthenticated `POST /v1/auth/*` endpoints are rate-limited per IP address as well as per account — see [Non-Functional Requirements → Rate limiting](../../non-functional-requirements/#rate-limiting).
+All unauthenticated `POST /auth/*` endpoints are rate-limited per IP address as well as per account — see [Non-Functional Requirements → Rate limiting](../../non-functional-requirements/#rate-limiting).
 
 ## The `AuthSession` response
 
@@ -106,7 +106,7 @@ The platform access token's claims:
 
 `amr` lists the authentication methods used (`pwd`, `otp`, `recovery_code`, `sso`). The platform access token carries **no permissions** — the API resolves the caller's Roles fresh on every request, so a Role change takes effect on the very next call, not at the next refresh.
 
-## `POST /v1/auth/signup`
+## `POST /auth/signup`
 
 ```json
 // Request
@@ -132,10 +132,10 @@ The platform access token's claims:
 }
 ```
 
-- Creates the User (`status: active`, `email_verified: false`), a `password` [UserIdentity](../../domain-model/users-and-organizations/#useridentity), a default Profile (with `display_name` if given) and Settings, and the `member` platform Role — one transaction, same as `POST /v1/users`.
+- Creates the User (`status: active`, `email_verified: false`), a `password` [UserIdentity](../../domain-model/users-and-organizations/#useridentity), a default Profile (with `display_name` if given) and Settings, and the `member` platform Role — one transaction, same as `POST /users`.
 - Sends a verification email (token TTL 24 hours). An unverified User **can** log in; `email_verified` is carried in every token so an Application can decide for itself whether to gate anything on it.
 - `application_id` is optional and **grants nothing** — it records which Application the signup came from (`signup_application_id` on the User, used to brand the verification email with that app's `email_from_name`) and is otherwise informational. Access to an Application still requires an [Entitlement](../entitlements/), which the developer's own backend grants (see [Workflows → Purchase → access](../../workflows/#purchase--access)).
-- If the email belongs to an `invited` User, signup is **rejected** with `409 email_taken` (`details.reason: "invitation_pending"`), and a fresh invitation email is sent to that address (this counts against the same 3-per-email-per-hour limit as `email/verify/resend`). An invitation can only be completed with its `inv_` token, through [`invitations/accept`](#post-v1authinvitationsaccept), because whatever was already attached to the invited account (Entitlements, Roles, Organization memberships) must only go to someone who controls the mailbox. Completing it by signup would hand all of that to anyone who knew the address.
+- If the email belongs to an `invited` User, signup is **rejected** with `409 email_taken` (`details.reason: "invitation_pending"`), and a fresh invitation email is sent to that address (this counts against the same 3-per-email-per-hour limit as `email/verify/resend`). An invitation can only be completed with its `inv_` token, through [`invitations/accept`](#post-authinvitationsaccept), because whatever was already attached to the invited account (Entitlements, Roles, Organization memberships) must only go to someone who controls the mailbox. Completing it by signup would hand all of that to anyone who knew the address.
 - `test_mode` (optional, default `false`): `true` creates a test-mode User instead. A test-mode signup may also send `expires_at` to choose how long the account lasts (default 24 hours). See [Test-mode Users](#test-mode-users).
 - **Password policy:** 12–128 characters; rejected if it appears in the bundled breached-password list (top 100,000) or equals the email address. No composition rules. Stored as Argon2id (`m=19456 KiB, t=2, p=1`).
 
@@ -145,7 +145,7 @@ The platform access token's claims:
 | `weak_password` | 422 | Fails the password policy; `details.reason` is `too_short`, `too_long`, `breached`, or `matches_email`. |
 | `validation_failed` | 422 | Malformed email, unknown `application_id`, etc. |
 
-## `POST /v1/auth/login`
+## `POST /auth/login`
 
 ```json
 // Request
@@ -183,9 +183,9 @@ A User created by a test-mode API Key (or by signup with `"test_mode": true`) is
 
 | Endpoint | Field |
 |---|---|
-| `POST /v1/auth/signup` | `test_mode` creates the User in that mode. |
-| `POST /v1/auth/login` | `test_mode` picks which account the email refers to. |
-| `POST /v1/auth/password/forgot`, `POST /v1/auth/email/verify/resend` | `test_mode` picks which account to email. |
+| `POST /auth/signup` | `test_mode` creates the User in that mode. |
+| `POST /auth/login` | `test_mode` picks which account the email refers to. |
+| `POST /auth/password/forgot`, `POST /auth/email/verify/resend` | `test_mode` picks which account to email. |
 
 Endpoints that take a token (`mfa/verify`, `token/refresh`, `password/reset`, `email/verify`, `invitations/accept`, `oauth/token`) don't need it, because the token already belongs to exactly one account. Every token issued to a test-mode User carries `"test_mode": true`, and the API confines that token to test-mode rows exactly as it does a `satk_test_` key. Applications themselves are shared catalog rows, visible in both modes, so a test-mode User gets app tokens for the same Applications a live one does, as long as they hold a (test-mode) Entitlement to it.
 
@@ -193,15 +193,15 @@ Endpoints that take a token (`mfa/verify`, `token/refresh`, `password/reset`, `e
 
 Every test-mode User is **time-limited**. Its `expires_at` is set when it's created, and at that moment the account stops working. Live Users never expire (`expires_at` is always `null`).
 
-- **Default: 24 hours** after creation. A caller creating a test-mode User, through [`POST /v1/users`](../users/#post-v1users) with a `satk_test_` key or through signup with `"test_mode": true`, may send `expires_at` to choose a different lifetime, to suit what's being tested: a short-lived account for one CI run, or one that lasts a week for a manual QA pass.
+- **Default: 24 hours** after creation. A caller creating a test-mode User, through [`POST /users`](../users/#post-users) with a `satk_test_` key or through signup with `"test_mode": true`, may send `expires_at` to choose a different lifetime, to suit what's being tested: a short-lived account for one CI run, or one that lasts a week for a manual QA pass.
 - **Range:** at least 15 minutes from now, and no later than **30 days after the User's `created_at`**, which is when its test data is purged. Anything outside that range is `422 validation_failed`, with the `expires_at` field's code `expires_at_out_of_range` in `details.fields`. Sending `expires_at` for a live User is `422 validation_failed` with the code `live_user`.
-- **Changing it:** `users.manage` can move `expires_at` with [`PATCH /v1/users/{id}`](../users/#patch-v1usersid), within the same range, to extend a run, end it early, or bring back an expired User that hasn't been purged yet.
+- **Changing it:** `users.manage` can move `expires_at` with [`PATCH /users/{id}`](../users/#patch-usersid), within the same range, to extend a run, end it early, or bring back an expired User that hasn't been purged yet.
 - **At expiry:** login returns `403 test_user_expired`, and every token issued to the User stops working, whatever its own `exp`. That covers access, refresh, and app tokens. No token is issued with an `exp` later than the User's `expires_at`, so an Application that verifies app tokens locally against JWKS stops accepting them at the same moment. Within 5 minutes, the expiry sweep revokes the User's sessions (`revoked_reason: test_user_expired`), deactivates their push devices, fires `access.revoked` (reason `test_user_expired`) for every Application they had active access to, and writes the `user.expired` Audit Event. Like suspension, expiry leaves `status` and the User's Entitlements, Roles, and memberships unchanged, so an extension restores exactly what was there and fires `access.granted` again.
 - **Purge:** the nightly purge of test-mode rows older than 30 days is unchanged. The 30-day ceiling on `expires_at` means a test User has always expired before its data is purged.
 
 Test-mode **API Keys**, Organizations, and Applications don't expire. Only the accounts people or test suites sign in as do.
 
-## `POST /v1/auth/mfa/verify`
+## `POST /auth/mfa/verify`
 
 ```json
 // Request — a TOTP code
@@ -222,7 +222,7 @@ TOTP is RFC 6238, SHA-1, 6 digits, 30-second step, accepting ±1 step of clock d
 | `invalid_mfa_code` | 401 | Wrong or reused code. |
 | `mfa_token_invalid` | 401 | Expired, already used, or exhausted. Start over at `login`. |
 
-## `POST /v1/auth/token/refresh`
+## `POST /auth/token/refresh`
 
 ```json
 // Request
@@ -234,7 +234,7 @@ TOTP is RFC 6238, SHA-1, 6 digits, 30-second step, accepting ±1 step of clock d
 
 Refresh tokens are single-use. Presenting one that has **already been rotated** is treated as theft: the whole session is revoked, and every token in it stops working (`401 refresh_token_reused`). Refresh fails with `401 session_revoked` after logout, password reset, suspension, or deletion.
 
-## `POST /v1/auth/logout`
+## `POST /auth/logout`
 
 ```json
 // Request — this session only (default)
@@ -295,7 +295,7 @@ Both paths produce the identical app token. Either way, issuance **fails** if th
 - `org_id` is the Organization whose org-wide grant provided access, if access came *only* through an Organization; `null` if the User has a personal Entitlement (personal wins for attribution when both exist). If multiple Organizations provide access and there's no personal path, it's the one whose grant was created first. Pass `organization_id` to `app-tokens` to pick a specific one explicitly.
 - `sid` lets an Application key its own local session to the hub session, so that an `access.revoked` webhook or a logout-everywhere can be matched to the right local session.
 
-### `POST /v1/auth/app-tokens`
+### `POST /auth/app-tokens`
 
 ```json
 // Request
@@ -327,9 +327,9 @@ GET https://auth.substratalapps.com/authorize
   &state=af0ifjsldkj
 ```
 
-It's a web page, not part of the `/v1` API, and it's listed as `authorization_endpoint` in [`openid-configuration`](#signing-keys-jwks), so libraries like AppAuth discover it. The page signs the User in (creating a platform session if there isn't one), then calls `oauth/authorization-codes` below with the same parameters and redirects to `redirect_to`. If `client_id` or `redirect_uri` isn't valid it shows an error instead of redirecting, per OAuth 2.0; any later failure (no access, User cancelled) redirects back with `error=access_denied` and the original `state`. The page ships with the dashboard; until then only embedded login is available.
+It's a web page, not part of the REST API, and it's listed as `authorization_endpoint` in [`openid-configuration`](#signing-keys-jwks), so libraries like AppAuth discover it. The page signs the User in (creating a platform session if there isn't one), then calls `oauth/authorization-codes` below with the same parameters and redirects to `redirect_to`. If `client_id` or `redirect_uri` isn't valid it shows an error instead of redirecting, per OAuth 2.0; any later failure (no access, User cancelled) redirects back with `error=access_denied` and the original `state`. The page ships with the dashboard; until then only embedded login is available.
 
-### `POST /v1/auth/oauth/authorization-codes`
+### `POST /auth/oauth/authorization-codes`
 
 Called by Substratal's hosted sign-in page (or the future dashboard's "Launch" button) on the signed-in User's behalf — not by the Application.
 
@@ -354,9 +354,9 @@ Called by Substratal's hosted sign-in page (or the future dashboard's "Launch" b
 
 `redirect_uri` must exactly match one of the Application's registered `redirect_uris` (`422 redirect_uri_not_registered`); `code_challenge_method` must be `S256` (`plain` is rejected, `422 validation_failed`). An unknown or invisible `application_id` returns `404 application_not_found`. The code is single-use, expires in 60 seconds, and belongs to the caller's session: the app refresh token it's later exchanged for is revoked whenever that session is. Access is checked here too, with the same errors as above, so a User without access is never redirected into the app holding a code.
 
-### `POST /v1/auth/oauth/token`
+### `POST /auth/oauth/token`
 
-Called by the Application. A public-client endpoint: there's no client secret, the PKCE verifier is the proof.
+Called by the Application. A public-client endpoint: there's no client secret, the PKCE verifier is the proof. It's the one Auth endpoint that doesn't need `Substratal-Version`, because standard OAuth libraries call it without custom headers (see [Conventions → Versioning](../conventions/#versioning)). Sending the header is fine.
 
 ```json
 // Request — exchange an authorization code
@@ -394,7 +394,7 @@ Accepts `application/json` and, for compatibility with standard OAuth client lib
 
 Transactional email (verification, password reset, invitations, MFA changes) is sent through **Amazon SES** in the same AWS account, so it adds no new sub-processor. Templates are Substratal-branded; an Application can set `email_from_name` and `support_url` so a message triggered from inside it names the app. A full per-Application custom domain and template is deferred.
 
-### `POST /v1/auth/email/verify`
+### `POST /auth/email/verify`
 
 ```json
 // Request — token from the emailed link
@@ -404,9 +404,9 @@ Transactional email (verification, password reset, invitations, MFA changes) is 
 // Response — 204
 ```
 
-Sets `email_verified: true` (or, for a pending email change, swaps `pending_email` into `email` — see [Users → `PATCH`](../users/#patch-v1usersid)). Token: single-use, 24-hour TTL. `400 token_invalid` if expired, used, or unknown.
+Sets `email_verified: true` (or, for a pending email change, swaps `pending_email` into `email` — see [Users → `PATCH`](../users/#patch-usersid)). Token: single-use, 24-hour TTL. `400 token_invalid` if expired, used, or unknown.
 
-### `POST /v1/auth/email/verify/resend`
+### `POST /auth/email/verify/resend`
 
 ```json
 // Request
@@ -420,7 +420,7 @@ Limited to 3 per email per hour.
 
 ## Password lifecycle
 
-### `POST /v1/auth/password/forgot`
+### `POST /auth/password/forgot`
 
 ```json
 // Request
@@ -432,7 +432,7 @@ Limited to 3 per email per hour.
 
 Sends a reset link (token `pwr_…`, single-use, 1-hour TTL) to an `active` User with a `password` identity. An SSO-only User gets an email explaining they sign in through their organization instead. Limited to 3 per email per hour.
 
-### `POST /v1/auth/password/reset`
+### `POST /auth/password/reset`
 
 ```json
 // Request
@@ -444,7 +444,7 @@ Sends a reset link (token `pwr_…`, single-use, 1-hour TTL) to an `active` User
 
 Sets the new password (same policy as signup), marks the email verified (the User just proved control of it), **revokes every session**, and emails a "your password was changed" notice. Writes Audit Event `user.password_reset`. Errors: `400 token_invalid`, `422 weak_password`.
 
-### `POST /v1/users/{id}/password`
+### `POST /users/{id}/password`
 
 ```json
 // Request
@@ -458,9 +458,9 @@ Self only (an admin cannot set a User's password — they can only trigger `pass
 
 ## Invitations
 
-`POST /v1/users` with `status: "invited"` (the default — see [Users](../users/#post-v1users)) or `POST /v1/organizations/{id}/members` with an unknown email creates an `invited` User and emails an invitation link (token `inv_…`, single-use, 7-day TTL).
+`POST /users` with `status: "invited"` (the default — see [Users](../users/#post-users)) or `POST /organizations/{id}/members` with an unknown email creates an `invited` User and emails an invitation link (token `inv_…`, single-use, 7-day TTL).
 
-### `POST /v1/auth/invitations/accept`
+### `POST /auth/invitations/accept`
 
 ```json
 // Request
@@ -470,13 +470,13 @@ Self only (an admin cannot set a User's password — they can only trigger `pass
 // Response — 200, an AuthSession
 ```
 
-Creates the `password` identity, sets `status: active` and `email_verified: true`, and signs the User in. If the invitation came from an Organization, accepting it also accepts that `pending` membership (and any other pending memberships for this User), the same as [`…/members/me/accept`](../organizations/#post-v1organizationsidmembersmeaccept). Errors: `400 token_invalid` (expired invitations are re-sent with `POST /v1/users/{id}/invitation` — see [Users](../users/)), `422 weak_password`.
+Creates the `password` identity, sets `status: active` and `email_verified: true`, and signs the User in. If the invitation came from an Organization, accepting it also accepts that `pending` membership (and any other pending memberships for this User), the same as [`…/members/me/accept`](../organizations/#post-organizationsidmembersmeaccept). Errors: `400 token_invalid` (expired invitations are re-sent with `POST /users/{id}/invitation` — see [Users](../users/)), `422 weak_password`.
 
 ## MFA (TOTP)
 
 Optional and self-service for `password` identities. Meaningless for a `method: sso` identity, whose MFA policy belongs to the Organization's own IdP (`409 mfa_not_applicable` if the User has no `password` identity).
 
-### `POST /v1/users/{id}/mfa/totp` — begin enrollment
+### `POST /users/{id}/mfa/totp` — begin enrollment
 
 ```json
 // Request
@@ -493,7 +493,7 @@ Optional and self-service for `password` identities. Meaningless for a `method: 
 
 The client renders `otpauth_uri` as a QR code itself; the API never serves the secret through a URL. Enrollment is *pending* until confirmed; calling this again replaces a pending secret. `409 mfa_already_enabled` if already confirmed.
 
-### `POST /v1/users/{id}/mfa/totp/confirm`
+### `POST /users/{id}/mfa/totp/confirm`
 
 ```json
 // Request
@@ -509,7 +509,7 @@ The client renders `otpauth_uri` as a QR code itself; the API never serves the s
 
 Ten recovery codes, shown **once** — stored hashed. Writes `user.mfa_enabled` and emails a notice. `401 invalid_mfa_code` on a wrong code; `409 mfa_enrollment_expired` if the pending secret is older than 10 minutes.
 
-### `POST /v1/users/{id}/mfa/totp/disable`
+### `POST /users/{id}/mfa/totp/disable`
 
 ```json
 // Request — a current TOTP code
@@ -523,15 +523,15 @@ Ten recovery codes, shown **once** — stored hashed. Writes `user.mfa_enabled` 
 // Response — 204
 ```
 
-Same fields as [`mfa/verify`](#post-v1authmfaverify). Deletes the secret and every recovery code, writes `user.mfa_disabled`, and emails a notice. Existing sessions are kept. Errors: `401 invalid_mfa_code` (wrong or reused code), `409 mfa_not_enabled` (no confirmed TOTP to disable), and `429 too_many_attempts` after 5 wrong codes in 15 minutes.
+Same fields as [`mfa/verify`](#post-authmfaverify). Deletes the secret and every recovery code, writes `user.mfa_disabled`, and emails a notice. Existing sessions are kept. Errors: `401 invalid_mfa_code` (wrong or reused code), `409 mfa_not_enabled` (no confirmed TOTP to disable), and `429 too_many_attempts` after 5 wrong codes in 15 minutes.
 
-### `DELETE /v1/users/{id}/mfa/totp` — support reset
+### `DELETE /users/{id}/mfa/totp` — support reset
 
 Requires `users.manage`. For a User who has lost their device *and* their recovery codes; support verifies identity out of band first. Revokes every session. Writes `user.mfa_reset`. Destructive — see [MCP Server → Tool annotations](../../mcp-server/#tool-annotations--safety).
 
 ## Sessions
 
-### `GET /v1/users/{id}/sessions`
+### `GET /users/{id}/sessions`
 
 ```json
 // Response — 200
@@ -554,11 +554,11 @@ Requires `users.manage`. For a User who has lost their device *and* their recove
 
 `expires_at` is when the session ends if nothing else happens: the earlier of `idle_expires_at` (30 days after the last refresh, here 2026-10-05) and `absolute_expires_at` (90 days after creation, 2026-12-31). Each refresh pushes the idle expiry forward, never past the absolute one.
 
-### `DELETE /v1/users/{id}/sessions/{sessionId}`
+### `DELETE /users/{id}/sessions/{sessionId}`
 
 `204`. Same effect as logout for that one session, including deactivating the push devices it registered. `revoked_reason` is `logout` when the User revokes their own session, and `admin` when a `users.manage` caller does.
 
-## `POST /v1/auth/sso/{provider}/callback`
+## `POST /auth/sso/{provider}/callback`
 
 Reserved. Returns `501 not_implemented` until the SSO broker integration ships (see [Native auth and per-Organization SSO](#native-auth-and-per-organization-sso)). When live, it creates or matches a `method: sso` [UserIdentity](../../domain-model/users-and-organizations/#useridentity) against the Organization's [SSOConnection](../../domain-model/users-and-organizations/#ssoconnection) and returns an `AuthSession` — SSO is a different way to obtain a session, not a different kind of session.
 
@@ -580,7 +580,7 @@ GET https://api.substratalapps.com/.well-known/jwks.json
 - Rotated every 90 days. A new key is published 7 days before it starts signing, and a retired key stays published for 7 days after its last use (longer than any token's TTL), so a verifying Application never sees an unknown `kid` in normal operation.
 - Verification checklist for an Application: signature against JWKS, `iss` equals `https://api.substratalapps.com`, `aud` equals its own `application_id`, `exp` in the future (allow ≤60 s clock skew), `entitlement_status` is `active`.
 
-`GET /.well-known/openid-configuration` returns `issuer`, `jwks_uri`, `authorization_endpoint` (`https://auth.substratalapps.com/authorize`, see [The authorization endpoint](#the-authorization-endpoint)), `token_endpoint` (`/v1/auth/oauth/token`), `response_types_supported` (`code`), `grant_types_supported` (`authorization_code`, `refresh_token`), and `code_challenge_methods_supported` (`S256`). It is metadata for standard libraries, not a claim of full OpenID Connect conformance (there is no `id_token` or userinfo endpoint).
+`GET /.well-known/openid-configuration` returns `issuer`, `jwks_uri`, `authorization_endpoint` (`https://auth.substratalapps.com/authorize`, see [The authorization endpoint](#the-authorization-endpoint)), `token_endpoint` (`/auth/oauth/token`), `response_types_supported` (`code`), `grant_types_supported` (`authorization_code`, `refresh_token`), and `code_challenge_methods_supported` (`S256`). It is metadata for standard libraries, not a claim of full OpenID Connect conformance (there is no `id_token` or userinfo endpoint).
 
 ## Errors specific to this resource
 

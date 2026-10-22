@@ -40,12 +40,12 @@ A long-lived credential scoped to either one Application (for an app's own backe
 
 | Method | Path | Purpose |
 |---|---|---|
-| `GET` | `/v1/api-keys` | List keys in scope for the caller. Filter by `scope`, `mode`, `intended_use`, and `include_inactive` (include revoked and expired keys). |
-| `POST` | `/v1/api-keys` | Create a key. Returns the secret once. |
-| `GET` | `/v1/api-keys/{id}` | Fetch one key (never the secret). |
-| `PATCH` | `/v1/api-keys/{id}` | Change `name`, `permissions`, or `restrict_destructive`. |
-| `POST` | `/v1/api-keys/{id}/rotate` | Issue a new secret for the same key record, invalidating the old one. |
-| `DELETE` | `/v1/api-keys/{id}` | Revoke permanently. |
+| `GET` | `/api-keys` | List keys in scope for the caller. Filter by `scope`, `mode`, `intended_use`, and `include_inactive` (include revoked and expired keys). |
+| `POST` | `/api-keys` | Create a key. Returns the secret once. |
+| `GET` | `/api-keys/{id}` | Fetch one key (never the secret). |
+| `PATCH` | `/api-keys/{id}` | Change `name`, `permissions`, or `restrict_destructive`. |
+| `POST` | `/api-keys/{id}/rotate` | Issue a new secret for the same key record, invalidating the old one. |
+| `DELETE` | `/api-keys/{id}` | Revoke permanently. |
 
 **Who may manage which keys:**
 
@@ -56,7 +56,7 @@ A long-lived credential scoped to either one Application (for an app's own backe
 
 An API Key can never create, change, or rotate API Keys, including itself (`400 user_token_required`). Credential management is always done by a person. Every create, change, rotate, and revoke writes an Audit Event (`api_key.created`, `api_key.updated`, `api_key.rotated`, `api_key.revoked`).
 
-## `POST /v1/api-keys`
+## `POST /api-keys`
 
 ```json
 // Request
@@ -140,7 +140,7 @@ This key carries `entitlements.manage` — it *can* toggle an Entitlement off �
 }
 ```
 
-"Destructive" is one rule, not a per-endpoint list maintained twice: the same classification [MCP Server → Tool annotations & safety](../../mcp-server/#tool-annotations--safety) uses to derive `destructiveHint` for a tool call. The complete list of destructive operations is maintained there once, and marked on each operation in `openapi.yaml` as `x-substratal-destructive`. Some operations are always destructive (every `DELETE`, for example). Others are destructive only for certain request bodies: `PATCH /v1/entitlements/{id}` only when it sets `status` to `disabled` or `revoked`, so the same agent key can still extend a trial or convert one to a purchase. `openapi.yaml` marks these `x-substratal-destructive: conditional`, with the condition in `x-substratal-destructive-when`, and the server evaluates the condition against each request. A `restrict_destructive` key can still read everything its permissions allow and call every non-destructive write; it's blocked from exactly that set, regardless of what permissions it otherwise carries — the permission check and the destructive-operation check are independent gates, both have to pass.
+"Destructive" is one rule, not a per-endpoint list maintained twice: the same classification [MCP Server → Tool annotations & safety](../../mcp-server/#tool-annotations--safety) uses to derive `destructiveHint` for a tool call. The complete list of destructive operations is maintained there once, and marked on each operation in `openapi.yaml` as `x-substratal-destructive`. Some operations are always destructive (every `DELETE`, for example). Others are destructive only for certain request bodies: `PATCH /entitlements/{id}` only when it sets `status` to `disabled` or `revoked`, so the same agent key can still extend a trial or convert one to a purchase. `openapi.yaml` marks these `x-substratal-destructive: conditional`, with the condition in `x-substratal-destructive-when`, and the server evaluates the condition against each request. A `restrict_destructive` key can still read everything its permissions allow and call every non-destructive write; it's blocked from exactly that set, regardless of what permissions it otherwise carries — the permission check and the destructive-operation check are independent gates, both have to pass.
 
 Setting `restrict_destructive: false` explicitly on an `intended_use: "agent"` key — overriding the safer default — writes an [Audit Event](../../domain-model/orders-and-audit/#audit-event) (`api_key.restrict_destructive_disabled`), since it's the deliberate exception worth a record, not the default worth none.
 
@@ -160,11 +160,11 @@ This is how an Application's developer integration-tests against the real API wi
 
 ### Walkthrough: a test run end to end
 
-1. **Create a test key** (as the Application's owner): `POST /v1/api-keys` with `"scope": "app_timetrack"`, `"mode": "test"`, `"permissions": ["entitlements.manage", "users.list"]`. The response's `secret` starts `satk_test_`. Applications are shared catalog rows, visible to test and live credentials alike (an Application's own `test_mode` flag only marks one created for testing, which is what allows `localhost` redirect URIs). Everything the test key *writes* is tagged `test_mode: true`.
-2. **Create a test User** with that key: `POST /v1/users` `{"email": "qa+1@example.com", "status": "active", "send_invitation": false}`. The response has `"test_mode": true` and an `expires_at` 24 hours away; add `"expires_at"` to the request for a shorter or longer run. A live User with the same email can exist alongside it without conflict.
-3. **Grant access**: `POST /v1/users/{id}/entitlements` with an `Idempotency-Key` and `{"application_id": "app_timetrack", "source": "trial", "ends_at": "…"}`. The Entitlement is `test_mode: true`, and the `entitlement.granted`/`access.granted` webhooks go only to subscriptions created with a test key.
-4. **Sign in as that User**: set a password through `POST /v1/auth/password/forgot` `{"email": "qa+1@example.com", "test_mode": true}`, then `POST /v1/auth/login` with `"test_mode": true` (see [Auth → Test-mode Users](../auth/#test-mode-users)). The access token and every app token carry `"test_mode": true`.
-5. **Check isolation**: `GET /v1/users?email=qa+1@example.com` with a *live* key returns an empty list. The test User doesn't exist as far as live credentials are concerned.
+1. **Create a test key** (as the Application's owner): `POST /api-keys` with `"scope": "app_timetrack"`, `"mode": "test"`, `"permissions": ["entitlements.manage", "users.list"]`. The response's `secret` starts `satk_test_`. Applications are shared catalog rows, visible to test and live credentials alike (an Application's own `test_mode` flag only marks one created for testing, which is what allows `localhost` redirect URIs). Everything the test key *writes* is tagged `test_mode: true`.
+2. **Create a test User** with that key: `POST /users` `{"email": "qa+1@example.com", "status": "active", "send_invitation": false}`. The response has `"test_mode": true` and an `expires_at` 24 hours away; add `"expires_at"` to the request for a shorter or longer run. A live User with the same email can exist alongside it without conflict.
+3. **Grant access**: `POST /users/{id}/entitlements` with an `Idempotency-Key` and `{"application_id": "app_timetrack", "source": "trial", "ends_at": "…"}`. The Entitlement is `test_mode: true`, and the `entitlement.granted`/`access.granted` webhooks go only to subscriptions created with a test key.
+4. **Sign in as that User**: set a password through `POST /auth/password/forgot` `{"email": "qa+1@example.com", "test_mode": true}`, then `POST /auth/login` with `"test_mode": true` (see [Auth → Test-mode Users](../auth/#test-mode-users)). The access token and every app token carry `"test_mode": true`.
+5. **Check isolation**: `GET /users?email=qa+1@example.com` with a *live* key returns an empty list. The test User doesn't exist as far as live credentials are concerned.
 6. **Clean up**, or don't: test rows older than 30 days are purged nightly.
 
 ## App-confined permissions
@@ -181,12 +181,12 @@ An app-scoped key may carry its Application's own `app.<slug>.*` keys, plus five
 | `audit.view` | Read Audit Events whose `application_id` is its Application. |
 | `notifications.send` | Send [notifications](../notifications/#sending-a-notification) from its own Application, only to users with active access to it. |
 
-Without any extra permission, every app-scoped key can also read and write its own users' [AppProfile](../profiles/) and [AppSettings](../settings/), read their [effective permissions](../roles-and-permissions/#get-v1usersidappsappideffective-permissions) for its Application, manage its Application's [webhooks](../webhooks/), register and manage its users' [devices](../notifications/#devices) for its Application, read their inbox for its Application, and read (never change) its [push credentials](../notifications/#push-credentials).
+Without any extra permission, every app-scoped key can also read and write its own users' [AppProfile](../profiles/) and [AppSettings](../settings/), read their [effective permissions](../roles-and-permissions/#get-usersidappsappideffective-permissions) for its Application, manage its Application's [webhooks](../webhooks/), register and manage its users' [devices](../notifications/#devices) for its Application, read their inbox for its Application, and read (never change) its [push credentials](../notifications/#push-credentials).
 
 {: .important }
 An app-scoped key can **never** carry `users.manage`, `applications.manage`, `organizations.manage`, `api_keys.manage`, `tenants.manage`, `webhooks.manage`, `billing.manage`, or `billing.refund`. Asking for one returns `422 permission_not_grantable_to_scope`. Any attempt to touch another Application's rows returns `404`, as though the row didn't exist. That's what makes it safe for an Application's backend, or a third party's, to hold one: a compromised key can't grant access to a different app, disable another app's Entitlements, or change anyone's platform standing.
 
-## `GET /v1/api-keys/{id}`, `PATCH /v1/api-keys/{id}`
+## `GET /api-keys/{id}`, `PATCH /api-keys/{id}`
 
 ```json
 // PATCH request — tighten an agent key
@@ -213,7 +213,7 @@ An app-scoped key can **never** carry `users.manage`, `applications.manage`, `or
 
 `scope`, `mode`, and `intended_use` are fixed at creation (`422 read_only_field`), so replace the key to change them. A permission change takes effect on the key's next request.
 
-## `POST /v1/api-keys/{id}/rotate`
+## `POST /api-keys/{id}/rotate`
 
 ```json
 // Request
@@ -230,7 +230,7 @@ An app-scoped key can **never** carry `users.manage`, `applications.manage`, `or
 
 The old secret stops working immediately — there's no overlap window, so rotating is a coordinated action (update the caller's stored secret in the same change), not a background migration. For a zero-downtime rotation, create a second key, cut the caller over, then revoke the first, rather than rotating in place.
 
-## `DELETE /v1/api-keys/{id}`
+## `DELETE /api-keys/{id}`
 
 ```json
 // Response — 204

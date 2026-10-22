@@ -20,7 +20,7 @@ Phased so the hub is useful as early as possible: "see my apps, launch one, admi
 Enough to replace "someone manually emails a link and flips a flag in a spreadsheet" with a real system.
 
 - [User](../domain-model/users-and-organizations/) accounts: create, invite, suspend, delete, export, and erasure.
-- Native [Auth](../api-reference/auth/): signup, login, MFA (TOTP), sessions, refresh, password reset, email verification, invitations, JWKS, and **embedded app-token issuance** (`POST /v1/auth/app-tokens`). Transactional email via SES.
+- Native [Auth](../api-reference/auth/): signup, login, MFA (TOTP), sessions, refresh, password reset, email verification, invitations, JWKS, and **embedded app-token issuance** (`POST /auth/app-tokens`). Transactional email via SES.
 - [Profile](../domain-model/profiles/) — global only. No per-app profile yet.
 - [Application](../domain-model/applications/) catalog — list and fetch; writes are admin/internal only.
 - [Entitlement](../domain-model/entitlements/) — grant, revoke, and the on/off toggle. This is the feature the rest of the MVP exists to support.
@@ -40,7 +40,7 @@ Enough to replace "someone manually emails a link and flips a flag in a spreadsh
 - [Push Notifications](../api-reference/notifications/): device registration, each Application's APNs/FCM/Web Push credentials, sending alerts and updates to a User, the notification inbox, and platform security and account alerts. Built on the same transactional outbox as webhooks.
 - Subscription [Billing](../api-reference/billing/) on Stripe for the Free and Standard tiers ([Pricing](../pricing/)): individual and Organization checkout, portal, the daily covered-member sync, and lapse handling.
 - [Organizations](../domain-model/users-and-organizations/) / seats — Organization Standard subscriptions, delegated admin via `OrganizationMembership.role: org_admin` (an org admin manages their own members without needing platform-admin rights), and org-wide Entitlements' `member_scope` allowlist/denylist. Pulled forward from a later phase: end users are expected to be both individuals and teams from early on, not teams-later — see [Organizations](../domain-model/users-and-organizations/#organization).
-- Support-run [Tenancy](../domain-model/tenancy/) tier changes become operationally available — `isolated` and `dedicated_region` are real, reachable tiers via the support-gated `POST /v1/tenants/{id}/tier-change-requests` flow, even though there's still no customer self-serve path. See [Tenancy tiers](../domain-model/tenancy/#how-a-tier-change-happens-today).
+- Support-run [Tenancy](../domain-model/tenancy/) tier changes become operationally available — `isolated` and `dedicated_region` are real, reachable tiers via the support-gated `POST /tenants/{id}/tier-change-requests` flow, even though there's still no customer self-serve path. See [Tenancy tiers](../domain-model/tenancy/#how-a-tier-change-happens-today).
 
 **Ships:** the full per-app customization model, team accounts, and the mechanics apps need to actually trust the hub in production rather than trusting it "eventually, on next login."
 

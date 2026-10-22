@@ -84,7 +84,7 @@ An org-wide (`source: org_seat`) Entitlement's default is that *every current an
 
 ### Attribution
 
-Reading a member's own entitlements (`GET /v1/users/{id}/entitlements`) surfaces *why* an org-sourced row is what it is, not just the resulting status — so anyone pulling a User's data can see which Organization is responsible:
+Reading a member's own entitlements (`GET /users/{id}/entitlements`) surfaces *why* an org-sourced row is what it is, not just the resulting status — so anyone pulling a User's data can see which Organization is responsible:
 
 ```json
 {
@@ -103,9 +103,9 @@ Reading a member's own entitlements (`GET /v1/users/{id}/entitlements`) surfaces
 }
 ```
 
-`granted_via` is computed per member at read time (it's not stored — `member_scope` + `member_overrides` on the org-wide row is the source of truth) and only appears when the caller is asking about a specific member's resolved standing, e.g. via `GET /v1/users/{id}/entitlements`, rather than the raw org-wide grant itself.
+`granted_via` is computed per member at read time (it's not stored — `member_scope` + `member_overrides` on the org-wide row is the source of truth) and only appears when the caller is asking about a specific member's resolved standing, e.g. via `GET /users/{id}/entitlements`, rather than the raw org-wide grant itself.
 
-`member_decision` is `included` or `excluded` (left out by `member_scope`/`member_overrides`). Rows with `excluded` **are** listed, so a member can see why they don't have access, but they're never an access path. Note that `status` above is the org-wide grant's own status (`active`), not this member's access; their resolved access comes from [effective-permissions](../../api-reference/roles-and-permissions/#get-v1usersidappsappideffective-permissions).
+`member_decision` is `included` or `excluded` (left out by `member_scope`/`member_overrides`). Rows with `excluded` **are** listed, so a member can see why they don't have access, but they're never an access path. Note that `status` above is the org-wide grant's own status (`active`), not this member's access; their resolved access comes from [effective-permissions](../../api-reference/roles-and-permissions/#get-usersidappsappideffective-permissions).
 
 ### Worked example: who gets access through one org grant
 
@@ -117,7 +117,7 @@ Acme Co. (`org_01JAFZ8Y7X6W5V4V3T2S1R0Q9P`) has three active members: Jordan, Sa
 | `allowlist` | `excluded` → no access | `included` → access | `excluded`, but **access via the personal Entitlement** |
 | `denylist` | `included` → access | `excluded` → no access | `included` → access (two paths) |
 
-Switching the grant from `all_members` to `denylist` with Sam listed fires one `entitlement.member_scope_changed` event (audit and webhook) for the grant, plus `access.revoked` (`reason: org_grant_changed`) for Sam only. Switching from `all_members` to `allowlist` fires `access.revoked` for Jordan only: Riley loses the org path but keeps access through the personal Entitlement, so their resolved access doesn't flip and nothing fires for them. Riley's `GET /v1/users/{id}/apps/app_invoicer/effective-permissions` under `allowlist` shows both paths:
+Switching the grant from `all_members` to `denylist` with Sam listed fires one `entitlement.member_scope_changed` event (audit and webhook) for the grant, plus `access.revoked` (`reason: org_grant_changed`) for Sam only. Switching from `all_members` to `allowlist` fires `access.revoked` for Jordan only: Riley loses the org path but keeps access through the personal Entitlement, so their resolved access doesn't flip and nothing fires for them. Riley's `GET /users/{id}/apps/app_invoicer/effective-permissions` under `allowlist` shows both paths:
 
 ```json
 {
@@ -164,12 +164,12 @@ Switching the grant from `all_members` to `denylist` with Sam listed fires one `
 
 Wherever this table says `entitlements.manage`, the Application's owner (with a User token) can do the same for that Application's own rows, exactly as its app-confined key can. See [Applications → Who can manage an Application's catalog entry](../applications/#who-can-manage-an-applications-catalog-entry).
 
-`disabled` is the soft, reversible toggle: support flips it back to `active`, and everything (Roles, AppProfile, AppSettings for that app) is exactly as it was. `revoked` means the underlying ownership is gone, so restoring access later means a brand-new Entitlement, not reinstating this one. A hard `DELETE` is reserved for removing a grant made in error. It's limited to rows without `order_id` that are less than 24 hours old. See [API Reference → Entitlements](../../api-reference/entitlements/#delete-v1entitlementsid).
+`disabled` is the soft, reversible toggle: support flips it back to `active`, and everything (Roles, AppProfile, AppSettings for that app) is exactly as it was. `revoked` means the underlying ownership is gone, so restoring access later means a brand-new Entitlement, not reinstating this one. A hard `DELETE` is reserved for removing a grant made in error. It's limited to rows without `order_id` that are less than 24 hours old. See [API Reference → Entitlements](../../api-reference/entitlements/#delete-entitlementsid).
 
 ## This is the endpoint everything else points back to
 
 ```
-PATCH /v1/entitlements/{id}
+PATCH /entitlements/{id}
 { "status": "disabled", "disabled_reason": "billing_dispute" }
 ```
 

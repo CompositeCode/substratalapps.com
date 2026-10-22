@@ -34,7 +34,7 @@ This is a new **surface**, not a new **capability**. Every tool call ultimately 
 POST https://api.substratalapps.com/mcp
 ```
 
-Implements MCP's **Streamable HTTP** transport: a single endpoint, JSON-RPC 2.0 request/response bodies, with the client's `Mcp-Session-Id` header (issued on `initialize`) tying together the calls in one session. Deliberately on the existing `api.substratalapps.com` domain rather than a new `mcp.` subdomain — no new Route 53 zone or ACM certificate needed, consistent with [Deployment Architecture → Cost principles](https://github.com/CompositeCode/substratalapps.com/blob/main/infra/README.md). Deliberately **outside** `/v1` — this endpoint isn't a REST resource, and MCP has its own protocol-version negotiation (a date-based version string exchanged during `initialize`) that's independent of this API's own `/v1` URL versioning — the same "versioned independently" pattern [Non-Functional Requirements → Versioning](../non-functional-requirements/#versioning) already applies to webhook payloads.
+Implements MCP's **Streamable HTTP** transport: a single endpoint, JSON-RPC 2.0 request/response bodies, with the client's `Mcp-Session-Id` header (issued on `initialize`) tying together the calls in one session. Deliberately on the existing `api.substratalapps.com` domain rather than a new `mcp.` subdomain — no new Route 53 zone or ACM certificate needed, consistent with [Deployment Architecture → Cost principles](https://github.com/CompositeCode/substratalapps.com/blob/main/infra/README.md). Deliberately **not** versioned by `Substratal-Version` — this endpoint isn't a REST resource, and MCP has its own protocol-version negotiation (a date-based version string exchanged during `initialize`) that's independent of this API's own [version header](../api-reference/conventions/#versioning). The MCP server makes every tool call with the API version its tools describe, so an MCP client never sends the header — the same "versioned independently" pattern [Non-Functional Requirements → Versioning](../non-functional-requirements/#versioning) already applies to webhook payloads.
 
 Tier 0's implementation is deliberately the simplest conforming option: every tool call returns one buffered JSON response, no server-initiated push, no mid-call progress notifications. See [Deployment Architecture → MCP server](https://github.com/CompositeCode/substratalapps.com/blob/main/infra/README.md) for why that's also the cheapest option, and what upgrading past it looks like.
 
@@ -51,11 +51,11 @@ Every MCP tool is generated from one operation in [openapi.yaml](../openapi.yaml
 
 | `operationId` | MCP tool name | REST equivalent |
 |---|---|---|
-| `entitlements.listForUser` | `substratal_entitlements_listForUser` | `GET /v1/users/{id}/entitlements` |
-| `entitlements.update` | `substratal_entitlements_update` | `PATCH /v1/entitlements/{id}` |
-| `permissions.getEffective` | `substratal_permissions_getEffective` | `GET /v1/users/{id}/apps/{appId}/effective-permissions` |
-| `tenants.requestTierChange` | `substratal_tenants_requestTierChange` | `POST /v1/tenants/{id}/tier-change-requests` |
-| `audit.list` | `substratal_audit_list` | `GET /v1/audit-events` |
+| `entitlements.listForUser` | `substratal_entitlements_listForUser` | `GET /users/{id}/entitlements` |
+| `entitlements.update` | `substratal_entitlements_update` | `PATCH /entitlements/{id}` |
+| `permissions.getEffective` | `substratal_permissions_getEffective` | `GET /users/{id}/apps/{appId}/effective-permissions` |
+| `tenants.requestTierChange` | `substratal_tenants_requestTierChange` | `POST /tenants/{id}/tier-change-requests` |
+| `audit.list` | `substratal_audit_list` | `GET /audit-events` |
 
 (Illustrative, not exhaustive — **every** operation in `openapi.yaml` generates a tool this way, and that count grows as the spec grows. Deliberately not stated as a number here — any specific count written on this page would be wrong again the next time an endpoint is added, which is exactly the kind of drift this generation scheme exists to avoid. See [openapi.yaml](../openapi.yaml) for the current, exact set; this page doesn't duplicate that list.)
 
@@ -79,18 +79,18 @@ This table is the single source of truth. `openapi.yaml`'s `x-substratal-destruc
 | Operation | When destructive |
 |---|---|
 | Every `DELETE` | Always. That covers: user soft-delete, Entitlement delete-in-error, Role delete, Role-assignment removal, Organization member removal, webhook unsubscribe, API Key revoke, session revoke, MFA support-reset, erasure cancellation, push-device unregister, and push-credential removal. |
-| `PATCH /v1/entitlements/{id}` | When `status` becomes `disabled` or `revoked`. |
-| `PATCH /v1/users/{id}` | When `status` becomes `suspended`. |
-| `POST /v1/users/{id}/suspend` | Always. |
-| `POST /v1/users/{id}/erasure-requests` | Always. |
-| `PATCH /v1/organizations/{id}` | When `status` becomes `suspended`. |
-| `PATCH /v1/organizations/{id}/members/{userId}` | When it demotes an `org_admin`. |
-| `PATCH /v1/applications/{id}` | When `review_status` becomes `rejected` or `suspended`, or when `available_app_roles`/`permissions` shrink. |
-| `PATCH /v1/roles/{id}` | When `permissions` shrink. |
-| `POST /v1/api-keys/{id}/rotate` | Always. It breaks the current secret with no overlap. |
-| `PATCH /v1/api-keys/{id}` | When `restrict_destructive` is set to `false`. |
-| `POST /v1/tenants/{id}/tier-change-requests` and its `PATCH` | Always. They lead to a maintenance window. |
-| `POST /v1/auth/logout` with `all_sessions: true` | Always. |
+| `PATCH /entitlements/{id}` | When `status` becomes `disabled` or `revoked`. |
+| `PATCH /users/{id}` | When `status` becomes `suspended`. |
+| `POST /users/{id}/suspend` | Always. |
+| `POST /users/{id}/erasure-requests` | Always. |
+| `PATCH /organizations/{id}` | When `status` becomes `suspended`. |
+| `PATCH /organizations/{id}/members/{userId}` | When it demotes an `org_admin`. |
+| `PATCH /applications/{id}` | When `review_status` becomes `rejected` or `suspended`, or when `available_app_roles`/`permissions` shrink. |
+| `PATCH /roles/{id}` | When `permissions` shrink. |
+| `POST /api-keys/{id}/rotate` | Always. It breaks the current secret with no overlap. |
+| `PATCH /api-keys/{id}` | When `restrict_destructive` is set to `false`. |
+| `POST /tenants/{id}/tier-change-requests` and its `PATCH` | Always. They lead to a maintenance window. |
+| `POST /auth/logout` with `all_sessions: true` | Always. |
 
 The same classification now has a second, server-side consumer, not just this client-facing hint: per [API Keys → Agent keys & `restrict_destructive`](../api-reference/api-keys/#agent-keys--restrict_destructive), an [API Key](../api-reference/api-keys/) with `restrict_destructive: true` — the default for `intended_use: "agent"` keys — gets a hard `403` on exactly the operations this table classifies as destructive, regardless of what permissions the key otherwise carries. One classification, two effects: a well-behaved MCP client uses `destructiveHint` to decide whether to ask a human first; the platform uses the identical rule to decide whether to allow the call at all, for keys explicitly scoped that way.
 

@@ -102,7 +102,7 @@ func (e entitlement) snapshot() entitlement {
 	return e
 }
 
-// ── POST /v1/users/{id}/entitlements ───────────────────────────────────
+// ── POST /users/{id}/entitlements ──────────────────────────────────────
 
 func (s *Server) EntitlementsGrant(w http.ResponseWriter, r *http.Request, id gen.UserIdOrMe, params gen.EntitlementsGrantParams) {
 	s.serve(w, r, opts{op: "entitlements.grant", idem: idemRequired}, func(c *Call) error {
@@ -219,7 +219,7 @@ func validateTerm(source string, starts time.Time, ends *time.Time, orderID *str
 	switch source {
 	case "purchase", "trial", "admin_grant":
 	case "org_seat":
-		return httpx.E(422, "invalid_source", "org_seat grants are created through POST /v1/organizations/{id}/entitlements.")
+		return httpx.E(422, "invalid_source", "org_seat grants are created through POST /organizations/{id}/entitlements.")
 	case "free", "subscription":
 		return httpx.E(422, "invalid_source", source+" Entitlements are managed by the platform, not granted through the API.")
 	default:
@@ -504,7 +504,7 @@ func (s *Server) EntitlementsList(w http.ResponseWriter, r *http.Request, params
 	})
 }
 
-// ── PATCH /v1/entitlements/{id} — the toggle ───────────────────────────
+// ── PATCH /entitlements/{id} — the toggle ──────────────────────────────
 
 func (s *Server) EntitlementsUpdate(w http.ResponseWriter, r *http.Request, id string, params gen.EntitlementsUpdateParams) {
 	s.serve(w, r, opts{op: "entitlements.update", idem: idemOptional}, func(c *Call) error {
@@ -841,7 +841,7 @@ func dedupe(ss []string) []string {
 	return out
 }
 
-// ── DELETE /v1/entitlements/{id} ───────────────────────────────────────
+// ── DELETE /entitlements/{id} ──────────────────────────────────────────
 
 func (s *Server) EntitlementsDelete(w http.ResponseWriter, r *http.Request, id string) {
 	s.serve(w, r, opts{op: "entitlements.delete"}, func(c *Call) error {

@@ -20,15 +20,15 @@ See [Domain Model → Audit Event](../../domain-model/orders-and-audit/#audit-ev
 
 | Method | Path | Requires | Purpose |
 |---|---|---|---|
-| `GET` | `/v1/audit-events` | `audit.view` (platform or app-confined); or self via `target_user_id=me`; or a Tenant owner via `tenant_id` | Query the audit log. |
-| `GET` | `/v1/audit-events/{id}` | same as above, for that event | Fetch one event. |
+| `GET` | `/audit-events` | `audit.view` (platform or app-confined); or self via `target_user_id=me`; or a Tenant owner via `tenant_id` | Query the audit log. |
+| `GET` | `/audit-events/{id}` | same as above, for that event | Fetch one event. |
 
 There's deliberately no write endpoint. Audit Events are produced only as a side effect of other writes, never created directly, and never edited or deleted through the API.
 
-## `GET /v1/audit-events`
+## `GET /audit-events`
 
 ```
-GET /v1/audit-events?target_user_id=usr_01JAG3Z9X8QS3F6K2M4N5P6R7S&since=2026-09-01T00:00:00Z
+GET /audit-events?target_user_id=usr_01JAG3Z9X8QS3F6K2M4N5P6R7S&since=2026-09-01T00:00:00Z
 ```
 
 ```json
@@ -75,7 +75,7 @@ GET /v1/audit-events?target_user_id=usr_01JAG3Z9X8QS3F6K2M4N5P6R7S&since=2026-09
 
 **Hot window only.** The API returns only events still in hot storage, which is one year for every Tenant. Older events are archived in a shape-only form and are retrievable through support, not through this endpoint. A `since` earlier than the window is allowed and simply returns nothing older. The response header `Audit-Hot-Window-Start` gives the earliest timestamp available for the caller's scope. See [Non-Functional Requirements → Audit log lifecycle](../../non-functional-requirements/#audit-log-lifecycle).
 
-## `GET /v1/audit-events/{id}`
+## `GET /audit-events/{id}`
 
 Returns one event, same shape. `404 audit_event_not_found` if it doesn't exist, isn't visible to the caller, or has been archived.
 

@@ -427,7 +427,7 @@ func (s *Server) ReconcileAllAccess(ctx context.Context) error {
 	})
 }
 
-// ── GET /v1/users/{id}/subscription ────────────────────────────────────
+// ── GET /users/{id}/subscription ───────────────────────────────────────
 
 func (s *Server) BillingGetUserSubscription(w http.ResponseWriter, r *http.Request, id gen.UserIdOrMe) {
 	s.serve(w, r, opts{op: "billing.getUserSubscription"}, func(c *Call) error {
@@ -454,7 +454,7 @@ func (s *Server) BillingGetUserSubscription(w http.ResponseWriter, r *http.Reque
 	})
 }
 
-// ── GET/PATCH /v1/organizations/{id}/subscription ──────────────────────
+// ── GET/PATCH /organizations/{id}/subscription ─────────────────────────
 
 // orgBillingAccess: org admins manage their Organization's subscription;
 // billing.manage can read it and open its portal.

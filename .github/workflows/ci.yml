@@ -68,8 +68,8 @@ jobs:
           go run ./cmd/admin bootstrap -email "$ADMIN_EMAIL"
           go build -o /tmp/devserver ./cmd/devserver
           /tmp/devserver > /tmp/devserver.log 2>&1 &
-          for i in $(seq 1 60); do curl -sf localhost:8080/v1/health && break; sleep 0.5; done
-          SUBSTRATAL_API=http://localhost:8080/v1 scripts/quickstart.sh || (cat /tmp/devserver.log; exit 1)
+          for i in $(seq 1 60); do curl -sf localhost:8080/health && break; sleep 0.5; done
+          SUBSTRATAL_API=http://localhost:8080 scripts/quickstart.sh || (cat /tmp/devserver.log; exit 1)
 
       - name: Build Lambda artifacts
         run: make build

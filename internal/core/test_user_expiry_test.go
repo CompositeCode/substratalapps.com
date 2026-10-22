@@ -59,29 +59,29 @@ func expiresAt(t *testing.T, u map[string]any) time.Time {
 // Auth → Test-mode Users → Lifetime: creation defaults and range checks.
 func TestTestUserExpiryCreation(t *testing.T) {
 	e := testenv.New(t)
-	testKey := e.Post("/v1/api-keys", e.Admin, map[string]any{"name": "qa", "scope": "platform", "mode": "test",
+	testKey := e.Post("/api-keys", e.Admin, map[string]any{"name": "qa", "scope": "platform", "mode": "test",
 		"permissions": []string{"users.manage", "users.list"}}).Expect(201).Str("secret")
-	liveKey := e.Post("/v1/api-keys", e.Admin, map[string]any{"name": "live", "scope": "platform",
+	liveKey := e.Post("/api-keys", e.Admin, map[string]any{"name": "live", "scope": "platform",
 		"permissions": []string{"users.manage", "users.list"}}).Expect(201).Str("secret")
 	addr := func() string { return "qa+" + testenv.Unique() + "@example.com" }
 
-	// Default: 24 hours, through signup and through POST /v1/users.
-	s := e.Post("/v1/auth/signup", "", map[string]any{"email": addr(), "password": testUserPass, "test_mode": true}).Expect(201)
-	if d := time.Until(expiresAt(t, e.Get("/v1/users/me", s.Token()).Expect(200).JSON())); d < 23*time.Hour || d > 24*time.Hour {
+	// Default: 24 hours, through signup and through POST /users.
+	s := e.Post("/auth/signup", "", map[string]any{"email": addr(), "password": testUserPass, "test_mode": true}).Expect(201)
+	if d := time.Until(expiresAt(t, e.Get("/users/me", s.Token()).Expect(200).JSON())); d < 23*time.Hour || d > 24*time.Hour {
 		t.Fatalf("signup default lifetime = %v", d)
 	}
-	u := e.Post("/v1/users", testKey, map[string]any{"email": addr(), "status": "active", "send_invitation": false}).Expect(201)
+	u := e.Post("/users", testKey, map[string]any{"email": addr(), "status": "active", "send_invitation": false}).Expect(201)
 	if d := time.Until(expiresAt(t, u.JSON())); d < 23*time.Hour || d > 24*time.Hour {
 		t.Fatalf("create default lifetime = %v", d)
 	}
 	// Live Users never expire.
-	if live := e.Signup(); e.Get("/v1/users/me", live.Token).JSON()["expires_at"] != nil {
+	if live := e.Signup(); e.Get("/users/me", live.Token).JSON()["expires_at"] != nil {
 		t.Fatal("a live User has expires_at")
 	}
 
 	// A chosen lifetime is kept.
 	want := time.Now().Add(2 * time.Hour).UTC().Truncate(time.Second)
-	u = e.Post("/v1/users", testKey, map[string]any{"email": addr(), "status": "active", "send_invitation": false,
+	u = e.Post("/users", testKey, map[string]any{"email": addr(), "status": "active", "send_invitation": false,
 		"expires_at": want.Format(time.RFC3339)}).Expect(201)
 	if got := expiresAt(t, u.JSON()); !got.Equal(want) {
 		t.Fatalf("expires_at = %v, want %v", got, want)
@@ -90,21 +90,21 @@ func TestTestUserExpiryCreation(t *testing.T) {
 	// Out of range, either way, and on a live User.
 	soon := time.Now().Add(5 * time.Minute).Format(time.RFC3339)
 	late := time.Now().Add(31 * 24 * time.Hour).Format(time.RFC3339)
-	r := e.Post("/v1/auth/signup", "", map[string]any{"email": addr(), "password": testUserPass, "test_mode": true,
+	r := e.Post("/auth/signup", "", map[string]any{"email": addr(), "password": testUserPass, "test_mode": true,
 		"expires_at": soon}).ExpectErr(422, "validation_failed")
 	if c := fieldCode(t, r); c != "expires_at_out_of_range" {
 		t.Fatalf("too soon: %s", c)
 	}
-	r = e.Post("/v1/users", testKey, map[string]any{"email": addr(), "expires_at": late}).ExpectErr(422, "validation_failed")
+	r = e.Post("/users", testKey, map[string]any{"email": addr(), "expires_at": late}).ExpectErr(422, "validation_failed")
 	if c := fieldCode(t, r); c != "expires_at_out_of_range" {
 		t.Fatalf("too late: %s", c)
 	}
-	r = e.Post("/v1/users", liveKey, map[string]any{"email": addr(), "expires_at": want.Format(time.RFC3339)}).
+	r = e.Post("/users", liveKey, map[string]any{"email": addr(), "expires_at": want.Format(time.RFC3339)}).
 		ExpectErr(422, "validation_failed")
 	if c := fieldCode(t, r); c != "live_user" {
 		t.Fatalf("live create: %s", c)
 	}
-	r = e.Post("/v1/auth/signup", "", map[string]any{"email": addr(), "password": testUserPass,
+	r = e.Post("/auth/signup", "", map[string]any{"email": addr(), "password": testUserPass,
 		"expires_at": want.Format(time.RFC3339)}).ExpectErr(422, "validation_failed")
 	if c := fieldCode(t, r); c != "live_user" {
 		t.Fatalf("live signup: %s", c)
@@ -117,35 +117,35 @@ func TestTestUserExpiry(t *testing.T) {
 	e := testenv.New(t)
 	ctx := context.Background()
 	app := e.App("usr_01JAG0SYSTEM00000000000000", nil)
-	testKey := e.Post("/v1/api-keys", e.Admin, map[string]any{"name": "qa", "scope": "platform", "mode": "test",
+	testKey := e.Post("/api-keys", e.Admin, map[string]any{"name": "qa", "scope": "platform", "mode": "test",
 		"permissions": []string{"users.manage", "users.list", "entitlements.manage"}}).Expect(201).Str("secret")
 	addr := "qa+" + testenv.Unique() + "@example.com"
-	s := e.Post("/v1/auth/signup", "", map[string]any{"email": addr, "password": testUserPass, "test_mode": true}).Expect(201)
+	s := e.Post("/auth/signup", "", map[string]any{"email": addr, "password": testUserPass, "test_mode": true}).Expect(201)
 	uid := s.Str("user_id")
-	e.PostIdem("/v1/users/"+uid+"/entitlements", testKey, testenv.Unique(),
+	e.PostIdem("/users/"+uid+"/entitlements", testKey, testenv.Unique(),
 		map[string]any{"application_id": app, "source": "admin_grant"}).Expect(201)
-	e.Post("/v1/auth/app-tokens", s.Token(), map[string]any{"application_id": app}).Expect(200)
+	e.Post("/auth/app-tokens", s.Token(), map[string]any{"application_id": app}).Expect(200)
 
 	// Close to expiry, no token outlives the User.
 	near := time.Now().Add(2 * time.Minute).UTC().Truncate(time.Second)
 	setExpiry(t, e, uid, near)
-	r := e.Post("/v1/auth/token/refresh", "", map[string]any{"refresh_token": s.Str("refresh_token")}).Expect(200)
+	r := e.Post("/auth/token/refresh", "", map[string]any{"refresh_token": s.Str("refresh_token")}).Expect(200)
 	if in := int(r.JSON()["expires_in"].(float64)); in > 120 {
 		t.Fatalf("access expires_in = %d", in)
 	}
 	at, refresh := r.Token(), r.Str("refresh_token")
-	appTok := e.Post("/v1/auth/app-tokens", at, map[string]any{"application_id": app}).Expect(200)
+	appTok := e.Post("/auth/app-tokens", at, map[string]any{"application_id": app}).Expect(200)
 	if exp := int64(decodeJWT(t, e, appTok.Str("app_token"))["exp"].(float64)); exp > near.Unix() {
 		t.Fatalf("app token exp %d is after expires_at %d", exp, near.Unix())
 	}
 
 	// At expiry every token stops working, before any sweep.
 	setExpiry(t, e, uid, time.Now())
-	e.Get("/v1/users/me", at).ExpectErr(401, "session_revoked")
-	e.Post("/v1/auth/login", "", map[string]any{"email": addr, "password": testUserPass, "test_mode": true}).
+	e.Get("/users/me", at).ExpectErr(401, "session_revoked")
+	e.Post("/auth/login", "", map[string]any{"email": addr, "password": testUserPass, "test_mode": true}).
 		ExpectErr(403, "test_user_expired")
-	e.Post("/v1/auth/token/refresh", "", map[string]any{"refresh_token": refresh}).ExpectErr(403, "test_user_expired")
-	if eff := e.Get("/v1/users/"+uid+"/apps/"+app+"/effective-permissions", testKey).Expect(200).JSON(); eff["allowed"] != false {
+	e.Post("/auth/token/refresh", "", map[string]any{"refresh_token": refresh}).ExpectErr(403, "test_user_expired")
+	if eff := e.Get("/users/"+uid+"/apps/"+app+"/effective-permissions", testKey).Expect(200).JSON(); eff["allowed"] != false {
 		t.Fatalf("introspection after expiry = %v", eff)
 	}
 
@@ -181,7 +181,7 @@ func TestTestUserExpiry(t *testing.T) {
 	// A self-service caller can't move expires_at; users.manage can, and
 	// moving it later brings the User back.
 	later := time.Now().Add(time.Hour).UTC().Truncate(time.Second).Format(time.RFC3339)
-	u := e.Patch("/v1/users/"+uid, testKey, map[string]any{"expires_at": later}).Expect(200).JSON()
+	u := e.Patch("/users/"+uid, testKey, map[string]any{"expires_at": later}).Expect(200).JSON()
 	if expiresAt(t, u).Format(time.RFC3339) != later {
 		t.Fatalf("expires_at = %v", u["expires_at"])
 	}
@@ -189,9 +189,9 @@ func TestTestUserExpiry(t *testing.T) {
 	if len(granted) == 0 || granted[0]["payload"].(map[string]any)["reason"] != "test_user_extended" {
 		t.Fatalf("access.granted = %v", granted)
 	}
-	back := e.Post("/v1/auth/login", "", map[string]any{"email": addr, "password": testUserPass, "test_mode": true}).Expect(200)
-	e.Post("/v1/auth/app-tokens", back.Token(), map[string]any{"application_id": app}).Expect(200)
-	e.Patch("/v1/users/me", back.Token(), map[string]any{"expires_at": later}).ExpectErr(403, "status_change_forbidden")
+	back := e.Post("/auth/login", "", map[string]any{"email": addr, "password": testUserPass, "test_mode": true}).Expect(200)
+	e.Post("/auth/app-tokens", back.Token(), map[string]any{"application_id": app}).Expect(200)
+	e.Patch("/users/me", back.Token(), map[string]any{"expires_at": later}).ExpectErr(403, "status_change_forbidden")
 
 	// The sweep leaves an extended User alone.
 	if _, err := e.Core.ExpireTestUsers(ctx); err != nil {
