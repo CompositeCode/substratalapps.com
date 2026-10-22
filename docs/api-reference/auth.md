@@ -252,7 +252,7 @@ Revokes the session(s): the refresh token and any app refresh tokens in them sto
 
 ## Getting an app token
 
-Embedded login is allowed today because every Application is first-party, so no third party ever handles a Substratal password. It's blocked for any Application not owned by Substratal once self-service registration ships, and the hosted sign-in page must exist before any third-party Application goes live. Requiring the hosted page from Phase 1 instead was considered and not chosen: it would make the MVP depend on a UI project.
+Embedded login is allowed for Applications staff create, which are either Substratal's own or a concierge customer's, so no unvetted third party ever handles a Substratal password. A [self-registered](../applications/#post-applications) Application is third-party: `app-tokens` refuses it with `403 embedded_login_not_allowed`, and it must use the hosted flow. The hosted sign-in page must exist before any self-registered Application can go live. Requiring the hosted page from Phase 1 instead was considered and not chosen: it would make the MVP depend on a UI project.
 
 An **app token** is the per-Application JWT that [Trust Model](../../trust-model/) describes. Two ways to get one:
 
@@ -266,6 +266,7 @@ Both paths produce the identical app token. Either way, issuance **fails** if th
 | Error | Status | When |
 |---|---|---|
 | `entitlement_required` | 403 | Resolved entitlement status isn't `active` (see [Access Control](../../access-control/)). `details.entitlement_status` says what it is, including `scheduled` for a grant whose `starts_at` hasn't arrived. |
+| `embedded_login_not_allowed` | 403 | `app-tokens` only: the Application is `self_registered`, so it must use the hosted flow. |
 | `application_not_available` | 409 | The Application's `review_status` is `suspended`/`rejected`/`pending_review` — see [Applications → review lifecycle](../../domain-model/applications/#the-review-lifecycle). A state conflict, not a permission failure, so it's the same `409` wherever this code appears. |
 | `tenant_suspended` | 403 | The Application's Tenant is `suspended` by the platform. See [Tenancy](../../domain-model/tenancy/#fields). |
 | `account_suspended` | 403 | The User is suspended. |

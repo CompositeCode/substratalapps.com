@@ -49,7 +49,7 @@ Enough to replace "someone manually emails a link and flips a flag in a spreadsh
 - Richer audit/compliance views — filtering, export, retention policy enforcement; see [Compliance & Data Protection](../compliance/) for what's driving this (SOC 2 readiness, GDPR data-subject requests).
 - SCIM-style provisioning for larger customers who want their own IdP to push user lifecycle events into the hub automatically. **Built 2026-10-21:** [SCIM 2.0 Users](../api-reference/scim/), as invitations and membership removal.
 - The **hosted sign-in page** and the authorization-code + PKCE flow ([Auth → Getting an app token](../api-reference/auth/#getting-an-app-token)). The API side is specified now; this is the UI. It's required before any third-party Application goes live.
-- Self-service Application registration and review queue for third-party developers — the marketplace phase. See [App developer/publisher model](../domain-model/applications/#the-review-lifecycle).
+- Self-service Application registration and review queue for third-party developers — the marketplace phase. **Built 2026-10-21.** Self-registered Applications still need the hosted sign-in page above before they can go live. See [App developer/publisher model](../domain-model/applications/#the-review-lifecycle).
 
 **Ships:** the features that only matter once there are customers (or outside developers) big enough to need them — deliberately not pulled earlier, since building any of these before there's a real need tends to guess the shape wrong.
 

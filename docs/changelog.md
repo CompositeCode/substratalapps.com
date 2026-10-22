@@ -12,6 +12,18 @@ What's changed in this specification over time. Every decision is written into t
 
 ---
 
+## 2026-10-22 — Self-service Application registration
+
+`POST /applications` is open to developers, not just staff. See [API Reference → Applications](../api-reference/applications/#post-applications) and [The review lifecycle](../domain-model/applications/#the-review-lifecycle). `openapi.yaml` is now at `1.0.0-draft.7`.
+
+- **Any User with a verified email** can submit an Application. It's owned by the caller, or by an Organization they're an `org_admin` of. It starts in `pending_review`, `public`, and `standard`, and the moderation fields are staff-only (`403 moderation_field_forbidden`). An unverified email is the new `403 email_not_verified`. Each User can submit 10 a day. Staff creation is unchanged.
+- **Applications gain `self_registered`** (read-only, migration `0010_self_registered_apps`). A self-registered Application is third-party, even once approved:
+  - `POST /auth/app-tokens` refuses it with the new `403 embedded_login_not_allowed`, as [Auth → Getting an app token](../api-reference/auth/#getting-an-app-token) already required once self-service shipped. It must use the hosted flow.
+  - Only `applications.manage` can turn on its `receives_platform_notifications`, so platform security alerts never go out under an unvetted app.
+- **Platform-managed Entitlements wait for approval.** `free` and `subscription` rows are granted only to an Application that has been approved, and approving one grants them. Before this, a `standard` submission would have been granted to every Standard subscriber the moment it was created, firing `access.granted` to an unreviewed developer.
+
+Self-registered Applications still can't go live until the hosted sign-in page exists.
+
 ## 2026-10-22 — Test-mode User expiry implemented
 
 [Test-mode Users → Lifetime](../api-reference/auth/#lifetime) is built, as specified on 2026-10-20. `openapi.yaml` is now at `1.0.0-draft.6`:

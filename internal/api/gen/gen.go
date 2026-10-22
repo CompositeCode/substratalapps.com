@@ -2331,6 +2331,9 @@ type Application struct {
 	ReviewNotes                   *string                  `json:"review_notes,omitempty"`
 	ReviewStatus                  *ApplicationReviewStatus `json:"review_status,omitempty"`
 
+	// SelfRegistered true when a developer submitted it themselves, not staff. A self-registered Application must use the hosted sign-in flow (POST /auth/app-tokens returns 403 embedded_login_not_allowed), and only applications.manage can turn on receives_platform_notifications for it.
+	SelfRegistered *bool `json:"self_registered,omitempty"`
+
 	// SettingsSchema JSON Schema 2020-12 subset — see Domain Model → Settings → settings_schema rules
 	SettingsSchema      *map[string]interface{} `json:"settings_schema,omitempty"`
 	SettingsSchemaStats *struct {
@@ -4748,7 +4751,7 @@ type ServerInterface interface {
 	// ApplicationsList List the catalog (filtered by visibility rules)
 	// (GET /applications)
 	ApplicationsList(w http.ResponseWriter, r *http.Request, params ApplicationsListParams)
-	// ApplicationsCreate Register an Application (applications.manage)
+	// ApplicationsCreate Register an Application (applications.manage, or self-service into review)
 	// (POST /applications)
 	ApplicationsCreate(w http.ResponseWriter, r *http.Request, params ApplicationsCreateParams)
 	// ApplicationsGet Fetch one Application

@@ -90,7 +90,7 @@ Applications that aren't `approved` are visible only to their owner, their own k
 | `launch_url` | `https` URL. Where the future dashboard sends a user to open the app. |
 | `redirect_uris` | 0–10 entries, each an exact-match string: an `https://` URL, or a private-use URI scheme for native apps (reverse-DNS, `com.example.app:/path`). `http://localhost` and `http://127.0.0.1` with any port are allowed for development only on a `test_mode` Application. Required (non-empty) before the hosted authorization-code flow will issue a code — see [Auth](../auth/#post-authoauthauthorization-codes). |
 | `support_url`, `email_from_name` | Optional. Used in transactional emails sent on behalf of this app. `email_from_name` is 1–50 characters; the sending address is always Substratal's own. |
-| `receives_platform_notifications` | Boolean, default `false`, writable by the owner. Whether this app's devices also get pushes for [platform alerts](../notifications/#platform-alerts). The app's push credentials are managed separately, under [`/applications/{id}/push-credentials`](../notifications/#push-credentials). |
+| `receives_platform_notifications` | Boolean, default `false`, writable by the owner, except that only `applications.manage` can turn it on for a `self_registered` Application (`403 moderation_field_forbidden`). Whether this app's devices also get pushes for [platform alerts](../notifications/#platform-alerts). The app's push credentials are managed separately, under [`/applications/{id}/push-credentials`](../notifications/#push-credentials). |
 | `settings_schema` | See [Domain Model → Settings → `settings_schema` rules](../../domain-model/settings/#settings_schema-rules). |
 | `settings_schema_stats` | Read-only. `stale_override_counts` is a key → count map of how many users hold overrides that no longer validate. |
 | `permissions` | The Application's own permission catalog, 0–100 entries. Each `key` must start with `app.<slug>.`, then match `[a-z0-9_.]{1,64}`. `description` is up to 255 characters. This is what `GET /permissions` lists, and it's the only set an AppRole may draw from. |
@@ -185,11 +185,22 @@ Returns the full Application object above.
 
 The Roles `role_invoicer_admin` and `role_invoicer_member` now exist with no permissions.
 
-- Requires `applications.manage`. Through Phase 2 this is how **every** Application comes to exist, including a paying customer's. Staff create it with the customer as owner, and the owner manages it from then on ("concierge onboarding").
-- `slug`, `name`, `launch_url`, and exactly one of `owner_user_id`/`owner_organization_id` are required. Everything else is optional.
+There are two kinds of caller:
+
+- **`applications.manage` (staff)** creates any Application, for any owner, `approved` unless it says otherwise. This is concierge onboarding: staff create a paying customer's Application with the customer as owner, and the owner manages it from then on. `self_registered` is `false`.
+- **Any other User with a verified email** can submit their own Application for review (self-service registration):
+  - It's owned by the caller. Omit both owner fields, or pass your own `owner_user_id`, or pass `owner_organization_id` for an Organization you're an active `org_admin` of. Anything else is `403 moderation_field_forbidden`.
+  - It starts in `pending_review`, `public`, and `standard`. Setting `visibility`, `access_tier`, `review_status`, `review_notes`, or turning on `receives_platform_notifications` is `403 moderation_field_forbidden`.
+  - `self_registered` is `true`. A self-registered Application is third-party, so it must use the [hosted sign-in flow](../auth/#getting-an-app-token): `POST /auth/app-tokens` returns `403 embedded_login_not_allowed` for it.
+  - An unverified email is `403 email_not_verified`. An API Key without `applications.manage` is `403 forbidden`. Each User can submit 10 per day.
+  - Until it's approved it's visible only to its owner and staff, it can't be granted or launched (`409 application_not_available`), and it gets no [platform-managed Entitlements](../../domain-model/entitlements/#platform-managed-entitlements). Staff work the queue with `GET /applications?review_status=pending_review`; see [Reviewing a submission](#reviewing-a-submission).
+
+For either caller:
+
+- `slug`, `name`, and `launch_url` are required, and staff must also pass exactly one of `owner_user_id`/`owner_organization_id`. Everything else is optional.
 - Resolves the owner's [Tenant](../tenancy/), creating one if needed. A new Tenant gets `tier: shared`.
 - **Seeds the app's Roles.** For each name in `available_app_roles`, a Role `role_<slug>_<name>` is created with no permissions, and the owner then fills them in with `PATCH /roles/{id}`.
-- Grants the [platform-managed Entitlements](../../domain-model/entitlements/#platform-managed-entitlements) its `access_tier` calls for: every User for a free Application, every covered subscriber for a standard one.
+- Grants the [platform-managed Entitlements](../../domain-model/entitlements/#platform-managed-entitlements) its `access_tier` calls for, once it's approved: every User for a free Application, every covered subscriber for a standard one.
 - Writes `application.created`.
 
 ## `PATCH /applications/{id}`
@@ -260,7 +271,8 @@ Any other transition returns `409 invalid_review_transition`. A transition to `r
 | `permission_in_use` | 409 | `PATCH` would remove a permission still referenced by a Role. |
 | `invalid_settings_schema` | 422 | The schema breaks a [`settings_schema` rule](../../domain-model/settings/#settings_schema-rules). |
 | `reserved_settings_key` | 422 | The schema declares `locale`, `timezone`, `theme`, or `notifications`. |
-| `moderation_field_forbidden` | 403 | A non-admin owner's `PATCH` touches a moderation field. |
+| `moderation_field_forbidden` | 403 | A non-admin owner's `PATCH`, or a self-service `POST`, touches a moderation field, names an owner other than the caller (or an Organization they're not an `org_admin` of), or turns on `receives_platform_notifications` for a self-registered Application. |
+| `email_not_verified` | 403 | A self-service `POST` from a User whose email isn't verified. |
 | `review_notes_required` | 422 | Transition to `rejected`/`suspended` without `review_notes`. |
 | `invalid_review_transition` | 409 | A `review_status` change not in the table above. |
 | `ownership_change_requires_migration` | 409 | An ownership change across non-`shared` Tenants. |

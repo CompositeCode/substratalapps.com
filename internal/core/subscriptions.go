@@ -196,22 +196,28 @@ func nullable(s string) any {
 // exist against the live ones that do. Rows match on holder, Application,
 // and source; an ended row that's wanted again is revived rather than
 // replaced, so the one-live-row index never conflicts.
+// Only Applications that have been approved get them: never a submission
+// still in review or rejected (a suspended one keeps them, since
+// suspension doesn't cascade).
 const platformAccessSQL = `with desired as (
 		select u.id as user_id, null::text as organization_id, a.id as application_id, a.tenant_id,
 		       'free'::text as source, null::text as subscription_id, null::text as member_scope,
 		       null::text[] as member_overrides, u.test_mode
-		  from users u join applications a on a.access_tier = 'free' and (not a.test_mode or a.test_mode = u.test_mode)
+		  from users u join applications a on a.access_tier = 'free' and a.review_status in ('approved','suspended')
+		   and (not a.test_mode or a.test_mode = u.test_mode)
 		 where u.status in ('active','invited','suspended') and :o::text is null
 		   and (:u::text is null or u.id = :u) and (:a::text is null or a.id = :a)
 		union all
 		select s.user_id, null, a.id, a.tenant_id, 'subscription', s.id, null, null, s.test_mode
-		  from subscriptions s join applications a on a.access_tier = 'standard' and (not a.test_mode or a.test_mode = s.test_mode)
+		  from subscriptions s join applications a on a.access_tier = 'standard' and a.review_status in ('approved','suspended')
+		   and (not a.test_mode or a.test_mode = s.test_mode)
 		  join users u on u.id = s.user_id and u.status <> 'deleted'
 		 where s.status in ` + coveringStatusesSQL + ` and :o::text is null
 		   and (:u::text is null or s.user_id = :u) and (:a::text is null or a.id = :a)
 		union all
 		select null, s.organization_id, a.id, a.tenant_id, 'subscription', s.id, s.member_scope, s.member_overrides, s.test_mode
-		  from subscriptions s join applications a on a.access_tier = 'standard' and (not a.test_mode or a.test_mode = s.test_mode)
+		  from subscriptions s join applications a on a.access_tier = 'standard' and a.review_status in ('approved','suspended')
+		   and (not a.test_mode or a.test_mode = s.test_mode)
 		 where s.organization_id is not null and s.status in ` + coveringStatusesSQL + ` and :u::text is null
 		   and (:o::text is null or s.organization_id = :o) and (:a::text is null or a.id = :a)),
 	existing as (
