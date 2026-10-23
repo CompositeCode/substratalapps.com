@@ -28,7 +28,7 @@ nav_order: 10
 First-party web apps, such as the dashboard and an admin console, call this API straight from the browser with the signed-in person's **own User token**. That's safe without a backend in between: a Bearer token is never sent automatically the way a cookie is, so cross-site request forgery doesn't apply, and the permission check on every request is the real gate. An admin console therefore sees exactly what its user's Roles allow, no more.
 
 - **Allow-listed origins** may call any REST endpoint, with any method, sending `Authorization`, `Content-Type`, `If-Match`, `Idempotency-Key`, `X-Request-Id`, and `Substratal-Version`. Preflights are cached for 2 hours (`Access-Control-Max-Age: 7200`, the most Chromium honors), since an admin screen touches many `/users/{id}/…` URLs.
-- **Readable response headers:** `ETag`, `X-Request-Id`, `RateLimit-Limit`, `RateLimit-Remaining`, `RateLimit-Reset`, `Retry-After`, `Audit-Hot-Window-Start`, and `Substratal-Version`.
+- **Readable response headers:** `ETag`, `X-Request-Id`, `RateLimit-Limit`, `RateLimit-Remaining`, `RateLimit-Reset`, `Retry-After`, `Audit-Hot-Window-Start`, `Substratal-Version`, and, on a deprecated version, `Deprecation` and `Sunset`, so a web client can show that it needs updating.
 - **Any other origin** gets no CORS headers, so the browser blocks the response.
 - **API Keys are never used from a browser.** A key in a web page is a leaked key. A request that authenticates with an API Key and carries an `Origin` header, which browsers send and server-side clients don't, is refused with `400 api_key_in_browser`, whatever the origin.
 

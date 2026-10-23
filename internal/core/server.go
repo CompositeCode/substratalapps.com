@@ -239,7 +239,7 @@ func (s *Server) cors(w http.ResponseWriter, r *http.Request) bool {
 	}
 	w.Header().Set("Access-Control-Allow-Origin", origin)
 	w.Header().Set("Vary", "Origin")
-	w.Header().Set("Access-Control-Expose-Headers", "ETag, X-Request-Id, RateLimit-Limit, RateLimit-Remaining, RateLimit-Reset, Retry-After, Audit-Hot-Window-Start, Substratal-Version")
+	w.Header().Set("Access-Control-Expose-Headers", "ETag, X-Request-Id, RateLimit-Limit, RateLimit-Remaining, RateLimit-Reset, Retry-After, Audit-Hot-Window-Start, Substratal-Version, Deprecation, Sunset")
 	if r.Method == http.MethodOptions {
 		w.Header().Set("Access-Control-Allow-Methods", "GET, PATCH, POST, DELETE")
 		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, If-Match, Idempotency-Key, X-Request-Id, Substratal-Version")
