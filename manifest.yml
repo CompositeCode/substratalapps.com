@@ -2,6 +2,10 @@
 # scripts/docs-build.rb on main's GitHub build; each entry has a frozen
 # static copy at <version>/ on this branch, served at /versions/<version>/.
 versions:
+- version: 1.7.8
+  released: '2026-10-23'
+  commit: cb49fc277121dee3cc8ab6f5c90507e6824dc6c7
+  summary: 'Merge pull request #69 from CompositeCode/fix/cors-expose-deprecation'
 - version: 1.7.7
   released: '2026-10-23'
   commit: b826f2a1aaa6d58d9c16c83f4aafeb8378a29d8a
