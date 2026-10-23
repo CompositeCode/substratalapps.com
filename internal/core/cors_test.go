@@ -24,7 +24,7 @@ func TestCORS(t *testing.T) {
 		t.Fatalf("max-age = %q", got)
 	}
 	expose := pre.Header.Get("Access-Control-Expose-Headers")
-	for _, h := range []string{"Retry-After", "Audit-Hot-Window-Start", "Substratal-Version", "ETag"} {
+	for _, h := range []string{"Retry-After", "Audit-Hot-Window-Start", "Substratal-Version", "ETag", "Deprecation", "Sunset"} {
 		if !strings.Contains(expose, h) {
 			t.Fatalf("expose-headers %q lacks %s", expose, h)
 		}

@@ -12,6 +12,10 @@ What's changed in this specification over time. Every decision is written into t
 
 ---
 
+## 2026-10-22 — Browsers can read `Deprecation` and `Sunset`
+
+`Access-Control-Expose-Headers` adds `Deprecation` and `Sunset`, so a web client can read them on a response to a deprecated version and tell its user to update, as [Versioning](../api-reference/conventions/#versioning) already promised. No other change. See [NFR → CORS](../non-functional-requirements/#cors).
+
 ## 2026-10-22 — Browser CORS, a role filter on users, and sign out everywhere
 
 Three gaps the management console needs ([#38](https://github.com/CompositeCode/substratalapps.com/issues/38), [#54](https://github.com/CompositeCode/substratalapps.com/issues/54), [#51](https://github.com/CompositeCode/substratalapps.com/issues/51)). `openapi.yaml` is now at `1.0.0-draft.9`, with 124 operations.
