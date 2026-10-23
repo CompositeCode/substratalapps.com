@@ -101,7 +101,7 @@ One successful login. Refresh tokens, app refresh tokens, and app-token `sid` cl
 | `ip_address`, `user_agent` | string | Recorded at login. They're personal data: included in export, deleted by erasure. |
 | `created_at`, `last_seen_at` | timestamp | `last_seen_at` is updated at most once a minute. |
 | `idle_expires_at`, `absolute_expires_at` | timestamp | 30 days from last refresh; 90 days from creation. |
-| `revoked_at`, `revoked_reason` | timestamp/string, nullable | `logout`, `logout_all`, `password_reset`, `password_changed`, `user_suspended`, `user_deleted`, `test_user_expired`, `mfa_reset`, `refresh_token_reused`, or `admin`. |
+| `revoked_at`, `revoked_reason` | timestamp/string, nullable | `logout`, `logout_all`, `password_reset`, `password_changed`, `user_suspended`, `user_deleted`, `test_user_expired`, `mfa_reset`, `refresh_token_reused`, `revoked_all`, or `admin`. |
 
 ### SSOConnection
 

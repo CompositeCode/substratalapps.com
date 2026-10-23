@@ -25,7 +25,14 @@ nav_order: 10
 
 ## CORS
 
-`GET` endpoints intended for direct browser use by a future first-party UI (the catalog, a user's own entitlements/profile/settings via `me`) allow that UI's origin. Admin and service-to-service endpoints do not allow browser-origin requests at all — an admin console calls through its own backend, not directly from the browser with a platform API key. The exact allow-listed origin(s) are an environment-level config value, not part of this spec.
+First-party web apps, such as the dashboard and an admin console, call this API straight from the browser with the signed-in person's **own User token**. That's safe without a backend in between: a Bearer token is never sent automatically the way a cookie is, so cross-site request forgery doesn't apply, and the permission check on every request is the real gate. An admin console therefore sees exactly what its user's Roles allow, no more.
+
+- **Allow-listed origins** may call any REST endpoint, with any method, sending `Authorization`, `Content-Type`, `If-Match`, `Idempotency-Key`, `X-Request-Id`, and `Substratal-Version`. Preflights are cached for 2 hours (`Access-Control-Max-Age: 7200`, the most Chromium honors), since an admin screen touches many `/users/{id}/…` URLs.
+- **Readable response headers:** `ETag`, `X-Request-Id`, `RateLimit-Limit`, `RateLimit-Remaining`, `RateLimit-Reset`, `Retry-After`, `Audit-Hot-Window-Start`, and `Substratal-Version`.
+- **Any other origin** gets no CORS headers, so the browser blocks the response.
+- **API Keys are never used from a browser.** A key in a web page is a leaked key. A request that authenticates with an API Key and carries an `Origin` header, which browsers send and server-side clients don't, is refused with `400 api_key_in_browser`, whatever the origin.
+
+The exact allow-listed origins are an environment-level config value (`CORS_ALLOWED_ORIGINS`), not part of this spec.
 
 ## Authorization enforcement point
 

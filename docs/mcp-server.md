@@ -91,6 +91,7 @@ This table is the single source of truth. `openapi.yaml`'s `x-substratal-destruc
 | `PATCH /api-keys/{id}` | When `restrict_destructive` is set to `false`. |
 | `POST /tenants/{id}/tier-change-requests` and its `PATCH` | Always. They lead to a maintenance window. |
 | `POST /auth/logout` with `all_sessions: true` | Always. |
+| `POST /users/{id}/sessions/revoke-all` | Always. |
 
 The same classification now has a second, server-side consumer, not just this client-facing hint: per [API Keys → Agent keys & `restrict_destructive`](../api-reference/api-keys/#agent-keys--restrict_destructive), an [API Key](../api-reference/api-keys/) with `restrict_destructive: true` — the default for `intended_use: "agent"` keys — gets a hard `403` on exactly the operations this table classifies as destructive, regardless of what permissions the key otherwise carries. One classification, two effects: a well-behaved MCP client uses `destructiveHint` to decide whether to ask a human first; the platform uses the identical rule to decide whether to allow the call at all, for keys explicitly scoped that way.
 

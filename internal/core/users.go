@@ -77,6 +77,28 @@ func (s *Server) UsersList(w http.ResponseWriter, r *http.Request, params gen.Us
 			where = append(where, `exists (select 1 from organization_memberships m where m.user_id = u.id and m.organization_id = :org)`)
 			args["org"] = *params.OrganizationId
 		}
+		if params.RoleId != nil && len(*params.RoleId) > 0 {
+			roles := *params.RoleId
+			if len(roles) > 20 {
+				var f httpx.Fields
+				f.Add("role_id", "too_many").Max = ip(20)
+				return f.Err()
+			}
+			// An app-confined key may only ask about its own Application's Roles.
+			if app, ok := c.p.AppKey(); ok {
+				n, err := db.All[string](c.ctx, c.q, `select to_jsonb(id) from roles
+					where id = any(:ids::text[]) and scope = :app`, db.Args{"ids": db.TextArray(roles), "app": app})
+				if err != nil {
+					return err
+				}
+				if len(n) != len(dedupe(roles)) {
+					return httpx.E(403, "role_scope_mismatch", "An app key can only act on its own Application's Roles.")
+				}
+			}
+			where = append(where, `exists (select 1 from user_role_assignments ra
+				where ra.user_id = u.id and ra.role_id = any(:roles::text[]))`)
+			args["roles"] = db.TextArray(roles)
+		}
 		if params.CreatedAfter != nil {
 			where = append(where, "u.created_at > :ca::timestamptz")
 			args["ca"] = db.Time(*params.CreatedAfter)

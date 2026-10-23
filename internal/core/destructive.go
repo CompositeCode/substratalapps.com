@@ -21,6 +21,7 @@ var DestructiveOps = map[string]Destructive{
 	"auth.logout":                     {When: "all_sessions is true"},
 	"auth.resetMfaTotp":               {Always: true},
 	"auth.revokeSession":              {Always: true},
+	"auth.revokeAllSessions":          {Always: true},
 	"users.update":                    {When: "status becomes suspended"},
 	"users.delete":                    {Always: true},
 	"users.suspend":                   {Always: true},

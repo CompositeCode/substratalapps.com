@@ -220,8 +220,9 @@ func (s *Server) middleware(next http.Handler) http.Handler {
 	})
 }
 
-// cors allows the configured first-party origins on browser-facing GETs
-// (NFR → CORS). It returns true when it fully handled a preflight.
+// cors allows the configured first-party origins to call any endpoint with
+// a user's own Bearer token (NFR → CORS); API Keys are refused from a
+// browser in authenticate. It returns true when it fully handled a preflight.
 func (s *Server) cors(w http.ResponseWriter, r *http.Request) bool {
 	origin := r.Header.Get("Origin")
 	if origin == "" {
@@ -238,11 +239,13 @@ func (s *Server) cors(w http.ResponseWriter, r *http.Request) bool {
 	}
 	w.Header().Set("Access-Control-Allow-Origin", origin)
 	w.Header().Set("Vary", "Origin")
-	w.Header().Set("Access-Control-Expose-Headers", "ETag, X-Request-Id, RateLimit-Limit, RateLimit-Remaining, RateLimit-Reset, Substratal-Version")
+	w.Header().Set("Access-Control-Expose-Headers", "ETag, X-Request-Id, RateLimit-Limit, RateLimit-Remaining, RateLimit-Reset, Retry-After, Audit-Hot-Window-Start, Substratal-Version")
 	if r.Method == http.MethodOptions {
 		w.Header().Set("Access-Control-Allow-Methods", "GET, PATCH, POST, DELETE")
 		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, If-Match, Idempotency-Key, X-Request-Id, Substratal-Version")
-		w.Header().Set("Access-Control-Max-Age", "600")
+		// 7200 is Chromium's cap; preflights are cached per URL, and an
+		// admin screen touches many /users/{id}/… URLs.
+		w.Header().Set("Access-Control-Max-Age", "7200")
 		w.WriteHeader(http.StatusNoContent)
 		return true
 	}

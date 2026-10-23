@@ -81,9 +81,10 @@ GET /users?status=active&email=jordan@example.com
 | `q` | Case-insensitive prefix match on `email` or Profile `display_name`, minimum 3 characters. |
 | `application_id` | Users holding any access path — personal Entitlement in any status, or membership in an Organization holding a grant — to that Application. |
 | `organization_id` | Members of that Organization. |
+| `role_id` | Users holding any of these Roles by explicit assignment. Repeatable (`?role_id=role_platform_support&role_id=role_platform_billing_admin`), up to 20. People who get an Application's `default_app_role` implicitly, by having access, aren't listed, since that's everyone with access; use `application_id` for them. |
 | `created_after`, `created_before` | ISO 8601 bounds on `created_at`. |
 
-**App-confined callers:** an app-scoped [API Key](../api-keys/#app-confined-permissions) holding `users.list` gets exactly the `application_id=<its own app>` result, whatever it passes — the filter is forced, not optional.
+**App-confined callers:** an app-scoped [API Key](../api-keys/#app-confined-permissions) holding `users.list` gets exactly the `application_id=<its own app>` result, whatever it passes — the filter is forced, not optional. Any `role_id` it sends must be one of its own Application's Roles, or the request is `403 role_scope_mismatch`.
 
 ## `POST /users`
 

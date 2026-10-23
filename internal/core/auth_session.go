@@ -102,27 +102,34 @@ func (c *Call) issueSession(u userRow, amr []string, identityID string) (authSes
 // key registered with no session (Push Notifications → Sessions and
 // device lifecycle).
 func (c *Call) revokeSessions(userID, reason, except string) error {
+	_, err := c.revokeSessionsCount(userID, reason, except)
+	return err
+}
+
+// revokeSessionsCount is revokeSessions, reporting how many sessions it
+// revoked.
+func (c *Call) revokeSessionsCount(userID, reason, except string) (int, error) {
 	switch reason {
 	case "suspended":
 		if err := c.deactivateDevices("d.user_id = :u", db.Args{"u": userID}, "user_suspended"); err != nil {
-			return err
+			return 0, err
 		}
 	case "deleted":
 		if err := c.deactivateDevices("d.user_id = :u", db.Args{"u": userID}, "user_deleted"); err != nil {
-			return err
+			return 0, err
 		}
 	case "test_user_expired":
 		if err := c.deactivateDevices("d.user_id = :u", db.Args{"u": userID}, "test_user_expired"); err != nil {
-			return err
+			return 0, err
 		}
 	}
 	sids, err := db.All[string](c.ctx, c.q, `update sessions set revoked_at = now(), revoked_reason = :r
 		where user_id = :u and revoked_at is null and id <> :except returning to_jsonb(id)`,
 		db.Args{"u": userID, "r": reason, "except": except})
 	if err != nil {
-		return err
+		return 0, err
 	}
-	return c.sessionsEnded(sids)
+	return len(sids), c.sessionsEnded(sids)
 }
 
 // revokeSession revokes one session, if it's still live, and deactivates

@@ -402,6 +402,7 @@ const (
 	AuditActionUserPasswordChanged               AuditAction = "user.password_changed"
 	AuditActionUserPasswordReset                 AuditAction = "user.password_reset"
 	AuditActionUserReactivated                   AuditAction = "user.reactivated"
+	AuditActionUserSessionsRevoked               AuditAction = "user.sessions_revoked"
 	AuditActionUserSuspended                     AuditAction = "user.suspended"
 	AuditActionUserUpdated                       AuditAction = "user.updated"
 	AuditActionWebhookCreated                    AuditAction = "webhook.created"
@@ -520,6 +521,8 @@ func (e AuditAction) Valid() bool {
 	case AuditActionUserPasswordReset:
 		return true
 	case AuditActionUserReactivated:
+		return true
+	case AuditActionUserSessionsRevoked:
 		return true
 	case AuditActionUserSuspended:
 		return true
@@ -4122,8 +4125,11 @@ type UsersListParams struct {
 	Q              *string                `form:"q,omitempty" json:"q,omitempty"`
 	ApplicationId  *string                `form:"application_id,omitempty" json:"application_id,omitempty"`
 	OrganizationId *string                `form:"organization_id,omitempty" json:"organization_id,omitempty"`
-	CreatedAfter   *time.Time             `form:"created_after,omitempty" json:"created_after,omitempty"`
-	CreatedBefore  *time.Time             `form:"created_before,omitempty" json:"created_before,omitempty"`
+
+	// RoleId Users holding any of these Roles by explicit assignment. Repeatable. Implicit holders of an Application's default_app_role aren't listed.
+	RoleId        *[]string  `form:"role_id,omitempty" json:"role_id,omitempty"`
+	CreatedAfter  *time.Time `form:"created_after,omitempty" json:"created_after,omitempty"`
+	CreatedBefore *time.Time `form:"created_before,omitempty" json:"created_before,omitempty"`
 }
 
 // UsersListParamsStatus defines parameters for UsersList.
@@ -4331,6 +4337,12 @@ type RolesListForUserParams struct {
 type AuthListSessionsParams struct {
 	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
 	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+}
+
+// AuthRevokeAllSessionsJSONBody defines parameters for AuthRevokeAllSessions.
+type AuthRevokeAllSessionsJSONBody struct {
+	// KeepCurrent Self only; 422 self_only otherwise.
+	KeepCurrent *bool `json:"keep_current,omitempty"`
 }
 
 // SettingsUpdateParams defines parameters for SettingsUpdate.
@@ -4551,6 +4563,9 @@ type AuthChangePasswordJSONRequestBody AuthChangePasswordJSONBody
 
 // ProfilesUpdateJSONRequestBody defines body for ProfilesUpdate for application/json ContentType.
 type ProfilesUpdateJSONRequestBody = ProfileWrite
+
+// AuthRevokeAllSessionsJSONRequestBody defines body for AuthRevokeAllSessions for application/json ContentType.
+type AuthRevokeAllSessionsJSONRequestBody AuthRevokeAllSessionsJSONBody
 
 // SettingsUpdateJSONRequestBody defines body for SettingsUpdate for application/json ContentType.
 type SettingsUpdateJSONRequestBody = SettingsWrite
@@ -5209,6 +5224,9 @@ type ServerInterface interface {
 	// AuthListSessions List active sessions (self or users.manage)
 	// (GET /users/{id}/sessions)
 	AuthListSessions(w http.ResponseWriter, r *http.Request, id UserIdOrMe, params AuthListSessionsParams)
+	// AuthRevokeAllSessions Revoke every session (self or users.manage)
+	// (POST /users/{id}/sessions/revoke-all)
+	AuthRevokeAllSessions(w http.ResponseWriter, r *http.Request, id UserIdOrMe)
 	// AuthRevokeSession Revoke one session
 	// (DELETE /users/{id}/sessions/{sessionId})
 	AuthRevokeSession(w http.ResponseWriter, r *http.Request, id UserIdOrMe, sessionId string)
@@ -8143,6 +8161,19 @@ func (siw *ServerInterfaceWrapper) UsersList(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	// ------------- Optional query parameter "role_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "role_id", r.URL.Query(), &params.RoleId, runtime.BindQueryParameterOptions{Type: "array", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "role_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "role_id", Err: err})
+		}
+		return
+	}
+
 	// ------------- Optional query parameter "created_after" -------------
 
 	err = runtime.BindQueryParameterWithOptions("form", true, false, "created_after", r.URL.Query(), &params.CreatedAfter, runtime.BindQueryParameterOptions{Type: "string", Format: "date-time"})
@@ -9950,6 +9981,32 @@ func (siw *ServerInterfaceWrapper) AuthListSessions(w http.ResponseWriter, r *ht
 	handler.ServeHTTP(w, r)
 }
 
+// AuthRevokeAllSessions operation middleware
+func (siw *ServerInterfaceWrapper) AuthRevokeAllSessions(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id UserIdOrMe
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AuthRevokeAllSessions(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // AuthRevokeSession operation middleware
 func (siw *ServerInterfaceWrapper) AuthRevokeSession(w http.ResponseWriter, r *http.Request) {
 
@@ -10673,6 +10730,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/users/{id}/roles/{roleId}", wrapper.RolesAssign)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/users/{id}/sessions", wrapper.AuthListSessions)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/users/{id}/sessions/{sessionId}", wrapper.AuthRevokeSession)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/users/{id}/sessions/revoke-all", wrapper.AuthRevokeAllSessions)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/users/{id}/settings", wrapper.SettingsGet)
 	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/users/{id}/settings", wrapper.SettingsUpdate)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/users/{id}/subscription", wrapper.BillingGetUserSubscription)

@@ -274,7 +274,7 @@ func NewWith(t testing.TB, opts Options) *Env {
 	s := core.New(core.Deps{DB: d, Signer: signer(), Encrypter: enc, Email: mail, Push: recorder, Exports: exports,
 		Cursors: httpx.Cursors{Key: []byte("test-cursor-key")}, Log: log,
 		Issuer: "https://api.substratalapps.com", PublicBaseURL: "http://localhost", AuthorizeURL: "https://auth.substratalapps.com/authorize",
-		DashboardURL: "https://dashboard.test", DisableRateLimits: !opts.RateLimits, Billing: opts.Billing, Now: opts.Now})
+		DashboardURL: "https://dashboard.test", CORSOrigins: []string{"https://dashboard.test"}, DisableRateLimits: !opts.RateLimits, Billing: opts.Billing, Now: opts.Now})
 	srv := httptest.NewServer(s.Handler())
 	e := &Env{T: t, Server: srv, Core: s, DB: d, Mail: mail, Deliverer: deliverer, Push: recorder, Exports: exports,
 		Signer: signer(), Validate: true,

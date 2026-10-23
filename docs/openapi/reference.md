@@ -16,7 +16,7 @@ Every operation, parameter, request body, and response in [`openapi.yaml`]({{ si
 
 1. Start the devserver with this page's origin allowed. For example, `CORS_ALLOWED_ORIGINS={{ site.url }} make run`, or `http://localhost:4000` if you're running the docs site locally.
 2. Choose **Local devserver** under **Servers**.
-3. Click **Authorize** and paste a user access token or an API Key.
+3. Click **Authorize** and paste a user access token. API Keys are refused from a browser (`400 api_key_in_browser`), so use `curl` or Postman for those.
 4. Open an operation and click **Try it out**.
 
 Browser requests to production are blocked by CORS on purpose. The production API allows only first-party browser origins, so admin and service credentials never get used from a web page (see [Non-Functional Requirements → CORS](../../non-functional-requirements/#cors)). To call production, use `curl`, a generated client, or an API tool such as Postman. Every operation's request is shown here for you to copy.

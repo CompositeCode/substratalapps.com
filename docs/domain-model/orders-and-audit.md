@@ -94,6 +94,7 @@ Every value `action` can take. It's mirrored exactly by the `AuditAction` enum i
 | `user.password_reset` | `POST /auth/password/reset` | `user` |
 | `user.mfa_enabled` / `user.mfa_disabled` | TOTP confirmed / disabled by the user | `user` |
 | `user.mfa_reset` | `DELETE /users/{id}/mfa/totp` — **admin-only** | `user` |
+| `user.sessions_revoked` | `POST /users/{id}/sessions/revoke-all`, by the User or a `users.manage` caller; the count and `keep_current` are in `after` | `user` |
 | `entitlement.granted` | An Entitlement is created, or returns to `active`. Platform-managed `free` and `subscription` rows are granted with actor `system` | `entitlement` |
 | `entitlement.disabled` | `status` set to `disabled` | `entitlement` |
 | `entitlement.revoked` | `status` set to `revoked` | `entitlement` |

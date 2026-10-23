@@ -1002,6 +1002,7 @@
                     "user.mfa_enabled",
                     "user.mfa_disabled",
                     "user.mfa_reset",
+                    "user.sessions_revoked",
                     "audit.exported",
                     "entitlement.granted",
                     "entitlement.disabled",
@@ -1233,6 +1234,7 @@
                 "user.mfa_enabled",
                 "user.mfa_disabled",
                 "user.mfa_reset",
+                "user.sessions_revoked",
                 "audit.exported",
                 "entitlement.granted",
                 "entitlement.disabled",
@@ -2123,6 +2125,51 @@
       "x_method": "POST",
       "x_path": "/auth/password/reset",
       "x_path_params": null,
+      "x_query_params": null,
+      "x_has_body": true,
+      "x_needs_idempotency_key": false,
+      "x_accepts_if_match": false
+    },
+    {
+      "name": "substratal_auth_revokeAllSessions",
+      "title": "Revoke every session (self or users.manage)",
+      "description": "Revoke every session (self or users.manage)\n\nSigns the User out everywhere: each live session is revoked with revoked_reason revoked_all, which ends its refresh tokens and app refresh tokens and deactivates the push devices it registered. keep_current keeps the calling session, and only applies to your own sessions. Writes user.sessions_revoked.\n\nREST: POST /users/{id}/sessions/revoke-all",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "properties": {
+              "keep_current": {
+                "default": false,
+                "description": "Self only; 422 self_only otherwise.",
+                "type": "boolean"
+              }
+            },
+            "type": "object"
+          },
+          "id": {
+            "description": "A usr_... id, or the literal string 'me' for the calling User (not valid for API Keys).",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false,
+        "title": "Revoke every session (self or users.manage)"
+      },
+      "x_operation_id": "auth.revokeAllSessions",
+      "x_method": "POST",
+      "x_path": "/users/{id}/sessions/revoke-all",
+      "x_path_params": [
+        "id"
+      ],
       "x_query_params": null,
       "x_has_body": true,
       "x_needs_idempotency_key": false,
@@ -6172,7 +6219,7 @@
     {
       "name": "substratal_users_list",
       "title": "List or search users",
-      "description": "List or search users\n\nRequires users.list. An app-scoped key with users.list is forced to application_id=\u003cits app\u003e.\n\nREST: GET /users",
+      "description": "List or search users\n\nRequires users.list. An app-scoped key with users.list is forced to application_id=\u003cits app\u003e, and any role_id it sends must be one of its own Application's Roles (403 role_scope_mismatch).\n\nREST: GET /users",
       "inputSchema": {
         "additionalProperties": false,
         "properties": {
@@ -6207,6 +6254,14 @@
             "minLength": 3,
             "type": "string"
           },
+          "role_id": {
+            "description": "Users holding any of these Roles by explicit assignment. Repeatable. Implicit holders of an Application's default_app_role aren't listed.",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "type": "array"
+          },
           "status": {
             "description": "deleted is allowed for users.manage only",
             "enum": [
@@ -6239,6 +6294,7 @@
         "q",
         "application_id",
         "organization_id",
+        "role_id",
         "created_after",
         "created_before"
       ],

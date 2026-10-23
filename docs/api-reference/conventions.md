@@ -208,6 +208,7 @@ A single resource is returned as a bare JSON object — no envelope:
 | `invalid_request` | 400 | Body isn't valid JSON, or a required field is missing. |
 | `invalid_cursor` | 400 | Pagination cursor expired, tampered with, or reused with different filters. |
 | `user_token_required` | 400 | An endpoint that acts *as a User* (`me`, `app-tokens`, password change, …) was called with an API Key. |
+| `api_key_in_browser` | 400 | An API Key was sent from a browser (the request carries an `Origin` header). Call from your backend, or use the signed-in User's own token. See [CORS](../../non-functional-requirements/#cors). |
 | `idempotency_key_required` | 400 | A `POST` that requires `Idempotency-Key` was sent without one. |
 | `api_version_required` | 400 | No `Substratal-Version` header. `details.supported` lists the versions served. See [Versioning](#versioning). |
 | `unsupported_api_version` | 400 | `Substratal-Version` names a version this API doesn't serve. `details.supported` lists the ones it does. |

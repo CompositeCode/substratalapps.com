@@ -65,6 +65,7 @@ Every platform access token and app token is signed with a key published at `htt
 | `DELETE` | `/users/{id}/mfa/totp` | Bearer (`users.manage`) | Support reset for a user who lost their device. |
 | `GET` | `/users/{id}/sessions` | Bearer (self or `users.manage`) | List active sessions. |
 | `DELETE` | `/users/{id}/sessions/{sessionId}` | Bearer (self or `users.manage`) | Revoke one session. |
+| `POST` | `/users/{id}/sessions/revoke-all` | Bearer (self or `users.manage`) | Revoke every session: sign out everywhere. |
 | `GET` | `/.well-known/jwks.json` | none | Public signing keys. No `Substratal-Version` needed. |
 | `GET` | `/.well-known/openid-configuration` | none | Issuer metadata (issuer, JWKS URI, token endpoint). No `Substratal-Version` needed. |
 
@@ -558,6 +559,26 @@ Requires `users.manage`. For a User who has lost their device *and* their recove
 ### `DELETE /users/{id}/sessions/{sessionId}`
 
 `204`. Same effect as logout for that one session, including deactivating the push devices it registered. `revoked_reason` is `logout` when the User revokes their own session, and `admin` when a `users.manage` caller does.
+
+### `POST /users/{id}/sessions/revoke-all`
+
+Signs a User out of every device in one call, for incident response on a compromised account that shouldn't be suspended, or for a User who wants to sign out everywhere else.
+
+```json
+// Request — body optional
+{ "keep_current": true }
+```
+```json
+// Response — 200
+{ "revoked": 3 }
+```
+
+- **Who:** the User themselves, or a `users.manage` caller.
+- **Effect:** every live session is revoked with `revoked_reason: revoked_all`, exactly as if each were revoked one at a time. Their refresh tokens and app refresh tokens stop working, access tokens from them are refused with `401 session_revoked`, and the push devices they registered are deactivated.
+- **`keep_current`:** keeps the session making the call. Self only; anyone else sending it gets `422 validation_failed` with the field code `self_only`.
+- **Result:** `revoked` counts the sessions revoked. `0` is still a success.
+- **Audit:** writes `user.sessions_revoked`, with the count and `keep_current` in `after`.
+- Destructive: see [MCP Server → Tool annotations](../../mcp-server/#tool-annotations--safety).
 
 ## `POST /auth/sso/{provider}/callback`
 
