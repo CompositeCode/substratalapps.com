@@ -1,0 +1,508 @@
+
+
+<!DOCTYPE html>
+
+<html lang="en-US">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+
+  <link rel="stylesheet" href="/substratalapps.com/versions/1.7.7/assets/css/just-the-docs-default.css">
+
+  <link rel="stylesheet" href="/substratalapps.com/versions/1.7.7/assets/css/just-the-docs-head-nav.css" id="jtd-head-nav-stylesheet">
+
+  <style id="jtd-nav-activation">
+  
+
+    
+    .site-nav > ul.nav-list:first-child > li:not(:nth-child(14)) > a,
+    .site-nav > ul.nav-list:first-child > li > ul > li a {
+      background-image: none;
+    }
+
+    .site-nav > ul.nav-list:not(:first-child) a,
+    .site-nav li.external a {
+      background-image: none;
+    }
+
+    .site-nav > ul.nav-list:first-child > li:nth-child(14) > a {
+      font-weight: 600;
+      text-decoration: none;
+    }.site-nav > ul.nav-list:first-child > li:nth-child(14) > button svg {
+      transform: rotate(-90deg);
+    }.site-nav > ul.nav-list:first-child > li.nav-list-item:nth-child(14) > ul.nav-list {
+      display: block;
+    }
+  </style>
+
+  
+
+  
+    <script src="/substratalapps.com/versions/1.7.7/assets/js/vendor/lunr.min.js"></script>
+  
+
+  <script src="/substratalapps.com/versions/1.7.7/assets/js/just-the-docs.js"></script>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+
+
+
+  <!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Pricing | Substratal Apps — Platform API</title>
+<meta name="generator" content="Jekyll v3.10.0" />
+<meta property="og:title" content="Pricing" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="The system of record for how Substratal manages users, roles, per-app access, profiles, and settings across every product in the Substratal Apps catalog. API-first specification and documentation." />
+<meta property="og:description" content="The system of record for how Substratal manages users, roles, per-app access, profiles, and settings across every product in the Substratal Apps catalog. API-first specification and documentation." />
+<link rel="canonical" href="https://compositecode.github.io/substratalapps.com/versions/1.7.7/pricing/" />
+<meta property="og:url" content="https://compositecode.github.io/substratalapps.com/versions/1.7.7/pricing/" />
+<meta property="og:site_name" content="Substratal Apps — Platform API" />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Pricing" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebPage","description":"The system of record for how Substratal manages users, roles, per-app access, profiles, and settings across every product in the Substratal Apps catalog. API-first specification and documentation.","headline":"Pricing","url":"https://compositecode.github.io/substratalapps.com/versions/1.7.7/pricing/"}</script>
+<!-- End Jekyll SEO tag -->
+
+
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll("code.language-mermaid").forEach(function (codeEl) {
+      var pre = codeEl.closest("pre") || codeEl.parentElement;
+      var div = document.createElement("div");
+      div.className = "mermaid";
+      div.textContent = codeEl.textContent;
+      pre.replaceWith(div);
+    });
+    if (window.mermaid) {
+      mermaid.initialize({ startOnLoad: true, theme: "neutral" });
+      mermaid.run();
+    }
+  });
+</script>
+
+
+</head>
+
+<body>
+  <a class="skip-to-main" href="#main-content">Skip to main content</a>
+  <svg xmlns="http://www.w3.org/2000/svg" class="d-none">
+  <symbol id="svg-link" viewBox="0 0 24 24">
+  <title>Link</title>
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-link">
+    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+  </svg>
+</symbol>
+
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+  <title>Menu</title>
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-menu">
+    <line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line>
+  </svg>
+</symbol>
+
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+  <title>Expand</title>
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-right">
+    <polyline points="9 18 15 12 9 6"></polyline>
+  </svg>
+</symbol>
+
+  <!-- Feather. MIT License: https://github.com/feathericons/feather/blob/master/LICENSE -->
+<symbol id="svg-external-link" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-external-link">
+  <title id="svg-external-link-title">(external link)</title>
+  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line>
+</symbol>
+
+  
+    <symbol id="svg-doc" viewBox="0 0 24 24">
+  <title>Document</title>
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file">
+    <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline>
+  </svg>
+</symbol>
+
+    <symbol id="svg-search" viewBox="0 0 24 24">
+  <title>Search</title>
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search">
+    <circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+  </svg>
+</symbol>
+
+  
+  
+    <!-- Bootstrap Icons. MIT License: https://github.com/twbs/icons/blob/main/LICENSE.md -->
+<symbol id="svg-copy" viewBox="0 0 16 16">
+  <title>Copy</title>
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-clipboard" viewBox="0 0 16 16">
+    <path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"/>
+    <path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"/>
+  </svg>
+</symbol>
+<symbol id="svg-copied" viewBox="0 0 16 16">
+  <title>Copied</title>
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-clipboard-check-fill" viewBox="0 0 16 16">
+    <path d="M6.5 0A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3Zm3 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3Z"/>
+    <path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1A2.5 2.5 0 0 1 9.5 5h-3A2.5 2.5 0 0 1 4 2.5v-1Zm6.854 7.354-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 0 1 .708-.708L7.5 10.793l2.646-2.647a.5.5 0 0 1 .708.708Z"/>
+  </svg>
+</symbol>
+
+  
+</svg>
+
+  
+    <header class="side-bar">
+  <div class="site-header">
+    <a href="/substratalapps.com/versions/1.7.7/" class="site-title lh-tight">
+  Substratal Apps — Platform API
+
+</a>
+    <button id="menu-button" class="site-button btn-reset" aria-label="Menu" aria-expanded="false">
+      <svg viewBox="0 0 24 24" class="icon" aria-hidden="true"><use xlink:href="#svg-menu"></use></svg>
+    </button>
+  </div>
+
+  <nav aria-label="Main" id="site-nav" class="site-nav">
+  
+  
+    <ul class="nav-list"><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.7/" class="nav-list-link">Home</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.7/getting-started/" class="nav-list-link">Getting Started</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.7/quickstart/" class="nav-list-link">Quickstart</a></li><li class="nav-list-item"><button class="nav-list-expander btn-reset" aria-label="Domain Model submenu" aria-expanded="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><use xlink:href="#svg-arrow-right"></use></svg>
+      </button><a href="/substratalapps.com/versions/1.7.7/domain-model/" class="nav-list-link">Domain Model</a><ul class="nav-list"><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.7/domain-model/users-and-organizations/" class="nav-list-link">Users & Organizations</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.7/domain-model/applications/" class="nav-list-link">Applications</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.7/domain-model/roles-and-permissions/" class="nav-list-link">Roles & Permissions</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.7/domain-model/entitlements/" class="nav-list-link">Entitlements</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.7/domain-model/profiles/" class="nav-list-link">Profiles</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.7/domain-model/settings/" class="nav-list-link">Settings</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.7/domain-model/orders-and-audit/" class="nav-list-link">Orders & Audit</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.7/domain-model/notifications/" class="nav-list-link">Notifications</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.7/domain-model/database-schema/" class="nav-list-link">Database Schema</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.7/domain-model/tenancy/" class="nav-list-link">Tenancy</a></li></ul></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.7/access-control/" class="nav-list-link">Access Control</a></li><li class="nav-list-item"><button class="nav-list-expander btn-reset" aria-label="API Reference submenu" aria-expanded="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><use xlink:href="#svg-arrow-right"></use></svg>
+      </button><a href="/substratalapps.com/versions/1.7.7/api-reference/" class="nav-list-link">API Reference</a><ul class="nav-list"><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.7/api-reference/conventions/" class="nav-list-link">Conventions</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.7/api-reference/auth/" class="nav-list-link">Auth</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.7/api-reference/users/" class="nav-list-link">Users</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.7/api-reference/profiles/" class="nav-list-link">Profiles</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.7/api-reference/settings/" class="nav-list-link">Settings</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.7/api-reference/applications/" class="nav-list-link">Applications</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.7/api-reference/entitlements/" class="nav-list-link">Entitlements</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.7/api-reference/roles-and-permissions/" class="nav-list-link">Roles & Permissions</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.7/api-reference/organizations/" class="nav-list-link">Organizations</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.7/api-reference/scim/" class="nav-list-link">SCIM</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.7/api-reference/tenancy/" class="nav-list-link">Tenancy</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.7/api-reference/billing/" class="nav-list-link">Billing</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.7/api-reference/audit/" class="nav-list-link">Audit</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.7/api-reference/webhooks/" class="nav-list-link">Webhooks</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.7/api-reference/notifications/" class="nav-list-link">Push Notifications</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.7/api-reference/api-keys/" class="nav-list-link">API Keys</a></li></ul></li><li class="nav-list-item"><button class="nav-list-expander btn-reset" aria-label="OpenAPI Specification submenu" aria-expanded="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><use xlink:href="#svg-arrow-right"></use></svg>
+      </button><a href="/substratalapps.com/versions/1.7.7/openapi/" class="nav-list-link">OpenAPI Specification</a><ul class="nav-list"><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.7/openapi/reference/" class="nav-list-link">Interactive Reference</a></li></ul></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.7/workflows/" class="nav-list-link">Workflows</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.7/trust-model/" class="nav-list-link">Trust Model</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.7/mcp-server/" class="nav-list-link">MCP Server</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.7/non-functional-requirements/" class="nav-list-link">Non-Functional Requirements</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.7/compliance/" class="nav-list-link">Compliance & Data Protection</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.7/roadmap/" class="nav-list-link">Roadmap</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.7/pricing/" class="nav-list-link">Pricing</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.7/changelog/" class="nav-list-link">Changelog</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.7/glossary/" class="nav-list-link">Glossary</a></li></ul>
+  
+</nav>
+
+
+<div class="d-md-block d-none site-footer">
+  
+  
+    This site uses <a href="https://github.com/just-the-docs/just-the-docs">Just the Docs</a>, a documentation theme for Jekyll.
+  
+  </div>
+</header>
+
+  
+  <div class="main" id="top">
+    <div id="main-header" class="main-header">
+  
+    
+
+<div class="search" role="search">
+  <div class="search-input-wrap">
+    <input type="text" id="search-input" class="search-input" tabindex="0" placeholder="Search Substratal Apps — Platform API" autocomplete="off">
+    <label for="search-input" class="search-label">
+      <span class="sr-only">Search Substratal Apps — Platform API</span>
+      <svg viewBox="0 0 24 24" class="search-icon" aria-hidden="true"><use xlink:href="#svg-search"></use></svg>
+    </label>
+  </div>
+  <div id="search-results" class="search-results"></div>
+</div>
+
+  
+  <div class="docs-version docs-version--archived">
+    <span class="docs-version__badge" title="Archived snapshot, released 2026-10-23">v1.7.7 · archived</span>
+    <a class="docs-version__link" href="/substratalapps.com/">View latest →</a>
+    <a class="docs-version__link" href="/substratalapps.com/versions/">All versions</a>
+  </div>
+  
+</div>
+
+    <div class="main-content-wrap">
+      
+      <div id="main-content" class="main-content">
+        <main>
+          
+            <h1 class="no_toc" id="pricing">
+  
+  
+    <a href="#pricing" class="anchor-heading" aria-labelledby="pricing"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> Pricing
+  
+  
+</h1>
+    
+
+<p class="fs-6 fw-300">Two subscription tiers, <strong>Free</strong> and <strong>Standard</strong>. The customer is the person using Substratal’s apps and services: an individual who subscribes for themselves, or an Organization that subscribes for its members.</p>
+
+<ol id="markdown-toc">
+  <li><a href="#the-tiers" id="markdown-toc-the-tiers">The tiers</a>    <ol>
+      <li><a href="#business-and-enterprise" id="markdown-toc-business-and-enterprise">Business and Enterprise</a></li>
+    </ol>
+  </li>
+  <li><a href="#who-pays" id="markdown-toc-who-pays">Who pays</a></li>
+  <li><a href="#what-a-user-means-for-an-organization" id="markdown-toc-what-a-user-means-for-an-organization">What a “user” means for an Organization</a></li>
+  <li><a href="#how-access-follows-the-tier" id="markdown-toc-how-access-follows-the-tier">How access follows the tier</a></li>
+  <li><a href="#when-a-subscription-lapses" id="markdown-toc-when-a-subscription-lapses">When a subscription lapses</a></li>
+  <li><a href="#stripe-catalog" id="markdown-toc-stripe-catalog">Stripe catalog</a></li>
+  <li><a href="#why-two-tiers" id="markdown-toc-why-two-tiers">Why two tiers</a></li>
+  <li><a href="#how-the-subscription-is-charged" id="markdown-toc-how-the-subscription-is-charged">How the subscription is charged</a></li>
+  <li><a href="#keeping-these-numbers-honest" id="markdown-toc-keeping-these-numbers-honest">Keeping these numbers honest</a></li>
+</ol><hr />
+<h2 id="the-tiers">
+  
+  
+    <a href="#the-tiers" class="anchor-heading" aria-labelledby="the-tiers"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> The tiers
+  
+  
+</h2>
+    
+
+<p>For most people, Free or Standard is all they’ll ever need.</p>
+
+<div class="table-wrapper"><table>
+  <thead>
+    <tr>
+      <th> </th>
+      <th><strong>Free</strong></th>
+      <th><strong>Standard</strong></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Price</td>
+      <td><strong>$0</strong></td>
+      <td><strong>$6 per user per month</strong></td>
+    </tr>
+    <tr>
+      <td>What it includes</td>
+      <td>Access to the Applications, features, and services Substratal designates as free.</td>
+      <td>Access to download and use every Application and service Substratal Apps offers, including everything in Free.</td>
+    </tr>
+    <tr>
+      <td>Who can subscribe</td>
+      <td>Every User, automatically, with no card required.</td>
+      <td>A User for themselves, or an <a href="../domain-model/users-and-organizations/#organization">Organization</a> for its members.</td>
+    </tr>
+    <tr>
+      <td>Billing</td>
+      <td>None.</td>
+      <td>Monthly, USD, tax-exclusive, through <a href="#how-the-subscription-is-charged">Stripe Billing</a>.</td>
+    </tr>
+  </tbody>
+</table></div>
+
+<p>Free and Standard are the only tiers available today.</p>
+<h3 id="business-and-enterprise">
+  
+  
+    <a href="#business-and-enterprise" class="anchor-heading" aria-labelledby="business-and-enterprise"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> Business and Enterprise
+  
+  
+</h3>
+    
+
+<p>Beyond Standard there will be business and enterprise pricing, tailored to an Organization’s specific needs, <a href="../domain-model/tenancy/">tenancy</a>, and the geographic location of its data. It isn’t offered yet and has no published price. The infrastructure it will be built on is already specified: the <a href="../domain-model/tenancy/#tiers"><code class="language-plaintext highlighter-rouge">isolated</code> and <code class="language-plaintext highlighter-rouge">dedicated_region</code> Tenant tiers</a> and the support-run <a href="../domain-model/tenancy/#how-a-tier-change-happens-today">tier-change process</a>. Until business pricing ships, everything runs on the <code class="language-plaintext highlighter-rouge">shared</code> tier.</p>
+<h2 id="who-pays">
+  
+  
+    <a href="#who-pays" class="anchor-heading" aria-labelledby="who-pays"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> Who pays
+  
+  
+</h2>
+    
+
+<p>Substratal builds every Application in the catalog today (see <a href="../#what-substratal-apps-actually-is">Home</a>), so Substratal bills the people who use those Applications directly, through this subscription. Nobody pays per Application. A Standard subscription covers the whole catalog.</p>
+
+<p>There are two ways to be covered by Standard:</p>
+
+<ul>
+  <li><strong>Individual subscription.</strong> A User subscribes for themselves: one user, $6 a month.</li>
+  <li><strong>Organization subscription.</strong> An Organization subscribes for its members and pays $6 a month for each covered member (see <a href="#what-a-user-means-for-an-organization">What a “user” means for an Organization</a>). An org admin chooses which members are covered, with the same <code class="language-plaintext highlighter-rouge">all_members</code> / <code class="language-plaintext highlighter-rouge">allowlist</code> / <code class="language-plaintext highlighter-rouge">denylist</code> choice that <a href="../domain-model/entitlements/#org-wide-entitlements-scoping-members-in-or-out">org-wide Entitlements</a> already use.</li>
+</ul>
+
+<p>A User covered either way has Standard access. Someone covered by an Organization can still subscribe individually. Both subscriptions are billed, and the User’s <code class="language-plaintext highlighter-rouge">plan_sources</code> lists both so a client can suggest cancelling one; nothing is refunded automatically. When a third-party marketplace ships, its Applications will carry their own developers’ pricing and billing. This subscription covers Substratal’s own catalog only (see <a href="../domain-model/orders-and-audit/#billing-system-of-record">Orders &amp; Audit → Billing system of record</a>).</p>
+<h2 id="what-a-user-means-for-an-organization">
+  
+  
+    <a href="#what-a-user-means-for-an-organization" class="anchor-heading" aria-labelledby="what-a-user-means-for-an-organization"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> What a “user” means for an Organization
+  
+  
+</h2>
+    
+
+<p>An Organization is billed for each <strong>covered member</strong>: a distinct, non-test-mode User who is an active member of the Organization and is included by its subscription’s member selection. Suspended and deleted Users don’t count, and neither do pending invitations. A User who belongs to several Organizations that each subscribe is counted by each of them.</p>
+
+<p>The count is <strong>provisioned, not activity-based</strong>. It counts who is covered, not who signed in this month, so an Organization can predict and budget against it.</p>
+
+<p>The count syncs to Stripe once a day with no mid-period proration. Each invoice charges for the count on the day before it’s issued. Real-time sync with prorations was considered and not chosen: it’s more accurate, but noisier for customers and means more Stripe API calls.</p>
+
+<p>A live subscription never counts test-mode Users, so integration tests can’t consume paid seats. A test-mode subscription runs in Stripe test mode and counts only test-mode members whose <a href="../api-reference/auth/#lifetime"><code class="language-plaintext highlighter-rouge">expires_at</code></a> hasn’t passed. Test-mode Users last 24 hours by default and never more than 30 days, so test mode can’t stand in for a free production tier.</p>
+<h2 id="how-access-follows-the-tier">
+  
+  
+    <a href="#how-access-follows-the-tier" class="anchor-heading" aria-labelledby="how-access-follows-the-tier"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> How access follows the tier
+  
+  
+</h2>
+    
+
+<p>Every <a href="../domain-model/applications/">Application</a> is designated either <strong>free</strong> or <strong>standard</strong>.</p>
+
+<ul>
+  <li>A <strong>free</strong> Application is available to every active User.</li>
+  <li>A <strong>standard</strong> Application is available to every User covered by Standard, through their own subscription or an Organization’s.</li>
+</ul>
+
+<p>Access is still enforced through <a href="../domain-model/entitlements/">Entitlements</a> and the <a href="../access-control/#the-algorithm">access-control algorithm</a>, exactly as for any other grant. The platform keeps them in step with each Application’s tier and each subscription (see <a href="../domain-model/entitlements/#platform-managed-entitlements">Platform-managed Entitlements</a>):</p>
+
+<ul>
+  <li>Every User gets a <code class="language-plaintext highlighter-rouge">free</code> Entitlement to each free Application at signup.</li>
+  <li>A subscription that covers someone gives them a <code class="language-plaintext highlighter-rouge">subscription</code> Entitlement to each standard Application: a personal one for an individual subscription, or one org-wide grant per Application for an Organization’s.</li>
+  <li>When an Application changes tier, or a new one is published, the platform grants or ends these Entitlements to match. An hourly job repairs anything that drifted.</li>
+</ul>
+
+<p>An admin can still disable, and later re-enable, one person’s access to one Application, whatever their tier. Applications hear about every change through the usual <a href="../api-reference/webhooks/#event-types"><code class="language-plaintext highlighter-rouge">access.granted</code> / <code class="language-plaintext highlighter-rouge">access.revoked</code></a> webhooks.</p>
+<h2 id="when-a-subscription-lapses">
+  
+  
+    <a href="#when-a-subscription-lapses" class="anchor-heading" aria-labelledby="when-a-subscription-lapses"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> When a subscription lapses
+  
+  
+</h2>
+    
+
+<div class="table-wrapper"><table>
+  <thead>
+    <tr>
+      <th>Situation</th>
+      <th>What happens</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Payment fails (<code class="language-plaintext highlighter-rouge">past_due</code>)</td>
+      <td>Nothing changes. Stripe retries (Smart Retries, about 3 weeks) and emails the customer.</td>
+    </tr>
+    <tr>
+      <td>Subscription ends (<code class="language-plaintext highlighter-rouge">canceled</code>, <code class="language-plaintext highlighter-rouge">unpaid</code>, <code class="language-plaintext highlighter-rouge">incomplete_expired</code>, <code class="language-plaintext highlighter-rouge">paused</code>)</td>
+      <td>Standard access ends at the end of the paid period. The User, or every member the Organization covered, drops to Free.</td>
+    </tr>
+    <tr>
+      <td>A member leaves an Organization, or the org admin stops covering them</td>
+      <td>They lose Standard access through that Organization at once. They’re no longer counted from the next daily sync.</td>
+    </tr>
+    <tr>
+      <td>Voluntary cancellation</td>
+      <td>Cancel at period end in the Stripe Customer Portal. Standard access continues until then.</td>
+    </tr>
+  </tbody>
+</table></div>
+
+<p>Dropping to Free never deletes anything. Profiles, settings, and per-user data in standard Applications are kept, and come back when the User is covered by Standard again. Only access to standard Applications stops.</p>
+<h2 id="stripe-catalog">
+  
+  
+    <a href="#stripe-catalog" class="anchor-heading" aria-labelledby="stripe-catalog"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> Stripe catalog
+  
+  
+</h2>
+    
+
+<p>Free is a User with no Stripe Subscription. Upgrades go through Stripe Checkout, and payment methods, invoices, and cancellation through the Customer Portal. Billing is monthly, USD only, and tax-exclusive with Stripe Tax.</p>
+
+<p>The Products and Prices configured in Stripe. Lookup keys are what the code references, never Stripe price ids, so test and live mode can share code.</p>
+
+<div class="table-wrapper"><table>
+  <thead>
+    <tr>
+      <th>Product</th>
+      <th>Price lookup key</th>
+      <th>Amount</th>
+      <th>Shape</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Substratal Standard</td>
+      <td><code class="language-plaintext highlighter-rouge">standard_monthly_usd</code></td>
+      <td>$6.00 per user</td>
+      <td>Licensed (not metered), <code class="language-plaintext highlighter-rouge">billing_scheme: per_unit</code>, monthly. <code class="language-plaintext highlighter-rouge">quantity: 1</code> for an individual subscription. For an Organization, <code class="language-plaintext highlighter-rouge">quantity</code> is the covered-member count from the daily sync, at least 1.</td>
+    </tr>
+  </tbody>
+</table></div>
+
+<ul>
+  <li><strong>Free has no Stripe Subscription</strong>, and a User or Organization has no Stripe Customer until its first Checkout. That avoids $0 subscriptions that would need cancelling and replacing on upgrade.</li>
+  <li><strong>Monthly, USD, tax-exclusive</strong> (Stripe Tax enabled). There are no annual plans and no Standard trial: Free is the way to try Substratal’s apps, and it never needs a card. Either can be added later as Stripe configuration (a second price, or <code class="language-plaintext highlighter-rouge">subscription_data.trial_period_days</code> on Checkout) without an API change.</li>
+  <li><strong>Organization quantity</strong> is written to the subscription item by a daily job (00:15 UTC) with <code class="language-plaintext highlighter-rouge">proration_behavior: none</code>.</li>
+  <li>Business and Enterprise prices will be created per customer when those tiers ship.</li>
+</ul>
+<h2 id="why-two-tiers">
+  
+  
+    <a href="#why-two-tiers" class="anchor-heading" aria-labelledby="why-two-tiers"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> Why two tiers
+  
+  
+</h2>
+    
+
+<ul>
+  <li><strong>Free is free, not just cheap.</strong> The first horizon in <a href="https://github.com/CompositeCode/substratalapps.com/blob/main/plan-remaining.md#growth-trajectory">Growth trajectory</a> is dozens of users, and the shared-tier cost of serving free Applications is near zero against the infrastructure floor that’s paid regardless. Charging for it would tax exactly the adoption the product needs most right now.</li>
+  <li><strong>One paid price, for the whole catalog.</strong> A single per-user price is easy to understand and budget for, and works the same for one person or a whole Organization. Per-Application pricing would make every new Application a new purchasing decision.</li>
+  <li><strong>Infrastructure choice waits for business pricing.</strong> <code class="language-plaintext highlighter-rouge">isolated</code> and <code class="language-plaintext highlighter-rouge">dedicated_region</code> tenancy carry a real, named infrastructure cost, driven by a customer’s own compliance or data-residency requirement. That’s what business and enterprise pricing is for, so neither is offered on Free or Standard.</li>
+</ul>
+<h2 id="how-the-subscription-is-charged">
+  
+  
+    <a href="#how-the-subscription-is-charged" class="anchor-heading" aria-labelledby="how-the-subscription-is-charged"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> How the subscription is charged
+  
+  
+</h2>
+    
+
+<p>The subscription is processed through <strong>Stripe Billing</strong>. Card data never touches this API, and Stripe is PCI-DSS Level 1, which keeps PCI scope minimal (see <a href="../compliance/#what-this-doesnt-cover">Compliance</a>). Stripe is one of the platform’s two sub-processors, alongside AWS (see <a href="../compliance/#gdpr-and-ccpa--build-for-it-now">Compliance → GDPR (and CCPA)</a>).</p>
+
+<p>The implementation (object mapping, webhook event handling, the daily quantity sync) is specified in <a href="https://github.com/CompositeCode/substratalapps.com/blob/main/infra/README.md#stripe-billing"><code class="language-plaintext highlighter-rouge">infra/README.md</code> → Stripe Billing</a>. It’s a build and operations concern, not part of the API Applications call.</p>
+<h2 id="keeping-these-numbers-honest">
+  
+  
+    <a href="#keeping-these-numbers-honest" class="anchor-heading" aria-labelledby="keeping-these-numbers-honest"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> Keeping these numbers honest
+  
+  
+</h2>
+    
+
+<p><strong>Stripe’s official MCP server</strong> is the direct way to check that the Products and Prices configured in Stripe still match this page. The two are kept in sync by hand, the same relationship <a href="../api-reference/conventions/#machine-readable">Conventions → Machine-readable</a> describes between this site’s prose and <code class="language-plaintext highlighter-rouge">openapi.yaml</code>. When business pricing is designed, the <strong>AWS Pricing</strong> and <strong>AWS Billing and Cost Management</strong> MCP servers are the way to ground its tenancy surcharges in live infrastructure cost rather than estimates.</p>
+
+          
+
+          
+            
+          
+        </main>
+        
+<hr>
+<footer>
+  
+    <p><a href="#top" id="back-to-top">Back to top</a></p>
+  
+
+  <p class="text-small mb-0">Substratal Apps Platform API — living specification. This site is the system of record; see git history for how it has changed over time.</p>
+
+  <div class="d-md-none mt-4 fs-2">
+    
+    
+      This site uses <a href="https://github.com/just-the-docs/just-the-docs">Just the Docs</a>, a documentation theme for Jekyll.
+    
+  </div>
+</footer>
+
+      </div>
+    </div>
+    
+      
+
+<div class="search-overlay"></div>
+
+    
+  </div>
+
+  
+</body>
+</html>
+

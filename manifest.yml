@@ -2,6 +2,10 @@
 # scripts/docs-build.rb on main's GitHub build; each entry has a frozen
 # static copy at <version>/ on this branch, served at /versions/<version>/.
 versions:
+- version: 1.7.7
+  released: '2026-10-23'
+  commit: b826f2a1aaa6d58d9c16c83f4aafeb8378a29d8a
+  summary: 'Merge pull request #68 from CompositeCode/feature/console-m1-batch1'
 - version: 1.7.6
   released: '2026-10-22'
   commit: 2b624986f1c05f995601580c0f3ee897f504d054
