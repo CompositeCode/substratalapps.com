@@ -73,7 +73,7 @@ One row per subscriber, kept across lapses and resubscribes.
 | `id` | `sbs_` prefix. |
 | `subscriber_type` | `user` (an individual subscription) or `organization`. Exactly one of `user_id` and `organization_id` is set. |
 | `plan` | Always `standard` today. |
-| `status` | `active`, `trialing`, `past_due`, `canceled`, `unpaid`, `incomplete`, `incomplete_expired`, or `paused`. Mirrors Stripe. `active`, `trialing`, and `past_due` cover their users with Standard; the rest don't. A Checkout that hasn't completed yet is `incomplete`. New values may be added; see [Non-Functional Requirements → Versioning](../../non-functional-requirements/#versioning). |
+| `status` | `active`, `trialing`, `past_due`, `canceled`, `unpaid`, `incomplete`, `incomplete_expired`, or `paused`. Mirrors Stripe. `active`, `trialing`, and `past_due` cover their users with Standard; the rest don't. A first Checkout that hasn't completed yet is `incomplete`. A new Checkout keeps the row's current status until Stripe reports the new subscription. A first Checkout that's abandoned becomes `incomplete_expired` when Stripe expires the session, about 24 hours later. New values may be added; see [Non-Functional Requirements → Versioning](../../non-functional-requirements/#versioning). |
 | `member_scope`, `member_overrides` | Organization subscriptions only: `all_members`, `allowlist`, or `denylist`, with the same meaning as on [org-wide Entitlements](../../domain-model/entitlements/#org-wide-entitlements-scoping-members-in-or-out). `null` on an individual subscription. |
 | `quantity.current` | Users billed, computed live. Always `1` for an individual subscription. For an Organization, its covered members: active Users with an active membership, included by `member_scope`, in the subscription's own mode. See [Pricing → What a "user" means for an Organization](../../pricing/#what-a-user-means-for-an-organization). |
 | `quantity.last_synced` | What was last written to Stripe by the daily sync, which is what the next invoice charges for. |
@@ -108,7 +108,7 @@ Every User's and Organization's subscription, for `billing.manage` only. Anyone 
 
 | Filter | Meaning |
 |---|---|
-| `status` | Any of these statuses. Repeatable (`?status=past_due&status=unpaid`), up to 8. An abandoned Checkout leaves an `incomplete` row, so a console usually filters by status. |
+| `status` | Any of these statuses. Repeatable (`?status=past_due&status=unpaid`), up to 8. An abandoned first Checkout leaves an `incomplete_expired` row, so a console usually filters by status. |
 | `subscriber_type` | `user` or `organization`. |
 | `cancel_at_period_end` | `true` for subscriptions set to end at the period's close, `false` for the rest. |
 | `current_period_end_before` | ISO 8601. Subscriptions whose current period ends before this time. |

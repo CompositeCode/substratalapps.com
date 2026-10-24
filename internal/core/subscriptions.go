@@ -1088,6 +1088,44 @@ func (s *Server) ApplyStripeSubscription(ctx context.Context, sub StripeSubscrip
 	return row.ID, err
 }
 
+// ExpireCheckout handles checkout.session.expired: a first Checkout that
+// was abandoned never creates a Stripe subscription, so nothing else would
+// move the row off incomplete. It becomes incomplete_expired, Stripe's own
+// status for a first payment that never completed. A row Stripe has
+// already linked, or that has moved on, is left alone. It returns our
+// subscription id, or "" when there's no such row.
+func (s *Server) ExpireCheckout(ctx context.Context, subscriptionID string) (string, error) {
+	var row subscriptionRow
+	err := s.system(ctx, false, db.Settings{AllModes: true}, func(c *Call) error {
+		return db.One(ctx, c.q, &row, `select to_jsonb(s) from subscriptions s where id = :id`, db.Args{"id": subscriptionID})
+	})
+	if err == db.ErrNotFound {
+		return "", nil
+	}
+	if err != nil {
+		return "", err
+	}
+	if row.Status != "incomplete" || row.StripeSubscriptionID != nil {
+		return row.ID, nil
+	}
+	err = s.system(ctx, row.TestMode, db.Settings{}, func(c *Call) error {
+		n, err := c.q.Exec(ctx, `update subscriptions set status = 'incomplete_expired'
+			where id = :id and status = 'incomplete' and stripe_subscription_id is null`, db.Args{"id": row.ID})
+		if err != nil || n == 0 {
+			return err
+		}
+		a := Audit{Action: "subscription.status_changed", TargetType: "subscription", TargetID: row.ID,
+			Before: map[string]any{"status": "incomplete"}, After: map[string]any{"status": "incomplete_expired"}}
+		if row.OrganizationID != nil {
+			a.OrganizationID = row.OrganizationID
+		} else {
+			a.TargetUserID = row.UserID
+		}
+		return c.audit(a)
+	})
+	return row.ID, err
+}
+
 // QuantityTarget is one Organization subscription's covered-member count
 // for the daily quantity sync.
 type QuantityTarget struct {

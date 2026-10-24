@@ -72,6 +72,30 @@ func (h *Webhook) Process(ctx context.Context, ev stripe.Event) error {
 		if s.Subscription != nil {
 			stripeSubID = s.Subscription.ID
 		}
+	case "checkout.session.expired":
+		var s stripe.CheckoutSession
+		if err := json.Unmarshal(ev.Data.Raw, &s); err != nil {
+			return err
+		}
+		if s.ClientReferenceID == "" {
+			return h.Core.MarkStripeEventProcessed(ctx, ev.ID, "")
+		}
+		if s.Customer != nil && s.Customer.ID != "" {
+			// Best effort: a failed check must not leave the event stuck, and a
+			// wrong expiry heals when the newer Checkout's events arrive.
+			open, err := h.Stripe.OpenCheckout(ctx, s.Customer.ID, s.ClientReferenceID)
+			if err != nil {
+				h.Log.Warn("stripe: open checkout check failed; expiring anyway", "event", ev.ID, "err", err)
+			}
+			if open {
+				return h.Core.MarkStripeEventProcessed(ctx, ev.ID, s.ClientReferenceID)
+			}
+		}
+		id, err := h.Core.ExpireCheckout(ctx, s.ClientReferenceID)
+		if err != nil {
+			return err
+		}
+		return h.Core.MarkStripeEventProcessed(ctx, ev.ID, id)
 	case "customer.subscription.created", "customer.subscription.updated", "customer.subscription.deleted":
 		var s stripe.Subscription
 		if err := json.Unmarshal(ev.Data.Raw, &s); err != nil {

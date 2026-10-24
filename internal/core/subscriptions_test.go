@@ -302,3 +302,49 @@ func TestTestModeCheckoutNeedsStripeTestMode(t *testing.T) {
 		t.Fatalf("test-mode subscription = %v", sub)
 	}
 }
+
+// An abandoned first Checkout's row becomes incomplete_expired when Stripe
+// expires the session; a row Stripe has linked is left alone.
+func TestExpireCheckout(t *testing.T) {
+	stripe := &fakeStripe{}
+	e := testenv.NewWith(t, testenv.Options{Billing: stripe, OwnDatabase: true})
+	ctx := context.Background()
+	u, paid := e.Signup(), e.Signup()
+
+	e.PostIdem("/users/me/billing/checkout-sessions", u.Token, testenv.Unique(), checkoutBody).Expect(201)
+	sid := e.Get("/users/me/subscription", u.Token).JSON()["subscription"].(map[string]any)["id"].(string)
+	if id, err := e.Core.ExpireCheckout(ctx, sid); err != nil || id != sid {
+		t.Fatalf("expire = %q, %v", id, err)
+	}
+	if st := e.Get("/users/me/subscription", u.Token).JSON()["subscription"].(map[string]any)["status"]; st != "incomplete_expired" {
+		t.Fatalf("status = %v", st)
+	}
+	audits := e.Get("/audit-events?action=subscription.status_changed&target_user_id="+u.ID, e.Admin).Expect(200).JSON()["data"].([]any)
+	if len(audits) != 1 {
+		t.Fatalf("audit events = %v", audits)
+	}
+	// Idempotent, and the subscriber can check out again.
+	if _, err := e.Core.ExpireCheckout(ctx, sid); err != nil {
+		t.Fatal(err)
+	}
+	if n := len(e.Get("/audit-events?action=subscription.status_changed&target_user_id="+u.ID, e.Admin).JSON()["data"].([]any)); n != 1 {
+		t.Fatalf("a repeat expiry wrote %d audit events", n)
+	}
+	e.PostIdem("/users/me/billing/checkout-sessions", u.Token, testenv.Unique(), checkoutBody).Expect(201)
+
+	// A completed Checkout isn't expired by a late event for an older session.
+	e.PostIdem("/users/me/billing/checkout-sessions", paid.Token, testenv.Unique(), checkoutBody).Expect(201)
+	psid := e.Get("/users/me/subscription", paid.Token).JSON()["subscription"].(map[string]any)["id"].(string)
+	activate(t, e, psid, "active")
+	if _, err := e.Core.ExpireCheckout(ctx, psid); err != nil {
+		t.Fatal(err)
+	}
+	if st := e.Get("/users/me/subscription", paid.Token).JSON()["subscription"].(map[string]any)["status"]; st != "active" {
+		t.Fatalf("paid status = %v", st)
+	}
+
+	// Unknown ids are ignored.
+	if id, err := e.Core.ExpireCheckout(ctx, "sbs_nope"); err != nil || id != "" {
+		t.Fatalf("unknown = %q, %v", id, err)
+	}
+}
