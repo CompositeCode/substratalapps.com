@@ -1,0 +1,619 @@
+
+
+<!DOCTYPE html>
+
+<html lang="en-US">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+
+  <link rel="stylesheet" href="/substratalapps.com/versions/1.7.13/assets/css/just-the-docs-default.css">
+
+  <link rel="stylesheet" href="/substratalapps.com/versions/1.7.13/assets/css/just-the-docs-head-nav.css" id="jtd-head-nav-stylesheet">
+
+  <style id="jtd-nav-activation">
+  
+
+    
+    .site-nav > ul.nav-list:first-child > li:not(:nth-child(7)) > a,
+    .site-nav > ul.nav-list:first-child > li > ul > li a {
+      background-image: none;
+    }
+
+    .site-nav > ul.nav-list:not(:first-child) a,
+    .site-nav li.external a {
+      background-image: none;
+    }
+
+    .site-nav > ul.nav-list:first-child > li:nth-child(7) > a {
+      font-weight: 600;
+      text-decoration: none;
+    }.site-nav > ul.nav-list:first-child > li:nth-child(7) > button svg {
+      transform: rotate(-90deg);
+    }.site-nav > ul.nav-list:first-child > li.nav-list-item:nth-child(7) > ul.nav-list {
+      display: block;
+    }
+  </style>
+
+  
+
+  
+    <script src="/substratalapps.com/versions/1.7.13/assets/js/vendor/lunr.min.js"></script>
+  
+
+  <script src="/substratalapps.com/versions/1.7.13/assets/js/just-the-docs.js"></script>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+
+
+
+  <!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>OpenAPI Specification | Substratal Apps — Platform API</title>
+<meta name="generator" content="Jekyll v3.10.0" />
+<meta property="og:title" content="OpenAPI Specification" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="The system of record for how Substratal manages users, roles, per-app access, profiles, and settings across every product in the Substratal Apps catalog. API-first specification and documentation." />
+<meta property="og:description" content="The system of record for how Substratal manages users, roles, per-app access, profiles, and settings across every product in the Substratal Apps catalog. API-first specification and documentation." />
+<link rel="canonical" href="https://compositecode.github.io/substratalapps.com/versions/1.7.13/openapi/" />
+<meta property="og:url" content="https://compositecode.github.io/substratalapps.com/versions/1.7.13/openapi/" />
+<meta property="og:site_name" content="Substratal Apps — Platform API" />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="OpenAPI Specification" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebPage","description":"The system of record for how Substratal manages users, roles, per-app access, profiles, and settings across every product in the Substratal Apps catalog. API-first specification and documentation.","headline":"OpenAPI Specification","url":"https://compositecode.github.io/substratalapps.com/versions/1.7.13/openapi/"}</script>
+<!-- End Jekyll SEO tag -->
+
+
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll("code.language-mermaid").forEach(function (codeEl) {
+      var pre = codeEl.closest("pre") || codeEl.parentElement;
+      var div = document.createElement("div");
+      div.className = "mermaid";
+      div.textContent = codeEl.textContent;
+      pre.replaceWith(div);
+    });
+    if (window.mermaid) {
+      mermaid.initialize({ startOnLoad: true, theme: "neutral" });
+      mermaid.run();
+    }
+  });
+</script>
+
+
+</head>
+
+<body>
+  <a class="skip-to-main" href="#main-content">Skip to main content</a>
+  <svg xmlns="http://www.w3.org/2000/svg" class="d-none">
+  <symbol id="svg-link" viewBox="0 0 24 24">
+  <title>Link</title>
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-link">
+    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+  </svg>
+</symbol>
+
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+  <title>Menu</title>
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-menu">
+    <line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line>
+  </svg>
+</symbol>
+
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+  <title>Expand</title>
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-right">
+    <polyline points="9 18 15 12 9 6"></polyline>
+  </svg>
+</symbol>
+
+  <!-- Feather. MIT License: https://github.com/feathericons/feather/blob/master/LICENSE -->
+<symbol id="svg-external-link" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-external-link">
+  <title id="svg-external-link-title">(external link)</title>
+  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line>
+</symbol>
+
+  
+    <symbol id="svg-doc" viewBox="0 0 24 24">
+  <title>Document</title>
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file">
+    <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline>
+  </svg>
+</symbol>
+
+    <symbol id="svg-search" viewBox="0 0 24 24">
+  <title>Search</title>
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search">
+    <circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+  </svg>
+</symbol>
+
+  
+  
+    <!-- Bootstrap Icons. MIT License: https://github.com/twbs/icons/blob/main/LICENSE.md -->
+<symbol id="svg-copy" viewBox="0 0 16 16">
+  <title>Copy</title>
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-clipboard" viewBox="0 0 16 16">
+    <path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"/>
+    <path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"/>
+  </svg>
+</symbol>
+<symbol id="svg-copied" viewBox="0 0 16 16">
+  <title>Copied</title>
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-clipboard-check-fill" viewBox="0 0 16 16">
+    <path d="M6.5 0A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3Zm3 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3Z"/>
+    <path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1A2.5 2.5 0 0 1 9.5 5h-3A2.5 2.5 0 0 1 4 2.5v-1Zm6.854 7.354-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 0 1 .708-.708L7.5 10.793l2.646-2.647a.5.5 0 0 1 .708.708Z"/>
+  </svg>
+</symbol>
+
+  
+</svg>
+
+  
+    <header class="side-bar">
+  <div class="site-header">
+    <a href="/substratalapps.com/versions/1.7.13/" class="site-title lh-tight">
+  Substratal Apps — Platform API
+
+</a>
+    <button id="menu-button" class="site-button btn-reset" aria-label="Menu" aria-expanded="false">
+      <svg viewBox="0 0 24 24" class="icon" aria-hidden="true"><use xlink:href="#svg-menu"></use></svg>
+    </button>
+  </div>
+
+  <nav aria-label="Main" id="site-nav" class="site-nav">
+  
+  
+    <ul class="nav-list"><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.13/" class="nav-list-link">Home</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.13/getting-started/" class="nav-list-link">Getting Started</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.13/quickstart/" class="nav-list-link">Quickstart</a></li><li class="nav-list-item"><button class="nav-list-expander btn-reset" aria-label="Domain Model submenu" aria-expanded="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><use xlink:href="#svg-arrow-right"></use></svg>
+      </button><a href="/substratalapps.com/versions/1.7.13/domain-model/" class="nav-list-link">Domain Model</a><ul class="nav-list"><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.13/domain-model/users-and-organizations/" class="nav-list-link">Users & Organizations</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.13/domain-model/applications/" class="nav-list-link">Applications</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.13/domain-model/roles-and-permissions/" class="nav-list-link">Roles & Permissions</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.13/domain-model/entitlements/" class="nav-list-link">Entitlements</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.13/domain-model/profiles/" class="nav-list-link">Profiles</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.13/domain-model/settings/" class="nav-list-link">Settings</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.13/domain-model/orders-and-audit/" class="nav-list-link">Orders & Audit</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.13/domain-model/notifications/" class="nav-list-link">Notifications</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.13/domain-model/database-schema/" class="nav-list-link">Database Schema</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.13/domain-model/tenancy/" class="nav-list-link">Tenancy</a></li></ul></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.13/access-control/" class="nav-list-link">Access Control</a></li><li class="nav-list-item"><button class="nav-list-expander btn-reset" aria-label="API Reference submenu" aria-expanded="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><use xlink:href="#svg-arrow-right"></use></svg>
+      </button><a href="/substratalapps.com/versions/1.7.13/api-reference/" class="nav-list-link">API Reference</a><ul class="nav-list"><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.13/api-reference/conventions/" class="nav-list-link">Conventions</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.13/api-reference/auth/" class="nav-list-link">Auth</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.13/api-reference/users/" class="nav-list-link">Users</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.13/api-reference/profiles/" class="nav-list-link">Profiles</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.13/api-reference/settings/" class="nav-list-link">Settings</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.13/api-reference/applications/" class="nav-list-link">Applications</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.13/api-reference/entitlements/" class="nav-list-link">Entitlements</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.13/api-reference/roles-and-permissions/" class="nav-list-link">Roles & Permissions</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.13/api-reference/organizations/" class="nav-list-link">Organizations</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.13/api-reference/scim/" class="nav-list-link">SCIM</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.13/api-reference/tenancy/" class="nav-list-link">Tenancy</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.13/api-reference/billing/" class="nav-list-link">Billing</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.13/api-reference/audit/" class="nav-list-link">Audit</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.13/api-reference/webhooks/" class="nav-list-link">Webhooks</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.13/api-reference/notifications/" class="nav-list-link">Push Notifications</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.13/api-reference/api-keys/" class="nav-list-link">API Keys</a></li></ul></li><li class="nav-list-item"><button class="nav-list-expander btn-reset" aria-label="OpenAPI Specification submenu" aria-expanded="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><use xlink:href="#svg-arrow-right"></use></svg>
+      </button><a href="/substratalapps.com/versions/1.7.13/openapi/" class="nav-list-link">OpenAPI Specification</a><ul class="nav-list"><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.13/openapi/reference/" class="nav-list-link">Interactive Reference</a></li></ul></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.13/workflows/" class="nav-list-link">Workflows</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.13/trust-model/" class="nav-list-link">Trust Model</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.13/mcp-server/" class="nav-list-link">MCP Server</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.13/non-functional-requirements/" class="nav-list-link">Non-Functional Requirements</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.13/compliance/" class="nav-list-link">Compliance & Data Protection</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.13/roadmap/" class="nav-list-link">Roadmap</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.13/pricing/" class="nav-list-link">Pricing</a></li><li class="nav-list-item"><button class="nav-list-expander btn-reset" aria-label="Legal submenu" aria-expanded="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><use xlink:href="#svg-arrow-right"></use></svg>
+      </button><a href="/substratalapps.com/versions/1.7.13/legal/" class="nav-list-link">Legal</a><ul class="nav-list"><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.13/legal/terms/" class="nav-list-link">Terms of Service</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.13/legal/privacy/" class="nav-list-link">Privacy Policy</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.13/legal/eula/" class="nav-list-link">End User License Agreement</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.13/legal/developer-terms/" class="nav-list-link">Developer and API Terms</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.13/legal/acceptable-use/" class="nav-list-link">Acceptable Use Policy</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.13/legal/dpa/" class="nav-list-link">Data Processing Addendum</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.13/legal/subprocessors/" class="nav-list-link">Sub-processors</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.13/legal/cookies/" class="nav-list-link">Cookie Notice</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.13/legal/data-deletion/" class="nav-list-link">Account and Data Deletion</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.13/legal/security/" class="nav-list-link">Security and Vulnerability Disclosure</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.13/legal/copyright/" class="nav-list-link">Copyright, Licenses and Trademarks</a></li></ul></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.13/changelog/" class="nav-list-link">Changelog</a></li><li class="nav-list-item"><a href="/substratalapps.com/versions/1.7.13/glossary/" class="nav-list-link">Glossary</a></li></ul>
+  
+</nav>
+
+
+<div class="d-md-block d-none site-footer">
+  
+  
+    This site uses <a href="https://github.com/just-the-docs/just-the-docs">Just the Docs</a>, a documentation theme for Jekyll.
+  
+  </div>
+</header>
+
+  
+  <div class="main" id="top">
+    <div id="main-header" class="main-header">
+  
+    
+
+<div class="search" role="search">
+  <div class="search-input-wrap">
+    <input type="text" id="search-input" class="search-input" tabindex="0" placeholder="Search Substratal Apps — Platform API" autocomplete="off">
+    <label for="search-input" class="search-label">
+      <span class="sr-only">Search Substratal Apps — Platform API</span>
+      <svg viewBox="0 0 24 24" class="search-icon" aria-hidden="true"><use xlink:href="#svg-search"></use></svg>
+    </label>
+  </div>
+  <div id="search-results" class="search-results"></div>
+</div>
+
+  
+  <div class="docs-version docs-version--archived">
+    <span class="docs-version__badge" title="Archived snapshot, released 2026-10-24">v1.7.13 · archived</span>
+    <a class="docs-version__link" href="/substratalapps.com/">View latest →</a>
+    <a class="docs-version__link" href="/substratalapps.com/versions/">All versions</a>
+  </div>
+  
+</div>
+
+    <div class="main-content-wrap">
+      
+      <div id="main-content" class="main-content">
+        <main>
+          
+            <h1 class="no_toc" id="openapi-specification">
+  
+  
+    <a href="#openapi-specification" class="anchor-heading" aria-labelledby="openapi-specification"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> OpenAPI Specification
+  
+  
+</h1>
+    
+
+<p class="fs-6 fw-300">The complete Platform API contract as an <a href="https://spec.openapis.org/oas/v3.1.0">OpenAPI 3.1</a> document, for developers building Applications against Substratal Apps. Browse it in the <a href="reference/">Interactive Reference</a>, download it, or generate a client from it.</p>
+
+<ol id="markdown-toc">
+  <li><a href="#at-a-glance" id="markdown-toc-at-a-glance">At a glance</a></li>
+  <li><a href="#get-the-document" id="markdown-toc-get-the-document">Get the document</a></li>
+  <li><a href="#what-the-document-covers" id="markdown-toc-what-the-document-covers">What the document covers</a></li>
+  <li><a href="#authentication-in-the-spec" id="markdown-toc-authentication-in-the-spec">Authentication in the spec</a></li>
+  <li><a href="#reading-an-operation" id="markdown-toc-reading-an-operation">Reading an operation</a>    <ol>
+      <li><a href="#vendor-extensions" id="markdown-toc-vendor-extensions">Vendor extensions</a></li>
+    </ol>
+  </li>
+  <li><a href="#generate-a-client" id="markdown-toc-generate-a-client">Generate a client</a></li>
+  <li><a href="#validate-your-integration" id="markdown-toc-validate-your-integration">Validate your integration</a></li>
+  <li><a href="#versioning-and-change-policy" id="markdown-toc-versioning-and-change-policy">Versioning and change policy</a></li>
+</ol><hr />
+<h2 id="at-a-glance">
+  
+  
+    <a href="#at-a-glance" class="anchor-heading" aria-labelledby="at-a-glance"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> At a glance
+  
+  
+</h2>
+    
+
+<div class="table-wrapper"><table>
+  <thead>
+    <tr>
+      <th> </th>
+      <th> </th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Format</td>
+      <td>OpenAPI <strong>3.1.0</strong>, YAML</td>
+    </tr>
+    <tr>
+      <td>Document</td>
+      <td><a href="/substratalapps.com/versions/1.7.13/openapi.yaml"><code class="language-plaintext highlighter-rouge">openapi.yaml</code></a></td>
+    </tr>
+    <tr>
+      <td>Interactive view</td>
+      <td><a href="reference/">Interactive Reference</a> (Swagger UI)</td>
+    </tr>
+    <tr>
+      <td>Base URL</td>
+      <td><code class="language-plaintext highlighter-rouge">https://api.substratalapps.com</code></td>
+    </tr>
+    <tr>
+      <td>API version</td>
+      <td><code class="language-plaintext highlighter-rouge">Substratal-Version: 1</code> request header, required (see <a href="../api-reference/conventions/#versioning">Conventions → Versioning</a>)</td>
+    </tr>
+    <tr>
+      <td>Authentication</td>
+      <td><code class="language-plaintext highlighter-rouge">Authorization: Bearer &lt;token&gt;</code>: a user access token or an API Key (<code class="language-plaintext highlighter-rouge">bearerAuth</code>)</td>
+    </tr>
+    <tr>
+      <td>Content type</td>
+      <td><code class="language-plaintext highlighter-rouge">application/json; charset=utf-8</code></td>
+    </tr>
+    <tr>
+      <td>Operations</td>
+      <td>123, every one with a stable <code class="language-plaintext highlighter-rouge">operationId</code></td>
+    </tr>
+    <tr>
+      <td>Schemas</td>
+      <td>109 reusable components under <code class="language-plaintext highlighter-rouge">components.schemas</code></td>
+    </tr>
+  </tbody>
+</table></div>
+
+<p>The prose pages under <a href="../api-reference/">API Reference</a> are authoritative. <code class="language-plaintext highlighter-rouge">openapi.yaml</code> is kept in sync with them by hand, and the implementation’s contract tests validate every response against it, so a drift between the two fails CI rather than reaching a client. See <a href="../api-reference/conventions/#machine-readable">Conventions → Machine-readable</a>.</p>
+<h2 id="get-the-document">
+  
+  
+    <a href="#get-the-document" class="anchor-heading" aria-labelledby="get-the-document"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> Get the document
+  
+  
+</h2>
+    
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>curl <span class="nt">-O</span> https://compositecode.github.io/substratalapps.com/versions/1.7.13/openapi.yaml
+</code></pre></div></div>
+
+<p>Every published version of this site keeps its own copy of <code class="language-plaintext highlighter-rouge">openapi.yaml</code>, so you can pin a client to the spec it was generated from. See <a href="/substratalapps.com/versions/1.7.13/versions/">Versions</a>.</p>
+<h2 id="what-the-document-covers">
+  
+  
+    <a href="#what-the-document-covers" class="anchor-heading" aria-labelledby="what-the-document-covers"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> What the document covers
+  
+  
+</h2>
+    
+
+<p>Operations are grouped by tag, and each tag matches an API Reference page that explains the rules behind it.</p>
+
+<div class="table-wrapper"><table>
+  <thead>
+    <tr>
+      <th>Tag</th>
+      <th>Operations</th>
+      <th>Prose reference</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Meta</td>
+      <td>1</td>
+      <td><a href="../api-reference/conventions/#health-check">Conventions → Health check</a></td>
+    </tr>
+    <tr>
+      <td>Auth</td>
+      <td>21</td>
+      <td><a href="../api-reference/auth/">Auth</a></td>
+    </tr>
+    <tr>
+      <td>Users</td>
+      <td>10</td>
+      <td><a href="../api-reference/users/">Users</a></td>
+    </tr>
+    <tr>
+      <td>Profiles</td>
+      <td>4</td>
+      <td><a href="../api-reference/profiles/">Profiles</a></td>
+    </tr>
+    <tr>
+      <td>Settings</td>
+      <td>4</td>
+      <td><a href="../api-reference/settings/">Settings</a></td>
+    </tr>
+    <tr>
+      <td>Applications</td>
+      <td>4</td>
+      <td><a href="../api-reference/applications/">Applications</a></td>
+    </tr>
+    <tr>
+      <td>Entitlements</td>
+      <td>6</td>
+      <td><a href="../api-reference/entitlements/">Entitlements</a></td>
+    </tr>
+    <tr>
+      <td>Roles &amp; Permissions</td>
+      <td>10</td>
+      <td><a href="../api-reference/roles-and-permissions/">Roles &amp; Permissions</a></td>
+    </tr>
+    <tr>
+      <td>Organizations</td>
+      <td>14</td>
+      <td><a href="../api-reference/organizations/">Organizations</a></td>
+    </tr>
+    <tr>
+      <td>Tenancy</td>
+      <td>6</td>
+      <td><a href="../api-reference/tenancy/">Tenancy</a></td>
+    </tr>
+    <tr>
+      <td>Billing</td>
+      <td>7</td>
+      <td><a href="../api-reference/billing/">Billing</a></td>
+    </tr>
+    <tr>
+      <td>Audit</td>
+      <td>4</td>
+      <td><a href="../api-reference/audit/">Audit</a></td>
+    </tr>
+    <tr>
+      <td>Webhooks</td>
+      <td>9</td>
+      <td><a href="../api-reference/webhooks/">Webhooks</a></td>
+    </tr>
+    <tr>
+      <td>Notifications</td>
+      <td>17</td>
+      <td><a href="../api-reference/notifications/">Push Notifications</a></td>
+    </tr>
+    <tr>
+      <td>API Keys</td>
+      <td>6</td>
+      <td><a href="../api-reference/api-keys/">API Keys</a></td>
+    </tr>
+  </tbody>
+</table></div>
+
+<p>Some endpoints aren’t in the document’s <code class="language-plaintext highlighter-rouge">paths</code>, because they follow external standards instead:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">GET /.well-known/jwks.json</code> and <code class="language-plaintext highlighter-rouge">GET /.well-known/openid-configuration</code>: signing keys and discovery, for verifying app tokens with any standard JWT library. See <a href="../api-reference/auth/#signing-keys-jwks">Auth → Signing keys</a>.</li>
+  <li><code class="language-plaintext highlighter-rouge">/mcp</code>: the <a href="../mcp-server/">MCP Server</a>, generated from this document’s <code class="language-plaintext highlighter-rouge">operationId</code>s.</li>
+  <li><code class="language-plaintext highlighter-rouge">/scim/v2/…</code>: <a href="../api-reference/scim/">SCIM 2.0</a> provisioning, following RFC 7644.</li>
+</ul>
+<h2 id="authentication-in-the-spec">
+  
+  
+    <a href="#authentication-in-the-spec" class="anchor-heading" aria-labelledby="authentication-in-the-spec"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> Authentication in the spec
+  
+  
+</h2>
+    
+
+<p>The document declares one security scheme, <code class="language-plaintext highlighter-rouge">bearerAuth</code> (HTTP bearer), and applies it globally. The few operations that need no credential, such as <code class="language-plaintext highlighter-rouge">GET /health</code>, signup, and login, override it with <code class="language-plaintext highlighter-rouge">security: []</code>.</p>
+
+<p>The same header carries both credential types:</p>
+
+<div class="table-wrapper"><table>
+  <thead>
+    <tr>
+      <th>Credential</th>
+      <th>Looks like</th>
+      <th>Used by</th>
+      <th>Get one from</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>User access token</td>
+      <td>A JWT</td>
+      <td>A person, or a client acting for them</td>
+      <td><code class="language-plaintext highlighter-rouge">POST /auth/login</code>, <code class="language-plaintext highlighter-rouge">/auth/signup</code>, <code class="language-plaintext highlighter-rouge">/auth/mfa/verify</code>, or <code class="language-plaintext highlighter-rouge">/auth/token/refresh</code></td>
+    </tr>
+    <tr>
+      <td>API Key</td>
+      <td><code class="language-plaintext highlighter-rouge">satk_live_…</code> or <code class="language-plaintext highlighter-rouge">satk_test_…</code></td>
+      <td>Your backend, service to service</td>
+      <td><a href="../api-reference/api-keys/">API Keys</a></td>
+    </tr>
+  </tbody>
+</table></div>
+
+<p>Some operations accept only one of the two. For example, every Billing operation returns <code class="language-plaintext highlighter-rouge">400 user_token_required</code> when called with an API Key. The operation’s description says so, and its prose page lists the permission it requires.</p>
+
+<p>A <code class="language-plaintext highlighter-rouge">satk_test_…</code> key works against the same base URL but only ever sees test-mode records. There’s no separate sandbox host. See <a href="../api-reference/conventions/#authentication">Conventions → Authentication</a>.</p>
+<h2 id="reading-an-operation">
+  
+  
+    <a href="#reading-an-operation" class="anchor-heading" aria-labelledby="reading-an-operation"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> Reading an operation
+  
+  
+</h2>
+    
+
+<p>Each operation in the document follows the same conventions, so you only need to learn them once:</p>
+
+<ul>
+  <li><strong><code class="language-plaintext highlighter-rouge">operationId</code></strong> is stable and namespaced (<code class="language-plaintext highlighter-rouge">entitlements.grant</code>, <code class="language-plaintext highlighter-rouge">users.get</code>). Generated clients use it for method names, and the MCP server uses it for tool names. Renaming one counts as a breaking change.</li>
+  <li><strong>Errors</strong> all share one shape (<code class="language-plaintext highlighter-rouge">{"error": {"code", "message", "details"}}</code>, with the request id in the <code class="language-plaintext highlighter-rouge">X-Request-Id</code> header) through the shared responses <code class="language-plaintext highlighter-rouge">BadRequest</code>, <code class="language-plaintext highlighter-rouge">Unauthorized</code>, <code class="language-plaintext highlighter-rouge">Forbidden</code>, <code class="language-plaintext highlighter-rouge">NotFound</code>, <code class="language-plaintext highlighter-rouge">Conflict</code>, <code class="language-plaintext highlighter-rouge">Unprocessable</code>, <code class="language-plaintext highlighter-rouge">TooManyRequests</code>, and <code class="language-plaintext highlighter-rouge">ServiceUnavailable</code>. Branch on <code class="language-plaintext highlighter-rouge">error.code</code>, never on <code class="language-plaintext highlighter-rouge">message</code>. See <a href="../api-reference/conventions/#errors">Conventions → Errors</a>.</li>
+  <li><strong>Pagination</strong> uses the shared <code class="language-plaintext highlighter-rouge">Limit</code> and <code class="language-plaintext highlighter-rouge">Cursor</code> parameters (<code class="language-plaintext highlighter-rouge">limit</code> 1–100, default 25). See <a href="../api-reference/conventions/#pagination">Conventions → Pagination</a>.</li>
+  <li><strong>Idempotency.</strong> Operations that create something take the <code class="language-plaintext highlighter-rouge">Idempotency-Key</code> header. Some require it, and their descriptions say which. See <a href="../api-reference/conventions/#idempotency">Conventions → Idempotency</a>.</li>
+  <li><strong>Concurrency.</strong> Single-resource responses carry an <code class="language-plaintext highlighter-rouge">ETag</code> header. Send it back as <code class="language-plaintext highlighter-rouge">If-Match</code> on <code class="language-plaintext highlighter-rouge">PATCH</code> to avoid overwriting someone else’s change. See <a href="../api-reference/conventions/#concurrency-etag--if-match">Conventions → Concurrency</a>.</li>
+  <li><strong>IDs</strong> are typed by prefix (<code class="language-plaintext highlighter-rouge">usr_</code>, <code class="language-plaintext highlighter-rouge">ent_</code>, <code class="language-plaintext highlighter-rouge">org_</code>, …). Most are a prefix plus a ULID. Application and Role ids are derived (<code class="language-plaintext highlighter-rouge">app_&lt;slug&gt;</code>, <code class="language-plaintext highlighter-rouge">role_&lt;slug&gt;_&lt;name&gt;</code>). See <a href="../api-reference/conventions/#ids">Conventions → IDs</a>.</li>
+  <li><strong><code class="language-plaintext highlighter-rouge">me</code></strong> can stand in for your own User id in any <code class="language-plaintext highlighter-rouge">/users/{id}</code> path. See <a href="../api-reference/conventions/#addressing-yourself-me">Conventions → Addressing yourself</a>.</li>
+</ul>
+<h3 id="vendor-extensions">
+  
+  
+    <a href="#vendor-extensions" class="anchor-heading" aria-labelledby="vendor-extensions"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> Vendor extensions
+  
+  
+</h3>
+    
+
+<div class="table-wrapper"><table>
+  <thead>
+    <tr>
+      <th>Extension</th>
+      <th>Values</th>
+      <th>Meaning</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">x-substratal-destructive</code></td>
+      <td><code class="language-plaintext highlighter-rouge">always</code> | <code class="language-plaintext highlighter-rouge">conditional</code></td>
+      <td>The operation destroys or irreversibly changes data. It’s rejected for API Keys created with <code class="language-plaintext highlighter-rouge">restrict_destructive: true</code>, and the MCP server marks it <code class="language-plaintext highlighter-rouge">destructiveHint</code>. See <a href="../api-reference/api-keys/#agent-keys--restrict_destructive">API Keys → Agent keys</a>.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">x-substratal-destructive-when</code></td>
+      <td>a description of the request</td>
+      <td>With <code class="language-plaintext highlighter-rouge">conditional</code>, only requests matching this are destructive. The rest of the operation stays callable with a restricted key.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">x-substratal-phase</code></td>
+      <td><code class="language-plaintext highlighter-rouge">mvp</code>, <code class="language-plaintext highlighter-rouge">phase2</code>, <code class="language-plaintext highlighter-rouge">phase3</code></td>
+      <td>The <a href="../roadmap/">Roadmap</a> phase the operation ships in.</td>
+    </tr>
+  </tbody>
+</table></div>
+
+<p>Code generators ignore these extensions, so they’re safe to leave in.</p>
+<h2 id="generate-a-client">
+  
+  
+    <a href="#generate-a-client" class="anchor-heading" aria-labelledby="generate-a-client"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> Generate a client
+  
+  
+</h2>
+    
+
+<p>Any OpenAPI 3.1 tool works. A few common ones:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># TypeScript types, with no runtime dependency</span>
+npx openapi-typescript https://compositecode.github.io/substratalapps.com/versions/1.7.13/openapi.yaml <span class="nt">-o</span> substratal.d.ts
+
+<span class="c"># Go: types and a client (this is what the reference implementation uses for its server side)</span>
+go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@latest <span class="se">\</span>
+  <span class="nt">-generate</span> types,client <span class="nt">-package</span> substratal openapi.yaml <span class="o">&gt;</span> substratal.gen.go
+
+<span class="c"># Any of 50+ languages</span>
+npx @openapitools/openapi-generator-cli generate <span class="nt">-i</span> openapi.yaml <span class="nt">-g</span> python <span class="nt">-o</span> ./substratal-python
+</code></pre></div></div>
+
+<p>To explore by hand, import <code class="language-plaintext highlighter-rouge">openapi.yaml</code> into Postman, Insomnia, Bruno, or any other tool that reads OpenAPI. The <a href="reference/">Interactive Reference</a> also has “Try it out” built in, against a local devserver.</p>
+<h2 id="validate-your-integration">
+  
+  
+    <a href="#validate-your-integration" class="anchor-heading" aria-labelledby="validate-your-integration"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> Validate your integration
+  
+  
+</h2>
+    
+
+<ul>
+  <li><strong>Lint the document, or your copy of it.</strong> Run <code class="language-plaintext highlighter-rouge">npx @redocly/cli lint openapi.yaml</code> or <code class="language-plaintext highlighter-rouge">npx @stoplight/spectral-cli lint openapi.yaml</code>.</li>
+  <li><strong>Check your mocks against it.</strong> <code class="language-plaintext highlighter-rouge">npx @stoplight/prism-cli mock openapi.yaml</code> serves a mock API from the document, so you can build a client before you have credentials.</li>
+  <li><strong>Run the reference implementation locally.</strong> The repository’s devserver serves every route at <code class="language-plaintext highlighter-rouge">http://localhost:8080</code> with no AWS account. See the repository’s <a href="https://github.com/CompositeCode/substratalapps.com#local-development">README → Local development</a>. The Interactive Reference can send requests to it once its origin is allowed. See the steps at the top of the <a href="reference/">Interactive Reference</a>.</li>
+</ul>
+<h2 id="versioning-and-change-policy">
+  
+  
+    <a href="#versioning-and-change-policy" class="anchor-heading" aria-labelledby="versioning-and-change-policy"><svg viewBox="0 0 16 16" aria-hidden="true"><use xlink:href="#svg-link"></use></svg></a> Versioning and change policy
+  
+  
+</h2>
+    
+
+<p>The API version is the <code class="language-plaintext highlighter-rouge">Substratal-Version</code> request header (currently <code class="language-plaintext highlighter-rouge">1</code>), not part of the base URL. Every versioned operation declares it as the shared <code class="language-plaintext highlighter-rouge">ApiVersion</code> header parameter (<code class="language-plaintext highlighter-rouge">components.parameters.ApiVersion</code>), so generated clients include it, and the Interactive Reference sends it for you. Most generators let you set it once as a default header instead of passing it per call. <code class="language-plaintext highlighter-rouge">info.version</code> in the document (currently a <code class="language-plaintext highlighter-rouge">1.0.0-draft</code> pre-release) is the version of the document itself.</p>
+
+<ul>
+  <li><strong>Additive changes</strong> (new optional fields, new operations, new enum values) ship within the current version. Write clients to ignore fields they don’t know, and to handle enum values they don’t recognize.</li>
+  <li><strong>Breaking changes</strong> ship as the next version number, and the previous version keeps working for at least 6 months. See <a href="../non-functional-requirements/#versioning">Non-Functional Requirements → Versioning</a> for what counts as breaking.</li>
+  <li>Every change is recorded in the <a href="../changelog/">Changelog</a>.</li>
+</ul>
+
+          
+
+          
+            <hr>
+<h2 class="text-delta">Table of contents</h2>
+
+<ul>
+  
+  <li>
+    <a href="/substratalapps.com/versions/1.7.13/openapi/reference/">Interactive Reference</a>
+  </li>
+  
+</ul>
+          
+        </main>
+        
+<hr>
+<footer>
+  
+    <p><a href="#top" id="back-to-top">Back to top</a></p>
+  
+
+  <p class="text-small mb-0">Substratal Apps Platform API — living specification, operated by Composite Code LLC. <a href="/substratalapps.com/legal/terms/">Terms</a> · <a href="/substratalapps.com/legal/privacy/">Privacy</a> · <a href="/substratalapps.com/legal/">Legal</a></p>
+
+  <div class="d-md-none mt-4 fs-2">
+    
+    
+      This site uses <a href="https://github.com/just-the-docs/just-the-docs">Just the Docs</a>, a documentation theme for Jekyll.
+    
+  </div>
+</footer>
+
+      </div>
+    </div>
+    
+      
+
+<div class="search-overlay"></div>
+
+    
+  </div>
+
+  
+</body>
+</html>
+
