@@ -2,6 +2,10 @@
 # scripts/docs-build.rb on main's GitHub build; each entry has a frozen
 # static copy at <version>/ on this branch, served at /versions/<version>/.
 versions:
+- version: 1.7.12
+  released: '2026-10-24'
+  commit: 9bf5ba0c02097a15e192d0a89c9a6baedc72f8f3
+  summary: 'Merge pull request #73 from CompositeCode/fix/checkout-automatic-tax-address'
 - version: 1.7.11
   released: '2026-10-24'
   commit: f3e2e9a357676f9d02d4e4e04379671492508d7b
