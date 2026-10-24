@@ -2,6 +2,10 @@
 # scripts/docs-build.rb on main's GitHub build; each entry has a frozen
 # static copy at <version>/ on this branch, served at /versions/<version>/.
 versions:
+- version: 1.7.9
+  released: '2026-10-24'
+  commit: 2865bb1f0b3c3fa84e9cefeebb7c2683f257df61
+  summary: 'Merge pull request #70 from CompositeCode/feature/subscriptions-list'
 - version: 1.7.8
   released: '2026-10-23'
   commit: cb49fc277121dee3cc8ab6f5c90507e6824dc6c7
