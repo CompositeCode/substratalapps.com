@@ -34,8 +34,10 @@ callouts:
     color: red
 
 footer_content: >-
-  Substratal Apps Platform API — living specification. This site is the
-  system of record; see git history for how it has changed over time.
+  Substratal Apps Platform API — living specification, operated by Composite Code LLC.
+  <a href="/substratalapps.com/legal/terms/">Terms</a> ·
+  <a href="/substratalapps.com/legal/privacy/">Privacy</a> ·
+  <a href="/substratalapps.com/legal/">Legal</a>
 
 exclude:
   - Gemfile

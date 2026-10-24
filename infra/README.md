@@ -225,6 +225,15 @@ Native auth sends email: verification, password reset, invitations, MFA and pass
 - Sends go through SQS so an SES throttle never fails an API request. A bounce or complaint (from the SES → SNS notification) marks the address undeliverable, and auth emails to it are skipped and logged.
 - Cost at Tier 0 volume is effectively $0 ($0.10 per 1,000 emails).
 
+### Inbound mail for the contact addresses
+
+The [legal pages](https://compositecode.github.io/substratalapps.com/legal/) publish `privacy@`, `legal@` and `security@substratalapps.com`, and DMARC reports go to `dmarc@`. Those four addresses, and nothing else, receive mail:
+
+- The apex domain has an SES identity (with DKIM) and an MX record pointing at `inbound-smtp.us-east-1.amazonaws.com`.
+- The active receipt rule set `substratal-prod-inbound` has one rule for the four addresses. It scans for spam and viruses, stores the message in the private bucket `substratal-prod-inbound-mail-<account>` under `inbound/`, then invokes the `mail-forward` function.
+- `mail-forward` reads the stored message, rewrites it to come From `forward@mail.substratalapps.com` with the original sender in `Reply-To` (`internal/mailfwd`), and sends it through SES to `contact_forward_to` (default: `alarm_email`). Messages with a spam or virus verdict of FAIL are dropped; one too large or malformed to forward is announced instead, with its S3 location.
+- Stored originals are deleted after 30 days by a lifecycle rule. Replying from the inbox goes straight to the sender, from the operator's own address.
+
 ## Webhook dispatch
 
 Outbound webhooks use a **transactional outbox**. Every state-changing transaction inserts its `webhook_events` rows in the same commit (see [Database Schema](https://compositecode.github.io/substratalapps.com/domain-model/database-schema/#webhook_subscriptions-webhook_events-webhook_deliveries)). A dispatcher Lambda, triggered every few seconds by an EventBridge Scheduler rule and also invoked directly after commit as a fast path, fans each event out to matching subscriptions as SQS messages. Delivery workers POST with a 5-second timeout, and failed attempts are re-enqueued with SQS delay (up to 15 minutes) or EventBridge Scheduler one-shot schedules for the 2-hour and 12-hour retries. No always-on component, consistent with the [cost principles](#cost-principles).

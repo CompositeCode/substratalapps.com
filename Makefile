@@ -5,7 +5,7 @@ SHELL := /bin/bash
 -include .env
 export
 
-FUNCTIONS := api mcp stripe-webhook webhook-worker jobs
+FUNCTIONS := api mcp stripe-webhook webhook-worker jobs mail-forward
 GOFLAGS_LAMBDA := CGO_ENABLED=0 GOOS=linux GOARCH=arm64
 
 .PHONY: help up down reset migrate migration seed run gen gen-check test test-integration test-contract \

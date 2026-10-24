@@ -44,6 +44,7 @@ It's written to be read by people building the API **and** by AI coding tools as
 | [MCP Server](mcp-server/) | How does an AI agent call this API directly, as a tool-using client rather than writing HTTP calls by hand? |
 | [Non-Functional Requirements](non-functional-requirements/) | Security, multi-tenancy, audit, rate limits, versioning. |
 | [Compliance & Data Protection](compliance/) | Which of SOC 2, HIPAA, GDPR, and CCPA apply, and when to act on each. |
+| [Legal](legal/) | Terms of Service, Privacy Policy, EULA, Developer Terms, the Data Processing Addendum, and the other agreements, at stable URLs. |
 | [Roadmap](roadmap/) | What ships in the MVP vs. later phases. |
 | [Pricing](pricing/) | Free and Standard ($6 per user per month) — what people using Substratal's apps pay, individually or through an Organization. |
 | [Changelog](changelog/) | What's changed in this spec over time. |

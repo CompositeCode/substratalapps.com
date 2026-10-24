@@ -9,7 +9,7 @@ on:
     inputs:
       functions:
         description: Functions to roll back
-        default: "api mcp stripe-webhook webhook-worker jobs"
+        default: "api mcp stripe-webhook webhook-worker jobs mail-forward"
 
 permissions:
   contents: read
