@@ -89,6 +89,21 @@ func TestListTotals(t *testing.T) {
 	expectTotal(t, e.Get("/organizations/"+org+"/members?include=total", owner.Token).Expect(200), 2)
 	expectTotal(t, e.Get("/organizations/"+org+"/members?role=org_admin&include=total", owner.Token).Expect(200), 1)
 
+	// Lists that check visibility per row count the same rows in SQL.
+	org2 := e.Post("/organizations", owner.Token, map[string]any{"name": "Owner Co " + testenv.Unique()}).Expect(201).Str("id")
+	e.App(system, map[string]any{"owner_user_id": nil, "owner_organization_id": org2})
+	invite := e.App(system, map[string]any{"visibility": "invite_only"})
+	e.App(system, map[string]any{"visibility": "invite_only"})
+	e.Grant(e.Admin, b.ID, invite)
+	expectTotal(t, e.Get("/applications?owned=true&include=total", owner.Token).Expect(200), 2)
+	expectTotal(t, e.Get("/applications?visibility=invite_only&include=total", b.Token).Expect(200), 1)
+	ownerRoles := e.Get("/roles?scope="+app+"&limit=100&include=total", owner.Token).Expect(200)
+	if n := len(ownerRoles.JSON()["data"].([]any)); n == 0 {
+		t.Fatal("the owner sees their app's Roles")
+	}
+	expectTotal(t, ownerRoles, len(ownerRoles.JSON()["data"].([]any)))
+	expectTotal(t, e.Get("/roles?scope="+app+"&include=total", b.Token).Expect(200), 0)
+
 	// A caller who can see nothing gets a total of 0.
 	key := e.Post("/api-keys", e.Admin, map[string]any{"name": "lister", "scope": "platform", "permissions": []string{"users.list"}}).Expect(201).Str("secret")
 	expectTotal(t, e.Get("/organizations?include=total", key).Expect(200), 0)

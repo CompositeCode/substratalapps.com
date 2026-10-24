@@ -239,18 +239,10 @@ func (s *Server) RolesList(w http.ResponseWriter, r *http.Request, params gen.Ro
 		if err != nil {
 			return err
 		}
-		// Visibility is decided per row in Go, so the count is too.
-		var total *int64
-		if want, err := httpx.WantTotal(c.r); err != nil {
+		// The list checks visibility per row in Go; the count does it in SQL.
+		total, err := c.listTotal("roles r", append(where[:len(where):len(where)], c.roleVisibleSQL(args)), args)
+		if err != nil {
 			return err
-		} else if want {
-			rows, err := c.queryRoles(strings.Join(where, " and "), args)
-			if err != nil {
-				return err
-			}
-			if total, err = visibleTotal(rows, c.canSeeRole); err != nil {
-				return err
-			}
 		}
 		if pos != nil {
 			where = append(where, "(r.created_at, r.id) < (:ps::timestamptz, :pi)")

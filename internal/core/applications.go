@@ -174,18 +174,10 @@ func (s *Server) ApplicationsList(w http.ResponseWriter, r *http.Request, params
 		if queue {
 			order, cmp = "a.created_at asc, a.id asc", ">"
 		}
-		// Visibility is decided per row in Go, so the count is too.
-		var total *int64
-		if want, err := httpx.WantTotal(c.r); err != nil {
+		// The list checks visibility per row in Go; the count does it in SQL.
+		total, err := c.listTotal("applications a", append(where[:len(where):len(where)], c.appVisibleSQL(args)), args)
+		if err != nil {
 			return err
-		} else if want {
-			rows, err := db.All[appRow](c.ctx, c.q, `select to_jsonb(a) from applications a where `+strings.Join(where, " and "), args)
-			if err != nil {
-				return err
-			}
-			if total, err = visibleTotal(rows, c.appVisible); err != nil {
-				return err
-			}
 		}
 		if pos != nil {
 			where = append(where, "(a.created_at, a.id) "+cmp+" (:ps::timestamptz, :pi)")
