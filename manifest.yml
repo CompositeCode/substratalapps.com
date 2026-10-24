@@ -2,6 +2,10 @@
 # scripts/docs-build.rb on main's GitHub build; each entry has a frozen
 # static copy at <version>/ on this branch, served at /versions/<version>/.
 versions:
+- version: 1.7.10
+  released: '2026-10-24'
+  commit: 7c13dadd8167bf403a5ab1b4a8e436dbf4929f0f
+  summary: 'Merge pull request #71 from CompositeCode/feature/list-totals'
 - version: 1.7.9
   released: '2026-10-24'
   commit: 2865bb1f0b3c3fa84e9cefeebb7c2683f257df61
