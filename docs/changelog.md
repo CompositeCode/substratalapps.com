@@ -12,6 +12,16 @@ What's changed in this specification over time. Every decision is written into t
 
 ---
 
+## 2026-10-24 — The web Hub is at hub.substratalapps.com
+
+The first-party web app, Substratal Hub, is served at `https://hub.substratalapps.com` instead of the planned `dashboard.substratalapps.com`, which was never served.
+
+- Links in verification, password-reset and invitation emails now point to `https://hub.substratalapps.com` (`DASHBOARD_URL`).
+- The CORS allow-list's first-party origin is now `https://hub.substratalapps.com`. See [NFR → CORS](../non-functional-requirements/#cors).
+- [Billing](../api-reference/billing/) examples and the legal documents name the new host.
+
+No API change: paths, requests and responses are the same.
+
 ## 2026-10-23 — Legal documents and contact addresses
 
 A new [Legal](../legal/) section publishes the agreements at stable URLs, for app stores, sign-in providers, and payment providers that ask for them. Substratal Apps is operated by **Composite Code LLC** (Washington, USA).

@@ -30,7 +30,7 @@ variable "mail_domain" {
 
 variable "dashboard_url" {
   type    = string
-  default = "https://dashboard.substratalapps.com"
+  default = "https://hub.substratalapps.com"
 }
 
 variable "authorize_url" {
@@ -41,7 +41,7 @@ variable "authorize_url" {
 variable "cors_origins" {
   description = "Comma-separated first-party browser origins (NFR → CORS)"
   type        = string
-  default     = "https://dashboard.substratalapps.com"
+  default     = "https://hub.substratalapps.com"
 }
 
 variable "alarm_email" {

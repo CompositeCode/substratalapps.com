@@ -22,7 +22,7 @@ permalink: /legal/terms/
 "**Substratal**" or the "**Service**" means:
 
 - the Substratal Apps platform and its API at `api.substratalapps.com`, including its MCP server;
-- the **Substratal Hub** apps for web (`dashboard.substratalapps.com`), macOS, Windows, Linux, iOS and Android;
+- the **Substratal Hub** apps for web (`hub.substratalapps.com`), macOS, Windows, Linux, iOS and Android;
 - the applications Substratal publishes that you sign in to with a Substratal account; and
 - this documentation site.
 
