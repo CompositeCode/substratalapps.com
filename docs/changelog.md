@@ -12,6 +12,14 @@ What's changed in this specification over time. Every decision is written into t
 
 ---
 
+## 2026-10-23 — Legal documents and contact addresses
+
+A new [Legal](../legal/) section publishes the agreements at stable URLs, for app stores, sign-in providers, and payment providers that ask for them. Substratal Apps is operated by **Composite Code LLC** (Washington, USA).
+
+- [Terms of Service](../legal/terms/), [Privacy Policy](../legal/privacy/), [End User License Agreement](../legal/eula/) for the six Hub apps, [Developer and API Terms](../legal/developer-terms/), [Acceptable Use Policy](../legal/acceptable-use/), [Data Processing Addendum](../legal/dpa/) (with the EU SCCs and UK Addendum by reference), [Sub-processors](../legal/subprocessors/), [Cookie Notice](../legal/cookies/), [Account and Data Deletion](../legal/data-deletion/), [Security and Vulnerability Disclosure](../legal/security/), and [Copyright, Licenses and Trademarks](../legal/copyright/).
+- **Contact addresses** `privacy@`, `legal@` and `security@substratalapps.com` now receive mail, as does `dmarc@` for DMARC reports. SES receives them on the apex domain and forwards them to the operator's inbox (new `mail-forward` function; stored copies are deleted after 30 days).
+- [Compliance](../compliance/) now points to these documents: lawful basis and consent are covered by the Developer Terms, and the sub-processor agreements are in place.
+
 ## 2026-10-23 — Checkout saves the billing address
 
 Checkout now sets `customer_update[address]: auto`, so the billing address entered in Checkout is saved to the subscriber's Stripe Customer. Stripe refuses a Checkout with automatic tax when the Customer has no address, and ours are created with only an email, so every Checkout would have failed against real Stripe (the test suite uses a fake). Found while setting up Stripe test mode. No API change. See [infra/README.md → Objects and mapping](https://github.com/CompositeCode/substratalapps.com/blob/main/infra/README.md#objects-and-mapping).

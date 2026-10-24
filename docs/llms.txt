@@ -58,6 +58,7 @@ older single-file draft found elsewhere in the repository's history.
 - [MCP Server]({{ site.url }}{{ site.baseurl }}/mcp-server/): a Model Context Protocol server that lets an AI agent call this API as tools, generated from openapi.yaml, using the same Bearer credential as every other caller — no new auth model.
 - [Non-Functional Requirements]({{ site.url }}{{ site.baseurl }}/non-functional-requirements/)
 - [Compliance & Data Protection]({{ site.url }}{{ site.baseurl }}/compliance/): which of SOC 2, HIPAA, GDPR, and CCPA apply, and when.
+- [Legal]({{ site.url }}{{ site.baseurl }}/legal/): Terms of Service, Privacy Policy, EULA for the Hub apps, Developer and API Terms, Acceptable Use, Data Processing Addendum, Sub-processors, Cookies, Account and Data Deletion, Security disclosure, and Copyright, each at a stable URL. Operated by Composite Code LLC (Washington, USA).
 - [Roadmap]({{ site.url }}{{ site.baseurl }}/roadmap/): MVP through Phase 3.
 - [Pricing]({{ site.url }}{{ site.baseurl }}/pricing/): Free, and Standard at $6 per user per month — what people using Substratal's own apps pay, individually or through an Organization. Business and Enterprise pricing comes later.
 - [Changelog]({{ site.url }}{{ site.baseurl }}/changelog/): what's changed in this spec over time.

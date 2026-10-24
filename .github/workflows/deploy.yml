@@ -84,7 +84,7 @@ jobs:
         if: steps.ready.outputs.ready == 'true'
         run: |
           make build
-          for f in api mcp stripe-webhook webhook-worker jobs; do
+          for f in api mcp stripe-webhook webhook-worker jobs mail-forward; do
             aws s3 cp "dist/$f.zip" "s3://${{ vars.ARTIFACT_BUCKET }}/$RELEASE/$f.zip" --only-show-errors
           done
 

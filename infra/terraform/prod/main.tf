@@ -5,7 +5,7 @@
 
 locals {
   prefix    = "substratal-prod"
-  functions = ["api", "mcp", "stripe-webhook", "webhook-worker", "jobs"]
+  functions = ["api", "mcp", "stripe-webhook", "webhook-worker", "jobs", "mail-forward"]
   artifact  = { for f in local.functions : f => "${var.release}/${f}.zip" }
   db_name   = "substratal"
 }
@@ -212,6 +212,127 @@ resource "aws_route53_record" "dmarc" {
   records = ["v=DMARC1; p=quarantine; rua=mailto:dmarc@${var.hosted_zone}"]
 }
 
+# ── Inbound mail for the published contact addresses ───────────────────
+# The legal pages publish privacy@, legal@ and security@ on the apex
+# domain, and DMARC reports go to dmarc@. SES receives them, stores each
+# message in a private bucket, and the mail-forward function re-sends it
+# to contact_forward_to. Nothing else on the apex domain receives mail.
+
+locals {
+  contact_addresses = [for a in ["privacy", "legal", "security", "dmarc"] : "${a}@${var.hosted_zone}"]
+  receipt_rule_set  = "${local.prefix}-inbound"
+  receipt_rule      = "contact-addresses"
+}
+
+resource "aws_sesv2_email_identity" "apex" {
+  email_identity = var.hosted_zone
+}
+
+resource "aws_route53_record" "apex_dkim" {
+  count   = 3
+  zone_id = data.aws_route53_zone.main.zone_id
+  name    = "${aws_sesv2_email_identity.apex.dkim_signing_attributes[0].tokens[count.index]}._domainkey.${var.hosted_zone}"
+  type    = "CNAME"
+  ttl     = 1800
+  records = ["${aws_sesv2_email_identity.apex.dkim_signing_attributes[0].tokens[count.index]}.dkim.amazonses.com"]
+}
+
+resource "aws_route53_record" "apex_mx" {
+  zone_id = data.aws_route53_zone.main.zone_id
+  name    = var.hosted_zone
+  type    = "MX"
+  ttl     = 1800
+  records = ["10 inbound-smtp.${var.region}.amazonaws.com"]
+}
+
+resource "aws_s3_bucket" "inbound_mail" {
+  bucket = "${local.prefix}-inbound-mail-${data.aws_caller_identity.me.account_id}"
+}
+
+resource "aws_s3_bucket_public_access_block" "inbound_mail" {
+  bucket                  = aws_s3_bucket.inbound_mail.id
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "inbound_mail" {
+  bucket = aws_s3_bucket.inbound_mail.id
+  rule {
+    apply_server_side_encryption_by_default { sse_algorithm = "AES256" }
+  }
+}
+
+# Forwarded copies are what's kept; the stored originals go after 30 days.
+resource "aws_s3_bucket_lifecycle_configuration" "inbound_mail" {
+  bucket = aws_s3_bucket.inbound_mail.id
+  rule {
+    id     = "expire-inbound"
+    status = "Enabled"
+    filter {}
+    expiration { days = 30 }
+  }
+}
+
+resource "aws_s3_bucket_policy" "inbound_mail" {
+  bucket = aws_s3_bucket.inbound_mail.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { Service = "ses.amazonaws.com" }
+      Action    = "s3:PutObject"
+      Resource  = "${aws_s3_bucket.inbound_mail.arn}/inbound/*"
+      Condition = {
+        StringEquals = { "aws:SourceAccount" = data.aws_caller_identity.me.account_id }
+        ArnLike      = { "aws:SourceArn" = "arn:aws:ses:${var.region}:${data.aws_caller_identity.me.account_id}:receipt-rule-set/${local.receipt_rule_set}:receipt-rule/${local.receipt_rule}" }
+      }
+    }]
+  })
+}
+
+resource "aws_ses_receipt_rule_set" "inbound" {
+  rule_set_name = local.receipt_rule_set
+}
+
+resource "aws_ses_active_receipt_rule_set" "inbound" {
+  rule_set_name = aws_ses_receipt_rule_set.inbound.rule_set_name
+}
+
+resource "aws_lambda_permission" "ses_forward" {
+  statement_id   = "AllowSESInvoke"
+  action         = "lambda:InvokeFunction"
+  function_name  = module.mail_forward.name
+  qualifier      = "live"
+  principal      = "ses.amazonaws.com"
+  source_account = data.aws_caller_identity.me.account_id
+  source_arn     = "arn:aws:ses:${var.region}:${data.aws_caller_identity.me.account_id}:receipt-rule-set/${local.receipt_rule_set}:receipt-rule/${local.receipt_rule}"
+}
+
+resource "aws_ses_receipt_rule" "contact" {
+  name          = local.receipt_rule
+  rule_set_name = aws_ses_receipt_rule_set.inbound.rule_set_name
+  recipients    = local.contact_addresses
+  enabled       = true
+  scan_enabled  = true
+  tls_policy    = "Optional"
+
+  s3_action {
+    position          = 1
+    bucket_name       = aws_s3_bucket.inbound_mail.bucket
+    object_key_prefix = "inbound/"
+  }
+
+  lambda_action {
+    position        = 2
+    function_arn    = module.mail_forward.alias_arn
+    invocation_type = "Event"
+  }
+
+  depends_on = [aws_s3_bucket_policy.inbound_mail, aws_lambda_permission.ses_forward, aws_sesv2_email_identity.apex]
+}
+
 # ── Function permissions ───────────────────────────────────────────────
 
 locals {
@@ -359,6 +480,26 @@ module "jobs" {
     Effect   = "Allow"
     Action   = ["s3:PutObject"]
     Resource = ["${aws_s3_bucket.audit_archive.arn}/*", "${aws_s3_bucket.audit_exports.arn}/*"]
+  }])
+}
+
+module "mail_forward" {
+  source          = "../modules/lambda_function"
+  name            = "${local.prefix}-mail-forward"
+  artifact_bucket = var.artifact_bucket
+  artifact_key    = local.artifact["mail-forward"]
+  memory_mb       = 256
+  timeout_s       = 60
+  environment = {
+    INBOUND_BUCKET = aws_s3_bucket.inbound_mail.bucket
+    INBOUND_PREFIX = "inbound/"
+    FORWARD_TO     = coalesce(var.contact_forward_to, var.alarm_email)
+    FORWARD_FROM   = "forward@${var.mail_domain}"
+  }
+  policy_statements = concat(local.email, [{
+    Effect   = "Allow"
+    Action   = ["s3:GetObject"]
+    Resource = "${aws_s3_bucket.inbound_mail.arn}/inbound/*"
   }])
 }
 
@@ -562,7 +703,7 @@ resource "aws_cloudwatch_metric_alarm" "api_5xx" {
 }
 
 resource "aws_cloudwatch_metric_alarm" "lambda_errors" {
-  for_each            = { api = module.api, mcp = module.mcp, stripe = module.stripe_webhook, worker = module.webhook_worker, jobs = module.jobs }
+  for_each            = { api = module.api, mcp = module.mcp, stripe = module.stripe_webhook, worker = module.webhook_worker, jobs = module.jobs, mail = module.mail_forward }
   alarm_name          = "${local.prefix}-${each.key}-errors"
   namespace           = "AWS/Lambda"
   metric_name         = "Errors"

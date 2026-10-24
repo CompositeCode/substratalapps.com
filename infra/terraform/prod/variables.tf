@@ -50,6 +50,12 @@ variable "alarm_email" {
   default     = "adronhall@proton.me"
 }
 
+variable "contact_forward_to" {
+  description = "Inbox that privacy@, legal@, security@ and dmarc@ on the apex domain forward to (empty: alarm_email)"
+  type        = string
+  default     = ""
+}
+
 variable "db_min_acu" {
   description = "Aurora Serverless v2 floor; 0.5 is the ~$43/month Tier 0 floor"
   type        = number
