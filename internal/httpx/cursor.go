@@ -16,6 +16,50 @@ import (
 type Page struct {
 	NextCursor *string `json:"next_cursor"`
 	HasMore    bool    `json:"has_more"`
+	// Total and TotalCapped are set only for ?include=total.
+	Total       *int64 `json:"total,omitempty"`
+	TotalCapped *bool  `json:"total_capped,omitempty"`
+}
+
+// TotalCap is the most a list count reports exactly (Conventions →
+// Pagination). Counts stop at TotalCap+1, so one past it means "more".
+const TotalCap = 10000
+
+// WantTotal reports whether the request asked for ?include=total. Any
+// other include value is a validation error.
+func WantTotal(r *http.Request) (bool, error) {
+	vals, ok := r.URL.Query()["include"]
+	if !ok {
+		return false, nil
+	}
+	for _, v := range vals {
+		if v != "total" {
+			var f Fields
+			f.Enum("include", "total")
+			return false, f.Err()
+		}
+	}
+	return true, nil
+}
+
+// CountSQL wraps a statement selecting a list's matching rows in a
+// count that stops at TotalCap+1, returned as one JSON number.
+func CountSQL(rows string) string {
+	return "select to_jsonb(count(*)) from (" + rows + " limit " + strconv.Itoa(TotalCap+1) + ") t"
+}
+
+// WithTotal sets the page's total from a count taken up to TotalCap+1.
+// A nil count (total not requested) leaves the page unchanged.
+func (l List[T]) WithTotal(n *int64) List[T] {
+	if n == nil {
+		return l
+	}
+	total, capped := *n, false
+	if total > TotalCap {
+		total, capped = TotalCap, true
+	}
+	l.Page.Total, l.Page.TotalCapped = &total, &capped
+	return l
 }
 
 // List is the list envelope (Conventions → Pagination).
@@ -96,11 +140,11 @@ func Limit(p *int) int {
 }
 
 // Filters fingerprints a request's filter parameters (everything but
-// cursor and limit), so a cursor is only valid under the filters it came
-// from.
+// cursor, limit, and include), so a cursor is only valid under the
+// filters it came from.
 func Filters(r *http.Request, exclude ...string) string {
 	q := r.URL.Query()
-	skip := map[string]bool{"cursor": true, "limit": true}
+	skip := map[string]bool{"cursor": true, "limit": true, "include": true}
 	for _, e := range exclude {
 		skip[e] = true
 	}

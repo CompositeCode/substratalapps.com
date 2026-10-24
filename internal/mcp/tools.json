@@ -161,6 +161,13 @@
           "cursor": {
             "type": "string"
           },
+          "include": {
+            "description": "`total` adds `page.total` and `page.total_capped`: the number of rows matching the current filters across every page, counted up to 10,000 (Conventions → Pagination). Omitted unless requested.",
+            "enum": [
+              "total"
+            ],
+            "type": "string"
+          },
           "include_inactive": {
             "default": false,
             "description": "Include revoked and expired keys",
@@ -206,6 +213,7 @@
       "x_query_params": [
         "limit",
         "cursor",
+        "include",
         "scope",
         "mode",
         "intended_use",
@@ -731,6 +739,13 @@
           "cursor": {
             "type": "string"
           },
+          "include": {
+            "description": "`total` adds `page.total` and `page.total_capped`: the number of rows matching the current filters across every page, counted up to 10,000 (Conventions → Pagination). Omitted unless requested.",
+            "enum": [
+              "total"
+            ],
+            "type": "string"
+          },
           "limit": {
             "default": 25,
             "maximum": 100,
@@ -783,6 +798,7 @@
       "x_query_params": [
         "limit",
         "cursor",
+        "include",
         "visibility",
         "review_status",
         "access_tier",
@@ -1302,6 +1318,13 @@
           "cursor": {
             "type": "string"
           },
+          "include": {
+            "description": "`total` adds `page.total` and `page.total_capped`: the number of rows matching the current filters across every page, counted up to 10,000 (Conventions → Pagination). Omitted unless requested.",
+            "enum": [
+              "total"
+            ],
+            "type": "string"
+          },
           "limit": {
             "default": 25,
             "maximum": 100,
@@ -1364,6 +1387,7 @@
       "x_query_params": [
         "limit",
         "cursor",
+        "include",
         "target_user_id",
         "target_type",
         "target_id",
@@ -2723,6 +2747,13 @@
           "cursor": {
             "type": "string"
           },
+          "include": {
+            "description": "`total` adds `page.total` and `page.total_capped`: the number of rows matching the current filters across every page, counted up to 10,000 (Conventions → Pagination). Omitted unless requested.",
+            "enum": [
+              "total"
+            ],
+            "type": "string"
+          },
           "limit": {
             "default": 25,
             "maximum": 100,
@@ -2772,6 +2803,7 @@
       "x_query_params": [
         "limit",
         "cursor",
+        "include",
         "status",
         "subscriber_type",
         "cancel_at_period_end",
@@ -3434,6 +3466,13 @@
             "format": "date-time",
             "type": "string"
           },
+          "include": {
+            "description": "`total` adds `page.total` and `page.total_capped`: the number of rows matching the current filters across every page, counted up to 10,000 (Conventions → Pagination). Omitted unless requested.",
+            "enum": [
+              "total"
+            ],
+            "type": "string"
+          },
           "include_inactive": {
             "default": false,
             "type": "boolean"
@@ -3491,6 +3530,7 @@
       "x_query_params": [
         "limit",
         "cursor",
+        "include",
         "application_id",
         "status",
         "user_id",
@@ -3519,6 +3559,13 @@
           },
           "id": {
             "description": "A usr_... id, or the literal string 'me' for the calling User (not valid for API Keys).",
+            "type": "string"
+          },
+          "include": {
+            "description": "`total` adds `page.total` and `page.total_capped`: the number of rows matching the current filters across every page, counted up to 10,000 (Conventions → Pagination). Omitted unless requested.",
+            "enum": [
+              "total"
+            ],
             "type": "string"
           },
           "include_inactive": {
@@ -3574,6 +3621,7 @@
       "x_query_params": [
         "limit",
         "cursor",
+        "include",
         "application_id",
         "status",
         "source",
@@ -4495,6 +4543,13 @@
           "cursor": {
             "type": "string"
           },
+          "include": {
+            "description": "`total` adds `page.total` and `page.total_capped`: the number of rows matching the current filters across every page, counted up to 10,000 (Conventions → Pagination). Omitted unless requested.",
+            "enum": [
+              "total"
+            ],
+            "type": "string"
+          },
           "limit": {
             "default": 25,
             "maximum": 100,
@@ -4528,6 +4583,7 @@
       "x_query_params": [
         "limit",
         "cursor",
+        "include",
         "status",
         "q"
       ],
@@ -4621,6 +4677,13 @@
           "id": {
             "type": "string"
           },
+          "include": {
+            "description": "`total` adds `page.total` and `page.total_capped`: the number of rows matching the current filters across every page, counted up to 10,000 (Conventions → Pagination). Omitted unless requested.",
+            "enum": [
+              "total"
+            ],
+            "type": "string"
+          },
           "limit": {
             "default": 25,
             "maximum": 100,
@@ -4666,6 +4729,7 @@
       "x_query_params": [
         "limit",
         "cursor",
+        "include",
         "role",
         "membership_status",
         "q"
@@ -5489,6 +5553,13 @@
           "cursor": {
             "type": "string"
           },
+          "include": {
+            "description": "`total` adds `page.total` and `page.total_capped`: the number of rows matching the current filters across every page, counted up to 10,000 (Conventions → Pagination). Omitted unless requested.",
+            "enum": [
+              "total"
+            ],
+            "type": "string"
+          },
           "limit": {
             "default": 25,
             "maximum": 100,
@@ -5516,6 +5587,7 @@
       "x_query_params": [
         "limit",
         "cursor",
+        "include",
         "scope"
       ],
       "x_has_body": false,
@@ -6317,6 +6389,13 @@
             "format": "email",
             "type": "string"
           },
+          "include": {
+            "description": "`total` adds `page.total` and `page.total_capped`: the number of rows matching the current filters across every page, counted up to 10,000 (Conventions → Pagination). Omitted unless requested.",
+            "enum": [
+              "total"
+            ],
+            "type": "string"
+          },
           "limit": {
             "default": 25,
             "maximum": 100,
@@ -6365,6 +6444,7 @@
       "x_query_params": [
         "limit",
         "cursor",
+        "include",
         "status",
         "email",
         "q",
@@ -6734,6 +6814,13 @@
           "cursor": {
             "type": "string"
           },
+          "include": {
+            "description": "`total` adds `page.total` and `page.total_capped`: the number of rows matching the current filters across every page, counted up to 10,000 (Conventions → Pagination). Omitted unless requested.",
+            "enum": [
+              "total"
+            ],
+            "type": "string"
+          },
           "limit": {
             "default": 25,
             "maximum": 100,
@@ -6757,6 +6844,7 @@
       "x_query_params": [
         "limit",
         "cursor",
+        "include",
         "application_id"
       ],
       "x_has_body": false,
@@ -6777,6 +6865,13 @@
             "type": "string"
           },
           "id": {
+            "type": "string"
+          },
+          "include": {
+            "description": "`total` adds `page.total` and `page.total_capped`: the number of rows matching the current filters across every page, counted up to 10,000 (Conventions → Pagination). Omitted unless requested.",
+            "enum": [
+              "total"
+            ],
             "type": "string"
           },
           "limit": {
@@ -6819,6 +6914,7 @@
       "x_query_params": [
         "limit",
         "cursor",
+        "include",
         "event_id",
         "status",
         "since"

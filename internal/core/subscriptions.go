@@ -529,6 +529,10 @@ func (s *Server) BillingListSubscriptions(w http.ResponseWriter, r *http.Request
 			where = append(where, "s.current_period_end < :cpeb::timestamptz")
 			args["cpeb"] = db.Time(*params.CurrentPeriodEndBefore)
 		}
+		total, err := c.listTotal("subscriptions s", where, args)
+		if err != nil {
+			return err
+		}
 		if pos != nil {
 			where = append(where, "(s.updated_at, s.id) < (:ps::timestamptz, :pi)")
 			args["ps"], args["pi"] = pos.Sort, pos.ID
@@ -557,7 +561,7 @@ func (s *Server) BillingListSubscriptions(w http.ResponseWriter, r *http.Request
 		}
 		return c.OK(httpx.Paginate(c.s.Cursors, items, lim, filters, func(i subscriptionListItem) (string, string) {
 			return httpx.TimeKey(i.UpdatedAt), i.ID
-		}))
+		}).WithTotal(total))
 	})
 }
 

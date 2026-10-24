@@ -398,6 +398,10 @@ func (s *Server) EntitlementsListForUser(w http.ResponseWriter, r *http.Request,
 			where user_id = :u and status = 'active'))`}
 		args := db.Args{"u": uid, "lim": int64(lim + 1)}
 		where, args = entFilters(where, args, appFilter, enumStr(params.Status), enumStr(params.Source), params.IncludeInactive)
+		total, err := c.listTotal("entitlements e", where, args)
+		if err != nil {
+			return err
+		}
 		if pos != nil {
 			where = append(where, "(e.created_at, e.id) < (:ps::timestamptz, :pi)")
 			args["ps"], args["pi"] = pos.Sort, pos.ID
@@ -413,7 +417,7 @@ func (s *Server) EntitlementsListForUser(w http.ResponseWriter, r *http.Request,
 		}
 		return c.OK(httpx.Paginate(c.s.Cursors, rows, lim, filters, func(e entitlement) (string, string) {
 			return httpx.TimeKey(e.CreatedAt), e.ID
-		}))
+		}).WithTotal(total))
 	})
 }
 
@@ -487,6 +491,10 @@ func (s *Server) EntitlementsList(w http.ResponseWriter, r *http.Request, params
 			where = append(where, "e.ends_at < :eb::timestamptz")
 			args["eb"] = db.Time(*params.EndsBefore)
 		}
+		total, err := c.listTotal("entitlements e", where, args)
+		if err != nil {
+			return err
+		}
 		if pos != nil {
 			where = append(where, "(e.created_at, e.id) < (:ps::timestamptz, :pi)")
 			args["ps"], args["pi"] = pos.Sort, pos.ID
@@ -500,7 +508,7 @@ func (s *Server) EntitlementsList(w http.ResponseWriter, r *http.Request, params
 		}
 		return c.OK(httpx.Paginate(c.s.Cursors, rows, lim, filters, func(e entitlement) (string, string) {
 			return httpx.TimeKey(e.CreatedAt), e.ID
-		}))
+		}).WithTotal(total))
 	})
 }
 

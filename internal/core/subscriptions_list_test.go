@@ -136,6 +136,11 @@ func TestListSubscriptions(t *testing.T) {
 		t.Fatalf("page 2 = %v", p2.Body)
 	}
 	e.Get("/subscriptions?subscriber_type=bogus", billing.Token).ExpectErr(422, "validation_failed")
+
+	// ?include=total counts every match, on every page.
+	expectTotal(t, e.Get("/subscriptions?include=total", billing.Token).Expect(200), 3)
+	expectTotal(t, e.Get("/subscriptions?include=total&status=past_due", billing.Token).Expect(200), 2)
+	expectTotal(t, e.Get("/subscriptions?include=total&limit=2&cursor="+page["next_cursor"].(string), billing.Token).Expect(200), 3)
 	nine := "/subscriptions?status=active"
 	for range 8 {
 		nine += "&status=active"

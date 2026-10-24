@@ -201,7 +201,7 @@ func (s *Server) WebhooksList(w http.ResponseWriter, r *http.Request, params gen
 					   where user_id = :me and role = 'org_admin' and status = 'active'))`)
 				args["me"] = c.p.UserID
 			} else {
-				return c.OK(httpx.List[webhook]{Data: []webhook{}})
+				return emptyList[webhook](c)
 			}
 		}
 		if params.ApplicationId != nil {
@@ -215,6 +215,10 @@ func (s *Server) WebhooksList(w http.ResponseWriter, r *http.Request, params gen
 		if err != nil {
 			return err
 		}
+		total, err := c.listTotal("webhook_subscriptions w", where, args)
+		if err != nil {
+			return err
+		}
 		if pos != nil {
 			where = append(where, "(w.created_at, w.id) < (:ps::timestamptz, :pi)")
 			args["ps"], args["pi"] = pos.Sort, pos.ID
@@ -225,7 +229,7 @@ func (s *Server) WebhooksList(w http.ResponseWriter, r *http.Request, params gen
 		}
 		return c.OK(httpx.Paginate(c.s.Cursors, rows, lim, filters, func(x webhook) (string, string) {
 			return httpx.TimeKey(x.CreatedAt), x.ID
-		}))
+		}).WithTotal(total))
 	})
 }
 
@@ -524,6 +528,10 @@ func (s *Server) WebhooksListDeliveries(w http.ResponseWriter, r *http.Request, 
 		if err != nil {
 			return err
 		}
+		total, err := c.listTotal("webhook_deliveries d join webhook_events e on e.id = d.event_id", where, args)
+		if err != nil {
+			return err
+		}
 		if pos != nil {
 			where = append(where, "(d.created_at, d.id) < (:ps::timestamptz, :pi)")
 			args["ps"], args["pi"] = pos.Sort, pos.ID
@@ -538,7 +546,7 @@ func (s *Server) WebhooksListDeliveries(w http.ResponseWriter, r *http.Request, 
 		}
 		return c.OK(httpx.Paginate(c.s.Cursors, rows, lim, filters, func(x delivery) (string, string) {
 			return httpx.TimeKey(x.CreatedAt), x.ID
-		}))
+		}).WithTotal(total))
 	})
 }
 

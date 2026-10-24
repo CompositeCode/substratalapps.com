@@ -51,3 +51,29 @@ func TestIfMatch(t *testing.T) {
 		t.Fatal("If-Match comparison")
 	}
 }
+
+func TestTotals(t *testing.T) {
+	for q, want := range map[string]bool{"": false, "?include=total": true} {
+		got, err := WantTotal(httptest.NewRequest("GET", "/users"+q, nil))
+		if err != nil || got != want {
+			t.Errorf("WantTotal(%q) = %v, %v", q, got, err)
+		}
+	}
+	if _, err := WantTotal(httptest.NewRequest("GET", "/users?include=count", nil)); err == nil {
+		t.Error("an unknown include value is a validation error")
+	}
+	if Filters(httptest.NewRequest("GET", "/users?status=active&include=total", nil)) !=
+		Filters(httptest.NewRequest("GET", "/users?status=active", nil)) {
+		t.Error("include isn't part of a cursor's filters")
+	}
+	for n, want := range map[int64][2]any{0: {int64(0), false}, 10000: {int64(10000), false}, 10001: {int64(10000), true}} {
+		v := n
+		l := List[int]{}.WithTotal(&v)
+		if *l.Page.Total != want[0] || *l.Page.TotalCapped != want[1] {
+			t.Errorf("WithTotal(%d) = %d, %v", n, *l.Page.Total, *l.Page.TotalCapped)
+		}
+	}
+	if l := (List[int]{}).WithTotal(nil); l.Page.Total != nil || l.Page.TotalCapped != nil {
+		t.Error("no count, no total")
+	}
+}

@@ -159,6 +159,10 @@ func (s *Server) AuditList(w http.ResponseWriter, r *http.Request, params gen.Au
 		if err != nil {
 			return err
 		}
+		total, err := c.listTotal("audit_events a", where, args)
+		if err != nil {
+			return err
+		}
 		if pos != nil {
 			where = append(where, "(a.timestamp, a.id) < (:ps::timestamptz, :pi)")
 			args["ps"], args["pi"] = pos.Sort, pos.ID
@@ -176,7 +180,7 @@ func (s *Server) AuditList(w http.ResponseWriter, r *http.Request, params gen.Au
 		}
 		return c.OK(httpx.Paginate(c.s.Cursors, rows, lim, filters, func(x auditEvent) (string, string) {
 			return httpx.TimeKey(x.Timestamp), x.ID
-		}))
+		}).WithTotal(total))
 	})
 }
 
