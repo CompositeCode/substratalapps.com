@@ -97,6 +97,9 @@ func (c *Client) CheckoutSession(ctx context.Context, in core.CheckoutInput) (st
 		CancelURL:                stripe.String(in.CancelURL),
 		BillingAddressCollection: stripe.String("required"),
 		AutomaticTax:             &stripe.CheckoutSessionCreateAutomaticTaxParams{Enabled: stripe.Bool(true)},
+		// Automatic tax needs an address on the Customer, which is created
+		// with only an email; save the one entered in Checkout.
+		CustomerUpdate: &stripe.CheckoutSessionCreateCustomerUpdateParams{Address: stripe.String("auto")},
 		LineItems: []*stripe.CheckoutSessionCreateLineItemParams{
 			{Price: stripe.String(price), Quantity: stripe.Int64(int64(max(in.Quantity, 1)))},
 		},
