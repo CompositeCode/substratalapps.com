@@ -12,6 +12,12 @@ What's changed in this specification over time. Every decision is written into t
 
 ---
 
+## 2026-10-23 — A cross-subscriber subscription list
+
+Billing admins can work the `past_due` list without going to Stripe ([#57](https://github.com/CompositeCode/substratalapps.com/issues/57)). `openapi.yaml` is now at `1.0.0-draft.10`, with 125 operations.
+
+- **`GET /subscriptions`** lists every User's and Organization's subscription, for `billing.manage` only. Filters: `status` (repeatable), `subscriber_type`, `cancel_at_period_end`, and `current_period_end_before`. Cursor-paginated, most recently updated first. Each item is the Subscription object plus `user_email` or `organization_name` for display. Revenue and invoices stay in Stripe. No migration: the table holds one row per subscriber and already has a `(status)` index; an `updated_at` index can follow if query plans call for it. See [Billing → `GET /subscriptions`](../api-reference/billing/#get-subscriptions).
+
 ## 2026-10-22 — Browsers can read `Deprecation` and `Sunset`
 
 `Access-Control-Expose-Headers` adds `Deprecation` and `Sunset`, so a web client can read them on a response to a deprecated version and tell its user to update, as [Versioning](../api-reference/conventions/#versioning) already promised. No other change. See [NFR → CORS](../non-functional-requirements/#cors).

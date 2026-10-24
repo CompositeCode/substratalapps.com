@@ -1497,13 +1497,13 @@ func (e SettingsWriteTheme) Valid() bool {
 
 // Defines values for SubscriptionCurrency.
 const (
-	Usd SubscriptionCurrency = "usd"
+	SubscriptionCurrencyUsd SubscriptionCurrency = "usd"
 )
 
 // Valid indicates whether the value is a known member of the SubscriptionCurrency enum.
 func (e SubscriptionCurrency) Valid() bool {
 	switch e {
-	case Usd:
+	case SubscriptionCurrencyUsd:
 		return true
 	default:
 		return false
@@ -1537,6 +1537,54 @@ func (e SubscriptionSubscriberType) Valid() bool {
 	case SubscriptionSubscriberTypeOrganization:
 		return true
 	case SubscriptionSubscriberTypeUser:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SubscriptionListItemCurrency.
+const (
+	SubscriptionListItemCurrencyUsd SubscriptionListItemCurrency = "usd"
+)
+
+// Valid indicates whether the value is a known member of the SubscriptionListItemCurrency enum.
+func (e SubscriptionListItemCurrency) Valid() bool {
+	switch e {
+	case SubscriptionListItemCurrencyUsd:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SubscriptionListItemPlan.
+const (
+	SubscriptionListItemPlanStandard SubscriptionListItemPlan = "standard"
+)
+
+// Valid indicates whether the value is a known member of the SubscriptionListItemPlan enum.
+func (e SubscriptionListItemPlan) Valid() bool {
+	switch e {
+	case SubscriptionListItemPlanStandard:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SubscriptionListItemSubscriberType.
+const (
+	SubscriptionListItemSubscriberTypeOrganization SubscriptionListItemSubscriberType = "organization"
+	SubscriptionListItemSubscriberTypeUser         SubscriptionListItemSubscriberType = "user"
+)
+
+// Valid indicates whether the value is a known member of the SubscriptionListItemSubscriberType enum.
+func (e SubscriptionListItemSubscriberType) Valid() bool {
+	switch e {
+	case SubscriptionListItemSubscriberTypeOrganization:
+		return true
+	case SubscriptionListItemSubscriberTypeUser:
 		return true
 	default:
 		return false
@@ -2038,6 +2086,24 @@ func (e BillingCreateOrganizationCheckoutSessionJSONBodyPlan) Valid() bool {
 	case BillingCreateOrganizationCheckoutSessionJSONBodyPlanEnterprise:
 		return true
 	case BillingCreateOrganizationCheckoutSessionJSONBodyPlanStandard:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BillingListSubscriptionsParamsSubscriberType.
+const (
+	BillingListSubscriptionsParamsSubscriberTypeOrganization BillingListSubscriptionsParamsSubscriberType = "organization"
+	BillingListSubscriptionsParamsSubscriberTypeUser         BillingListSubscriptionsParamsSubscriberType = "user"
+)
+
+// Valid indicates whether the value is a known member of the BillingListSubscriptionsParamsSubscriberType enum.
+func (e BillingListSubscriptionsParamsSubscriberType) Valid() bool {
+	switch e {
+	case BillingListSubscriptionsParamsSubscriberTypeOrganization:
+		return true
+	case BillingListSubscriptionsParamsSubscriberTypeUser:
 		return true
 	default:
 		return false
@@ -3363,6 +3429,62 @@ type SubscriptionPlan string
 // SubscriptionSubscriberType defines model for Subscription.SubscriberType.
 type SubscriptionSubscriberType string
 
+// SubscriptionListItem defines model for SubscriptionListItem.
+type SubscriptionListItem struct {
+	CancelAtPeriodEnd  *bool                         `json:"cancel_at_period_end,omitempty"`
+	CreatedAt          *time.Time                    `json:"created_at,omitempty"`
+	Currency           *SubscriptionListItemCurrency `json:"currency,omitempty"`
+	CurrentPeriodEnd   *time.Time                    `json:"current_period_end,omitempty"`
+	CurrentPeriodStart *time.Time                    `json:"current_period_start,omitempty"`
+
+	// Id sbs_ prefix
+	Id              *string   `json:"id,omitempty"`
+	MemberOverrides *[]string `json:"member_overrides,omitempty"`
+
+	// MemberScope Organization subscriptions only.
+	MemberScope    *EntitlementMemberScope `json:"member_scope,omitempty"`
+	OrganizationId *string                 `json:"organization_id,omitempty"`
+
+	// OrganizationName Organization subscriptions: the Organization's name, for display.
+	OrganizationName *string                   `json:"organization_name,omitempty"`
+	Plan             *SubscriptionListItemPlan `json:"plan,omitempty"`
+
+	// Quantity Users billed. Always 1 for an individual subscription; for an Organization, covered members.
+	Quantity *struct {
+		Current      *int       `json:"current,omitempty"`
+		LastSynced   *int       `json:"last_synced,omitempty"`
+		LastSyncedAt *time.Time `json:"last_synced_at,omitempty"`
+	} `json:"quantity,omitempty"`
+
+	// Status Mirrors Stripe. active, trialing, and past_due cover their users with Standard; the rest don't.
+	Status         *SubscriptionStatus                 `json:"status,omitempty"`
+	SubscriberType *SubscriptionListItemSubscriberType `json:"subscriber_type,omitempty"`
+	TestMode       *bool                               `json:"test_mode,omitempty"`
+
+	// UnitAmount Cents per user per month (600).
+	UnitAmount *int       `json:"unit_amount,omitempty"`
+	UpdatedAt  *time.Time `json:"updated_at,omitempty"`
+
+	// UserEmail Individual subscriptions: the User's email, for display.
+	UserEmail *openapi_types.Email `json:"user_email,omitempty"`
+	UserId    *string              `json:"user_id,omitempty"`
+}
+
+// SubscriptionListItemCurrency defines model for SubscriptionListItem.Currency.
+type SubscriptionListItemCurrency string
+
+// SubscriptionListItemPlan defines model for SubscriptionListItem.Plan.
+type SubscriptionListItemPlan string
+
+// SubscriptionListItemSubscriberType defines model for SubscriptionListItem.SubscriberType.
+type SubscriptionListItemSubscriberType string
+
+// SubscriptionPage defines model for SubscriptionPage.
+type SubscriptionPage struct {
+	Data []SubscriptionListItem `json:"data"`
+	Page PageInfo               `json:"page"`
+}
+
 // SubscriptionStatus Mirrors Stripe. active, trialing, and past_due cover their users with Standard; the rest don't.
 type SubscriptionStatus string
 
@@ -4071,6 +4193,23 @@ type RolesUpdateParams struct {
 	// IfMatch The ETag from a prior read. A mismatch returns 409 version_conflict.
 	IfMatch *IfMatch `json:"If-Match,omitempty"`
 }
+
+// BillingListSubscriptionsParams defines parameters for BillingListSubscriptions.
+type BillingListSubscriptionsParams struct {
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Status Subscriptions in any of these statuses. Repeatable.
+	Status            *[]SubscriptionStatus                         `form:"status,omitempty" json:"status,omitempty"`
+	SubscriberType    *BillingListSubscriptionsParamsSubscriberType `form:"subscriber_type,omitempty" json:"subscriber_type,omitempty"`
+	CancelAtPeriodEnd *bool                                         `form:"cancel_at_period_end,omitempty" json:"cancel_at_period_end,omitempty"`
+
+	// CurrentPeriodEndBefore Subscriptions whose current period ends before this time.
+	CurrentPeriodEndBefore *time.Time `form:"current_period_end_before,omitempty" json:"current_period_end_before,omitempty"`
+}
+
+// BillingListSubscriptionsParamsSubscriberType defines parameters for BillingListSubscriptions.
+type BillingListSubscriptionsParamsSubscriberType string
 
 // TenantsListParams defines parameters for TenantsList.
 type TenantsListParams struct {
@@ -5083,6 +5222,9 @@ type ServerInterface interface {
 	// RolesUpdate Change a Role's permissions or description
 	// (PATCH /roles/{id})
 	RolesUpdate(w http.ResponseWriter, r *http.Request, id string, params RolesUpdateParams)
+	// BillingListSubscriptions List every subscriber's subscription (billing.manage)
+	// (GET /subscriptions)
+	BillingListSubscriptions(w http.ResponseWriter, r *http.Request, params BillingListSubscriptionsParams)
 	// TenantsList List Tenants (your own; all with tenants.manage)
 	// (GET /tenants)
 	TenantsList(w http.ResponseWriter, r *http.Request, params TenantsListParams)
@@ -7753,6 +7895,104 @@ func (siw *ServerInterfaceWrapper) RolesUpdate(w http.ResponseWriter, r *http.Re
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.RolesUpdate(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// BillingListSubscriptions operation middleware
+func (siw *ServerInterfaceWrapper) BillingListSubscriptions(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params BillingListSubscriptionsParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "array", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "subscriber_type" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "subscriber_type", r.URL.Query(), &params.SubscriberType, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "subscriber_type"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "subscriber_type", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cancel_at_period_end" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cancel_at_period_end", r.URL.Query(), &params.CancelAtPeriodEnd, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cancel_at_period_end"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cancel_at_period_end", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "current_period_end_before" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "current_period_end_before", r.URL.Query(), &params.CurrentPeriodEndBefore, runtime.BindQueryParameterOptions{Type: "string", Format: "date-time"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "current_period_end_before"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "current_period_end_before", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.BillingListSubscriptions(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -10684,6 +10924,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/roles/{id}", wrapper.RolesDelete)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/roles/{id}", wrapper.RolesGet)
 	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/roles/{id}", wrapper.RolesUpdate)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/subscriptions", wrapper.BillingListSubscriptions)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/tenants", wrapper.TenantsList)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/tenants/{id}", wrapper.TenantsGet)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/tenants/{id}/tier-change-requests", wrapper.TenantsListTierChangeRequests)

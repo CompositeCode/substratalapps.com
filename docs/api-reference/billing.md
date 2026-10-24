@@ -31,6 +31,7 @@ Stripe tells this API about every change through its webhook. This API never tak
 
 | Method | Path | Requires | Purpose |
 |---|---|---|---|
+| `GET` | `/subscriptions` | `billing.manage` | Every subscriber's subscription, filterable, for working the `past_due` list. |
 | `GET` | `/users/{id}/subscription` | self, or `billing.manage` | A User's plan, what covers it, and their own subscription. |
 | `POST` | `/users/me/billing/checkout-sessions` | self, User token | Start a Stripe Checkout to subscribe yourself to Standard. |
 | `POST` | `/users/me/billing/portal-sessions` | self, User token | Open the Stripe Customer Portal for your own subscription. |
@@ -79,6 +80,40 @@ One row per subscriber, kept across lapses and resubscribes.
 | `unit_amount` | Cents per user per month. |
 
 Invoices and receipts aren't mirrored here. Stripe is the system of record for those, and the Portal shows them.
+
+## `GET /subscriptions`
+
+```
+GET /subscriptions?status=past_due&status=unpaid
+```
+```json
+// Response — 200
+{
+  "data": [
+    {
+      "id": "sbs_01JAGC3D4E5F6G7H8J9K011M2N",
+      "subscriber_type": "organization",
+      "organization_id": "org_01JAGB2C3D4E5F6G7H8J9K0L1M",
+      "status": "past_due",
+      "...": "...",
+      "user_email": null,
+      "organization_name": "Acme Corp"
+    }
+  ],
+  "page": { "next_cursor": null, "has_more": false }
+}
+```
+
+Every User's and Organization's subscription, for `billing.manage` only. Anyone else, including org admins and the subscribers themselves, gets `403`. Each item is the [Subscription object](#the-subscription-object) plus the subscriber for display: `user_email` on an individual subscription, `organization_name` on an Organization's, and `null` for the other. A deleted User's subscription is still listed, but `user_email` is `null` unless the caller also holds `users.manage`. Results are in the caller's mode, most recently updated first, and [cursor-paginated](../conventions/#pagination). This is what the API already stores. Revenue, invoices, and payment attempts stay in Stripe.
+
+| Filter | Meaning |
+|---|---|
+| `status` | Any of these statuses. Repeatable (`?status=past_due&status=unpaid`), up to 8. An abandoned Checkout leaves an `incomplete` row, so a console usually filters by status. |
+| `subscriber_type` | `user` or `organization`. |
+| `cancel_at_period_end` | `true` for subscriptions set to end at the period's close, `false` for the rest. |
+| `current_period_end_before` | ISO 8601. Subscriptions whose current period ends before this time. |
+
+Ordering is by `updated_at`, which changes whenever Stripe reports a change. A subscription updated while you page through can move to the front, so it can be missed or seen twice in one pass.
 
 ## `GET /users/{id}/subscription`
 

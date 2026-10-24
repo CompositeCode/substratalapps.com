@@ -2706,6 +2706,82 @@
       "x_accepts_if_match": false
     },
     {
+      "name": "substratal_billing_listSubscriptions",
+      "title": "List every subscriber's subscription (billing.manage)",
+      "description": "List every subscriber's subscription (billing.manage)\n\nRequires billing.manage. Every User's and Organization's subscription in the caller's mode, most recently updated first, with the subscriber's email or name for display. Revenue and invoices stay in Stripe.\n\nREST: GET /subscriptions",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "cancel_at_period_end": {
+            "type": "boolean"
+          },
+          "current_period_end_before": {
+            "description": "Subscriptions whose current period ends before this time.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "cursor": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "status": {
+            "description": "Subscriptions in any of these statuses. Repeatable.",
+            "items": {
+              "description": "Mirrors Stripe. active, trialing, and past_due cover their users with Standard; the rest don't.",
+              "enum": [
+                "active",
+                "trialing",
+                "past_due",
+                "canceled",
+                "unpaid",
+                "incomplete",
+                "incomplete_expired",
+                "paused"
+              ],
+              "type": "string"
+            },
+            "maxItems": 8,
+            "type": "array"
+          },
+          "subscriber_type": {
+            "enum": [
+              "user",
+              "organization"
+            ],
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "List every subscriber's subscription (billing.manage)"
+      },
+      "x_operation_id": "billing.listSubscriptions",
+      "x_method": "GET",
+      "x_path": "/subscriptions",
+      "x_path_params": null,
+      "x_query_params": [
+        "limit",
+        "cursor",
+        "status",
+        "subscriber_type",
+        "cancel_at_period_end",
+        "current_period_end_before"
+      ],
+      "x_has_body": false,
+      "x_needs_idempotency_key": false,
+      "x_accepts_if_match": false
+    },
+    {
       "name": "substratal_billing_updateOrganizationSubscription",
       "title": "Choose which members the Organization's subscription covers (org admin)",
       "description": "Choose which members the Organization's subscription covers (org admin)\n\nREST: PATCH /organizations/{id}/subscription",
