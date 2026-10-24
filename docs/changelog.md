@@ -12,6 +12,10 @@ What's changed in this specification over time. Every decision is written into t
 
 ---
 
+## 2026-10-23 — Checkout saves the billing address
+
+Checkout now sets `customer_update[address]: auto`, so the billing address entered in Checkout is saved to the subscriber's Stripe Customer. Stripe refuses a Checkout with automatic tax when the Customer has no address, and ours are created with only an email, so every Checkout would have failed against real Stripe (the test suite uses a fake). Found while setting up Stripe test mode. No API change. See [infra/README.md → Objects and mapping](https://github.com/CompositeCode/substratalapps.com/blob/main/infra/README.md#objects-and-mapping).
+
 ## 2026-10-23 — Abandoned Checkouts expire
 
 A first Checkout that's never completed no longer leaves its subscription `incomplete` forever. When Stripe expires the Checkout session (`checkout.session.expired`, about 24 hours later), the row becomes `incomplete_expired`, Stripe's own status for a first payment that never completed, and `subscription.status_changed` is written. A row Stripe has already linked to a subscription is left alone, and so is one whose subscriber has a newer Checkout still open. The subscriber can check out again as before. Add `checkout.session.expired` by hand to the Stripe webhook endpoint's events, in test and live mode; see [infra/README.md → Webhook handling](https://github.com/CompositeCode/substratalapps.com/blob/main/infra/README.md#webhook-handling). No API or schema change.
