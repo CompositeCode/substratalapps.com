@@ -2212,6 +2212,21 @@ func (e RolesListParamsInclude) Valid() bool {
 	}
 }
 
+// Defines values for BillingListSubscriptionsParamsInclude.
+const (
+	BillingListSubscriptionsParamsIncludeTotal BillingListSubscriptionsParamsInclude = "total"
+)
+
+// Valid indicates whether the value is a known member of the BillingListSubscriptionsParamsInclude enum.
+func (e BillingListSubscriptionsParamsInclude) Valid() bool {
+	switch e {
+	case BillingListSubscriptionsParamsIncludeTotal:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for BillingListSubscriptionsParamsSubscriberType.
 const (
 	BillingListSubscriptionsParamsSubscriberTypeOrganization BillingListSubscriptionsParamsSubscriberType = "organization"
@@ -4430,6 +4445,9 @@ type BillingListSubscriptionsParams struct {
 	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
 	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
 
+	// Include `total` adds `page.total` and `page.total_capped`: the number of rows matching the current filters across every page, counted up to 10,000 (Conventions → Pagination). Omitted unless requested.
+	Include *BillingListSubscriptionsParamsInclude `form:"include,omitempty" json:"include,omitempty"`
+
 	// Status Subscriptions in any of these statuses. Repeatable.
 	Status            *[]SubscriptionStatus                         `form:"status,omitempty" json:"status,omitempty"`
 	SubscriberType    *BillingListSubscriptionsParamsSubscriberType `form:"subscriber_type,omitempty" json:"subscriber_type,omitempty"`
@@ -4438,6 +4456,9 @@ type BillingListSubscriptionsParams struct {
 	// CurrentPeriodEndBefore Subscriptions whose current period ends before this time.
 	CurrentPeriodEndBefore *time.Time `form:"current_period_end_before,omitempty" json:"current_period_end_before,omitempty"`
 }
+
+// BillingListSubscriptionsParamsInclude defines parameters for BillingListSubscriptions.
+type BillingListSubscriptionsParamsInclude string
 
 // BillingListSubscriptionsParamsSubscriberType defines parameters for BillingListSubscriptions.
 type BillingListSubscriptionsParamsSubscriberType string
@@ -8281,6 +8302,19 @@ func (siw *ServerInterfaceWrapper) BillingListSubscriptions(w http.ResponseWrite
 			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
 		} else {
 			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "include" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "include", r.URL.Query(), &params.Include, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "include"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "include", Err: err})
 		}
 		return
 	}

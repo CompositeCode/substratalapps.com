@@ -2074,6 +2074,7 @@ paths:
         - $ref: "#/components/parameters/ApiVersion"
         - $ref: "#/components/parameters/Limit"
         - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Include"
         - name: status
           in: query
           description: "Subscriptions in any of these statuses. Repeatable."

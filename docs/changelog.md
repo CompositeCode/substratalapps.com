@@ -17,7 +17,7 @@ What's changed in this specification over time. Every decision is written into t
 Console tables can show "1,204 users" for their current filters without paging everything ([#53](https://github.com/CompositeCode/substratalapps.com/issues/53)). `openapi.yaml` is now at `1.0.0-draft.11`. No new operations, and no migration.
 
 - **`?include=total`** adds `page.total` and `page.total_capped` to a list response. The count uses the list's own filters and visibility, ignores `cursor` (every page reports the same total), and stops at 10,000: above that, `total` is `10000` and `total_capped` is `true`. Without the parameter, both fields are absent. Any other `include` value is `422 validation_failed`. See [Conventions → Pagination](../api-reference/conventions/#pagination).
-- **Supported on** `GET /users`, `/entitlements`, `/users/{id}/entitlements`, `/applications`, `/organizations`, `/organizations/{id}/members`, `/audit-events`, `/webhooks`, `/webhooks/{id}/deliveries`, `/api-keys`, and `/roles`, each declaring the shared `Include` parameter. `PageInfo` gains the two optional fields.
+- **Supported on** `GET /users`, `/entitlements`, `/users/{id}/entitlements`, `/applications`, `/organizations`, `/organizations/{id}/members`, `/audit-events`, `/webhooks`, `/webhooks/{id}/deliveries`, `/api-keys`, `/roles`, and `/subscriptions`, each declaring the shared `Include` parameter. `PageInfo` gains the two optional fields.
 - **Cursors ignore `include`**, so a cursor from a counted page works on an uncounted one and the other way round.
 
 ## 2026-10-23 — A cross-subscriber subscription list

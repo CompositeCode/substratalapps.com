@@ -2747,6 +2747,13 @@
           "cursor": {
             "type": "string"
           },
+          "include": {
+            "description": "`total` adds `page.total` and `page.total_capped`: the number of rows matching the current filters across every page, counted up to 10,000 (Conventions → Pagination). Omitted unless requested.",
+            "enum": [
+              "total"
+            ],
+            "type": "string"
+          },
           "limit": {
             "default": 25,
             "maximum": 100,
@@ -2796,6 +2803,7 @@
       "x_query_params": [
         "limit",
         "cursor",
+        "include",
         "status",
         "subscriber_type",
         "cancel_at_period_end",
