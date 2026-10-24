@@ -1918,6 +1918,36 @@ func (e ApiVersion) Valid() bool {
 	}
 }
 
+// Defines values for Include.
+const (
+	IncludeTotal Include = "total"
+)
+
+// Valid indicates whether the value is a known member of the Include enum.
+func (e Include) Valid() bool {
+	switch e {
+	case IncludeTotal:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ApiKeysListParamsInclude.
+const (
+	ApiKeysListParamsIncludeTotal ApiKeysListParamsInclude = "total"
+)
+
+// Valid indicates whether the value is a known member of the ApiKeysListParamsInclude enum.
+func (e ApiKeysListParamsInclude) Valid() bool {
+	switch e {
+	case ApiKeysListParamsIncludeTotal:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ApiKeysListParamsMode.
 const (
 	ApiKeysListParamsModeLive ApiKeysListParamsMode = "live"
@@ -1948,6 +1978,36 @@ func (e ApiKeysListParamsIntendedUse) Valid() bool {
 	case ApiKeysListParamsIntendedUseAgent:
 		return true
 	case ApiKeysListParamsIntendedUseService:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ApplicationsListParamsInclude.
+const (
+	ApplicationsListParamsIncludeTotal ApplicationsListParamsInclude = "total"
+)
+
+// Valid indicates whether the value is a known member of the ApplicationsListParamsInclude enum.
+func (e ApplicationsListParamsInclude) Valid() bool {
+	switch e {
+	case ApplicationsListParamsIncludeTotal:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AuditListParamsInclude.
+const (
+	AuditListParamsIncludeTotal AuditListParamsInclude = "total"
+)
+
+// Valid indicates whether the value is a known member of the AuditListParamsInclude enum.
+func (e AuditListParamsInclude) Valid() bool {
+	switch e {
+	case AuditListParamsIncludeTotal:
 		return true
 	default:
 		return false
@@ -2005,6 +2065,21 @@ func (e AuthExchangeOAuthToken200JSONResponseBodyTokenType) Valid() bool {
 	}
 }
 
+// Defines values for EntitlementsListParamsInclude.
+const (
+	EntitlementsListParamsIncludeTotal EntitlementsListParamsInclude = "total"
+)
+
+// Valid indicates whether the value is a known member of the EntitlementsListParamsInclude enum.
+func (e EntitlementsListParamsInclude) Valid() bool {
+	switch e {
+	case EntitlementsListParamsIncludeTotal:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for EntitlementsUpdateJSONBodySource.
 const (
 	EntitlementsUpdateJSONBodySourcePurchase EntitlementsUpdateJSONBodySource = "purchase"
@@ -2029,6 +2104,21 @@ const (
 func (e HealthCheck200JSONResponseBodyStatus) Valid() bool {
 	switch e {
 	case Ok:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OrganizationsListParamsInclude.
+const (
+	OrganizationsListParamsIncludeTotal OrganizationsListParamsInclude = "total"
+)
+
+// Valid indicates whether the value is a known member of the OrganizationsListParamsInclude enum.
+func (e OrganizationsListParamsInclude) Valid() bool {
+	switch e {
+	case OrganizationsListParamsIncludeTotal:
 		return true
 	default:
 		return false
@@ -2086,6 +2176,36 @@ func (e BillingCreateOrganizationCheckoutSessionJSONBodyPlan) Valid() bool {
 	case BillingCreateOrganizationCheckoutSessionJSONBodyPlanEnterprise:
 		return true
 	case BillingCreateOrganizationCheckoutSessionJSONBodyPlanStandard:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OrganizationsListMembersParamsInclude.
+const (
+	OrganizationsListMembersParamsIncludeTotal OrganizationsListMembersParamsInclude = "total"
+)
+
+// Valid indicates whether the value is a known member of the OrganizationsListMembersParamsInclude enum.
+func (e OrganizationsListMembersParamsInclude) Valid() bool {
+	switch e {
+	case OrganizationsListMembersParamsIncludeTotal:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RolesListParamsInclude.
+const (
+	RolesListParamsIncludeTotal RolesListParamsInclude = "total"
+)
+
+// Valid indicates whether the value is a known member of the RolesListParamsInclude enum.
+func (e RolesListParamsInclude) Valid() bool {
+	switch e {
+	case RolesListParamsIncludeTotal:
 		return true
 	default:
 		return false
@@ -2152,6 +2272,21 @@ func (e TenantsUpdateTierChangeRequestJSONBodyStatus) Valid() bool {
 	}
 }
 
+// Defines values for UsersListParamsInclude.
+const (
+	UsersListParamsIncludeTotal UsersListParamsInclude = "total"
+)
+
+// Valid indicates whether the value is a known member of the UsersListParamsInclude enum.
+func (e UsersListParamsInclude) Valid() bool {
+	switch e {
+	case UsersListParamsIncludeTotal:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for UsersListParamsStatus.
 const (
 	UsersListParamsStatusActive    UsersListParamsStatus = "active"
@@ -2212,6 +2347,21 @@ func (e UsersUpdateJSONBodyStatus) Valid() bool {
 	}
 }
 
+// Defines values for EntitlementsListForUserParamsInclude.
+const (
+	EntitlementsListForUserParamsIncludeTotal EntitlementsListForUserParamsInclude = "total"
+)
+
+// Valid indicates whether the value is a known member of the EntitlementsListForUserParamsInclude enum.
+func (e EntitlementsListForUserParamsInclude) Valid() bool {
+	switch e {
+	case EntitlementsListForUserParamsIncludeTotal:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for EntitlementsGrantJSONBodySource.
 const (
 	EntitlementsGrantJSONBodySourceAdminGrant EntitlementsGrantJSONBodySource = "admin_grant"
@@ -2227,6 +2377,21 @@ func (e EntitlementsGrantJSONBodySource) Valid() bool {
 	case EntitlementsGrantJSONBodySourcePurchase:
 		return true
 	case EntitlementsGrantJSONBodySourceTrial:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WebhooksListParamsInclude.
+const (
+	WebhooksListParamsIncludeTotal WebhooksListParamsInclude = "total"
+)
+
+// Valid indicates whether the value is a known member of the WebhooksListParamsInclude enum.
+func (e WebhooksListParamsInclude) Valid() bool {
+	switch e {
+	case WebhooksListParamsIncludeTotal:
 		return true
 	default:
 		return false
@@ -2257,6 +2422,21 @@ const (
 func (e WebhooksUpdateJSONBodyStatus) Valid() bool {
 	switch e {
 	case WebhooksUpdateJSONBodyStatusHealthy:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WebhooksListDeliveriesParamsInclude.
+const (
+	WebhooksListDeliveriesParamsIncludeTotal WebhooksListDeliveriesParamsInclude = "total"
+)
+
+// Valid indicates whether the value is a known member of the WebhooksListDeliveriesParamsInclude enum.
+func (e WebhooksListDeliveriesParamsInclude) Valid() bool {
+	switch e {
+	case WebhooksListDeliveriesParamsIncludeTotal:
 		return true
 	default:
 		return false
@@ -3148,6 +3328,12 @@ type PageEnvelope struct {
 type PageInfo struct {
 	HasMore    bool    `json:"has_more"`
 	NextCursor *string `json:"next_cursor"`
+
+	// Total Only with `include=total`. Rows matching the current filters across every page, ignoring `cursor`; 10000 when capped.
+	Total *int `json:"total,omitempty"`
+
+	// TotalCapped Only with `include=total`. True when there are more than 10,000 matching rows.
+	TotalCapped *bool `json:"total_capped,omitempty"`
 }
 
 // Permission defines model for Permission.
@@ -3755,6 +3941,9 @@ type IdempotencyKeyOptional = string
 // IfMatch defines model for IfMatch.
 type IfMatch = string
 
+// Include defines model for Include.
+type Include string
+
 // Limit defines model for Limit.
 type Limit = int
 
@@ -3787,8 +3976,11 @@ type Unprocessable = Error
 
 // ApiKeysListParams defines parameters for ApiKeysList.
 type ApiKeysListParams struct {
-	Limit       *Limit                        `form:"limit,omitempty" json:"limit,omitempty"`
-	Cursor      *Cursor                       `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Include `total` adds `page.total` and `page.total_capped`: the number of rows matching the current filters across every page, counted up to 10,000 (Conventions → Pagination). Omitted unless requested.
+	Include     *ApiKeysListParamsInclude     `form:"include,omitempty" json:"include,omitempty"`
 	Scope       *string                       `form:"scope,omitempty" json:"scope,omitempty"`
 	Mode        *ApiKeysListParamsMode        `form:"mode,omitempty" json:"mode,omitempty"`
 	IntendedUse *ApiKeysListParamsIntendedUse `form:"intended_use,omitempty" json:"intended_use,omitempty"`
@@ -3796,6 +3988,9 @@ type ApiKeysListParams struct {
 	// IncludeInactive Include revoked and expired keys
 	IncludeInactive *bool `form:"include_inactive,omitempty" json:"include_inactive,omitempty"`
 }
+
+// ApiKeysListParamsInclude defines parameters for ApiKeysList.
+type ApiKeysListParamsInclude string
 
 // ApiKeysListParamsMode defines parameters for ApiKeysList.
 type ApiKeysListParamsMode string
@@ -3812,16 +4007,22 @@ type ApiKeysUpdateJSONBody struct {
 
 // ApplicationsListParams defines parameters for ApplicationsList.
 type ApplicationsListParams struct {
-	Limit               *Limit                   `form:"limit,omitempty" json:"limit,omitempty"`
-	Cursor              *Cursor                  `form:"cursor,omitempty" json:"cursor,omitempty"`
-	Visibility          *ApplicationVisibility   `form:"visibility,omitempty" json:"visibility,omitempty"`
-	ReviewStatus        *ApplicationReviewStatus `form:"review_status,omitempty" json:"review_status,omitempty"`
-	AccessTier          *ApplicationAccessTier   `form:"access_tier,omitempty" json:"access_tier,omitempty"`
-	Owned               *bool                    `form:"owned,omitempty" json:"owned,omitempty"`
-	TenantId            *string                  `form:"tenant_id,omitempty" json:"tenant_id,omitempty"`
-	OwnerUserId         *string                  `form:"owner_user_id,omitempty" json:"owner_user_id,omitempty"`
-	OwnerOrganizationId *string                  `form:"owner_organization_id,omitempty" json:"owner_organization_id,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Include `total` adds `page.total` and `page.total_capped`: the number of rows matching the current filters across every page, counted up to 10,000 (Conventions → Pagination). Omitted unless requested.
+	Include             *ApplicationsListParamsInclude `form:"include,omitempty" json:"include,omitempty"`
+	Visibility          *ApplicationVisibility         `form:"visibility,omitempty" json:"visibility,omitempty"`
+	ReviewStatus        *ApplicationReviewStatus       `form:"review_status,omitempty" json:"review_status,omitempty"`
+	AccessTier          *ApplicationAccessTier         `form:"access_tier,omitempty" json:"access_tier,omitempty"`
+	Owned               *bool                          `form:"owned,omitempty" json:"owned,omitempty"`
+	TenantId            *string                        `form:"tenant_id,omitempty" json:"tenant_id,omitempty"`
+	OwnerUserId         *string                        `form:"owner_user_id,omitempty" json:"owner_user_id,omitempty"`
+	OwnerOrganizationId *string                        `form:"owner_organization_id,omitempty" json:"owner_organization_id,omitempty"`
 }
+
+// ApplicationsListParamsInclude defines parameters for ApplicationsList.
+type ApplicationsListParamsInclude string
 
 // ApplicationsCreateJSONBody defines parameters for ApplicationsCreate.
 type ApplicationsCreateJSONBody struct {
@@ -3877,8 +4078,11 @@ type PushCredentialsUpdateParams struct {
 
 // AuditListParams defines parameters for AuditList.
 type AuditListParams struct {
-	Limit          *Limit                    `form:"limit,omitempty" json:"limit,omitempty"`
-	Cursor         *Cursor                   `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Include `total` adds `page.total` and `page.total_capped`: the number of rows matching the current filters across every page, counted up to 10,000 (Conventions → Pagination). Omitted unless requested.
+	Include        *AuditListParamsInclude   `form:"include,omitempty" json:"include,omitempty"`
 	TargetUserId   *string                   `form:"target_user_id,omitempty" json:"target_user_id,omitempty"`
 	TargetType     *AuditTargetType          `form:"target_type,omitempty" json:"target_type,omitempty"`
 	TargetId       *string                   `form:"target_id,omitempty" json:"target_id,omitempty"`
@@ -3891,6 +4095,9 @@ type AuditListParams struct {
 	Since          *time.Time                `form:"since,omitempty" json:"since,omitempty"`
 	Until          *time.Time                `form:"until,omitempty" json:"until,omitempty"`
 }
+
+// AuditListParamsInclude defines parameters for AuditList.
+type AuditListParamsInclude string
 
 // AuditListParamsActorType defines parameters for AuditList.
 type AuditListParamsActorType string
@@ -4005,17 +4212,23 @@ type AuthRefreshTokenJSONBody struct {
 
 // EntitlementsListParams defines parameters for EntitlementsList.
 type EntitlementsListParams struct {
-	Limit           *Limit             `form:"limit,omitempty" json:"limit,omitempty"`
-	Cursor          *Cursor            `form:"cursor,omitempty" json:"cursor,omitempty"`
-	ApplicationId   *string            `form:"application_id,omitempty" json:"application_id,omitempty"`
-	Status          *EntitlementStatus `form:"status,omitempty" json:"status,omitempty"`
-	UserId          *string            `form:"user_id,omitempty" json:"user_id,omitempty"`
-	OrganizationId  *string            `form:"organization_id,omitempty" json:"organization_id,omitempty"`
-	Source          *EntitlementSource `form:"source,omitempty" json:"source,omitempty"`
-	OrderId         *string            `form:"order_id,omitempty" json:"order_id,omitempty"`
-	EndsBefore      *time.Time         `form:"ends_before,omitempty" json:"ends_before,omitempty"`
-	IncludeInactive *bool              `form:"include_inactive,omitempty" json:"include_inactive,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Include `total` adds `page.total` and `page.total_capped`: the number of rows matching the current filters across every page, counted up to 10,000 (Conventions → Pagination). Omitted unless requested.
+	Include         *EntitlementsListParamsInclude `form:"include,omitempty" json:"include,omitempty"`
+	ApplicationId   *string                        `form:"application_id,omitempty" json:"application_id,omitempty"`
+	Status          *EntitlementStatus             `form:"status,omitempty" json:"status,omitempty"`
+	UserId          *string                        `form:"user_id,omitempty" json:"user_id,omitempty"`
+	OrganizationId  *string                        `form:"organization_id,omitempty" json:"organization_id,omitempty"`
+	Source          *EntitlementSource             `form:"source,omitempty" json:"source,omitempty"`
+	OrderId         *string                        `form:"order_id,omitempty" json:"order_id,omitempty"`
+	EndsBefore      *time.Time                     `form:"ends_before,omitempty" json:"ends_before,omitempty"`
+	IncludeInactive *bool                          `form:"include_inactive,omitempty" json:"include_inactive,omitempty"`
 }
+
+// EntitlementsListParamsInclude defines parameters for EntitlementsList.
+type EntitlementsListParamsInclude string
 
 // EntitlementsUpdateJSONBody defines parameters for EntitlementsUpdate.
 type EntitlementsUpdateJSONBody struct {
@@ -4042,11 +4255,17 @@ type HealthCheck200JSONResponseBodyStatus string
 
 // OrganizationsListParams defines parameters for OrganizationsList.
 type OrganizationsListParams struct {
-	Limit  *Limit                         `form:"limit,omitempty" json:"limit,omitempty"`
-	Cursor *Cursor                        `form:"cursor,omitempty" json:"cursor,omitempty"`
-	Status *OrganizationsListParamsStatus `form:"status,omitempty" json:"status,omitempty"`
-	Q      *string                        `form:"q,omitempty" json:"q,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Include `total` adds `page.total` and `page.total_capped`: the number of rows matching the current filters across every page, counted up to 10,000 (Conventions → Pagination). Omitted unless requested.
+	Include *OrganizationsListParamsInclude `form:"include,omitempty" json:"include,omitempty"`
+	Status  *OrganizationsListParamsStatus  `form:"status,omitempty" json:"status,omitempty"`
+	Q       *string                         `form:"q,omitempty" json:"q,omitempty"`
 }
+
+// OrganizationsListParamsInclude defines parameters for OrganizationsList.
+type OrganizationsListParamsInclude string
 
 // OrganizationsListParamsStatus defines parameters for OrganizationsList.
 type OrganizationsListParamsStatus string
@@ -4126,12 +4345,18 @@ type OrganizationsGrantEntitlementParams struct {
 
 // OrganizationsListMembersParams defines parameters for OrganizationsListMembers.
 type OrganizationsListMembersParams struct {
-	Limit            *Limit                        `form:"limit,omitempty" json:"limit,omitempty"`
-	Cursor           *Cursor                       `form:"cursor,omitempty" json:"cursor,omitempty"`
-	Role             *OrganizationMemberRole       `form:"role,omitempty" json:"role,omitempty"`
-	MembershipStatus *OrganizationMembershipStatus `form:"membership_status,omitempty" json:"membership_status,omitempty"`
-	Q                *string                       `form:"q,omitempty" json:"q,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Include `total` adds `page.total` and `page.total_capped`: the number of rows matching the current filters across every page, counted up to 10,000 (Conventions → Pagination). Omitted unless requested.
+	Include          *OrganizationsListMembersParamsInclude `form:"include,omitempty" json:"include,omitempty"`
+	Role             *OrganizationMemberRole                `form:"role,omitempty" json:"role,omitempty"`
+	MembershipStatus *OrganizationMembershipStatus          `form:"membership_status,omitempty" json:"membership_status,omitempty"`
+	Q                *string                                `form:"q,omitempty" json:"q,omitempty"`
 }
+
+// OrganizationsListMembersParamsInclude defines parameters for OrganizationsListMembers.
+type OrganizationsListMembersParamsInclude string
 
 // OrganizationsAddMemberJSONBody defines parameters for OrganizationsAddMember.
 type OrganizationsAddMemberJSONBody struct {
@@ -4178,9 +4403,15 @@ type RolesListParams struct {
 	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
 	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
 
+	// Include `total` adds `page.total` and `page.total_capped`: the number of rows matching the current filters across every page, counted up to 10,000 (Conventions → Pagination). Omitted unless requested.
+	Include *RolesListParamsInclude `form:"include,omitempty" json:"include,omitempty"`
+
 	// Scope 'platform' or an application_id
 	Scope *string `form:"scope,omitempty" json:"scope,omitempty"`
 }
+
+// RolesListParamsInclude defines parameters for RolesList.
+type RolesListParamsInclude string
 
 // RolesUpdateJSONBody defines parameters for RolesUpdate.
 type RolesUpdateJSONBody struct {
@@ -4258,6 +4489,9 @@ type UsersListParams struct {
 	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
 	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
 
+	// Include `total` adds `page.total` and `page.total_capped`: the number of rows matching the current filters across every page, counted up to 10,000 (Conventions → Pagination). Omitted unless requested.
+	Include *UsersListParamsInclude `form:"include,omitempty" json:"include,omitempty"`
+
 	// Status deleted is allowed for users.manage only
 	Status         *UsersListParamsStatus `form:"status,omitempty" json:"status,omitempty"`
 	Email          *openapi_types.Email   `form:"email,omitempty" json:"email,omitempty"`
@@ -4270,6 +4504,9 @@ type UsersListParams struct {
 	CreatedAfter  *time.Time `form:"created_after,omitempty" json:"created_after,omitempty"`
 	CreatedBefore *time.Time `form:"created_before,omitempty" json:"created_before,omitempty"`
 }
+
+// UsersListParamsInclude defines parameters for UsersList.
+type UsersListParamsInclude string
 
 // UsersListParamsStatus defines parameters for UsersList.
 type UsersListParamsStatus string
@@ -4366,13 +4603,19 @@ type DevicesSendTestJSONBody struct {
 
 // EntitlementsListForUserParams defines parameters for EntitlementsListForUser.
 type EntitlementsListForUserParams struct {
-	Limit           *Limit             `form:"limit,omitempty" json:"limit,omitempty"`
-	Cursor          *Cursor            `form:"cursor,omitempty" json:"cursor,omitempty"`
-	ApplicationId   *string            `form:"application_id,omitempty" json:"application_id,omitempty"`
-	Status          *EntitlementStatus `form:"status,omitempty" json:"status,omitempty"`
-	Source          *EntitlementSource `form:"source,omitempty" json:"source,omitempty"`
-	IncludeInactive *bool              `form:"include_inactive,omitempty" json:"include_inactive,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Include `total` adds `page.total` and `page.total_capped`: the number of rows matching the current filters across every page, counted up to 10,000 (Conventions → Pagination). Omitted unless requested.
+	Include         *EntitlementsListForUserParamsInclude `form:"include,omitempty" json:"include,omitempty"`
+	ApplicationId   *string                               `form:"application_id,omitempty" json:"application_id,omitempty"`
+	Status          *EntitlementStatus                    `form:"status,omitempty" json:"status,omitempty"`
+	Source          *EntitlementSource                    `form:"source,omitempty" json:"source,omitempty"`
+	IncludeInactive *bool                                 `form:"include_inactive,omitempty" json:"include_inactive,omitempty"`
 }
+
+// EntitlementsListForUserParamsInclude defines parameters for EntitlementsListForUser.
+type EntitlementsListForUserParamsInclude string
 
 // EntitlementsGrantJSONBody defines parameters for EntitlementsGrant.
 type EntitlementsGrantJSONBody struct {
@@ -4497,10 +4740,16 @@ type UsersSuspendJSONBody struct {
 
 // WebhooksListParams defines parameters for WebhooksList.
 type WebhooksListParams struct {
-	Limit         *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
-	Cursor        *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
-	ApplicationId *string `form:"application_id,omitempty" json:"application_id,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Include `total` adds `page.total` and `page.total_capped`: the number of rows matching the current filters across every page, counted up to 10,000 (Conventions → Pagination). Omitted unless requested.
+	Include       *WebhooksListParamsInclude `form:"include,omitempty" json:"include,omitempty"`
+	ApplicationId *string                    `form:"application_id,omitempty" json:"application_id,omitempty"`
 }
+
+// WebhooksListParamsInclude defines parameters for WebhooksList.
+type WebhooksListParamsInclude string
 
 // WebhooksCreateJSONBody defines parameters for WebhooksCreate.
 type WebhooksCreateJSONBody struct {
@@ -4534,12 +4783,18 @@ type WebhooksUpdateJSONBodyStatus string
 
 // WebhooksListDeliveriesParams defines parameters for WebhooksListDeliveries.
 type WebhooksListDeliveriesParams struct {
-	Limit   *Limit                              `form:"limit,omitempty" json:"limit,omitempty"`
-	Cursor  *Cursor                             `form:"cursor,omitempty" json:"cursor,omitempty"`
-	EventId *string                             `form:"event_id,omitempty" json:"event_id,omitempty"`
-	Status  *WebhooksListDeliveriesParamsStatus `form:"status,omitempty" json:"status,omitempty"`
-	Since   *time.Time                          `form:"since,omitempty" json:"since,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Include `total` adds `page.total` and `page.total_capped`: the number of rows matching the current filters across every page, counted up to 10,000 (Conventions → Pagination). Omitted unless requested.
+	Include *WebhooksListDeliveriesParamsInclude `form:"include,omitempty" json:"include,omitempty"`
+	EventId *string                              `form:"event_id,omitempty" json:"event_id,omitempty"`
+	Status  *WebhooksListDeliveriesParamsStatus  `form:"status,omitempty" json:"status,omitempty"`
+	Since   *time.Time                           `form:"since,omitempty" json:"since,omitempty"`
 }
+
+// WebhooksListDeliveriesParamsInclude defines parameters for WebhooksListDeliveries.
+type WebhooksListDeliveriesParamsInclude string
 
 // WebhooksListDeliveriesParamsStatus defines parameters for WebhooksListDeliveries.
 type WebhooksListDeliveriesParamsStatus string
@@ -5457,6 +5712,19 @@ func (siw *ServerInterfaceWrapper) ApiKeysList(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	// ------------- Optional query parameter "include" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "include", r.URL.Query(), &params.Include, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "include"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "include", Err: err})
+		}
+		return
+	}
+
 	// ------------- Optional query parameter "scope" -------------
 
 	err = runtime.BindQueryParameterWithOptions("form", true, false, "scope", r.URL.Query(), &params.Scope, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
@@ -5669,6 +5937,19 @@ func (siw *ServerInterfaceWrapper) ApplicationsList(w http.ResponseWriter, r *ht
 			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
 		} else {
 			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "include" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "include", r.URL.Query(), &params.Include, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "include"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "include", Err: err})
 		}
 		return
 	}
@@ -6128,6 +6409,19 @@ func (siw *ServerInterfaceWrapper) AuditList(w http.ResponseWriter, r *http.Requ
 			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
 		} else {
 			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "include" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "include", r.URL.Query(), &params.Include, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "include"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "include", Err: err})
 		}
 		return
 	}
@@ -6626,6 +6920,19 @@ func (siw *ServerInterfaceWrapper) EntitlementsList(w http.ResponseWriter, r *ht
 		return
 	}
 
+	// ------------- Optional query parameter "include" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "include", r.URL.Query(), &params.Include, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "include"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "include", Err: err})
+		}
+		return
+	}
+
 	// ------------- Optional query parameter "application_id" -------------
 
 	err = runtime.BindQueryParameterWithOptions("form", true, false, "application_id", r.URL.Query(), &params.ApplicationId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
@@ -6888,6 +7195,19 @@ func (siw *ServerInterfaceWrapper) OrganizationsList(w http.ResponseWriter, r *h
 			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
 		} else {
 			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "include" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "include", r.URL.Query(), &params.Include, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "include"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "include", Err: err})
 		}
 		return
 	}
@@ -7344,6 +7664,19 @@ func (siw *ServerInterfaceWrapper) OrganizationsListMembers(w http.ResponseWrite
 		return
 	}
 
+	// ------------- Optional query parameter "include" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "include", r.URL.Query(), &params.Include, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "include"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "include", Err: err})
+		}
+		return
+	}
+
 	// ------------- Optional query parameter "role" -------------
 
 	err = runtime.BindQueryParameterWithOptions("form", true, false, "role", r.URL.Query(), &params.Role, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
@@ -7760,6 +8093,19 @@ func (siw *ServerInterfaceWrapper) RolesList(w http.ResponseWriter, r *http.Requ
 			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
 		} else {
 			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "include" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "include", r.URL.Query(), &params.Include, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "include"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "include", Err: err})
 		}
 		return
 	}
@@ -8332,6 +8678,19 @@ func (siw *ServerInterfaceWrapper) UsersList(w http.ResponseWriter, r *http.Requ
 			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
 		} else {
 			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "include" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "include", r.URL.Query(), &params.Include, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "include"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "include", Err: err})
 		}
 		return
 	}
@@ -9213,6 +9572,19 @@ func (siw *ServerInterfaceWrapper) EntitlementsListForUser(w http.ResponseWriter
 			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
 		} else {
 			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "include" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "include", r.URL.Query(), &params.Include, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "include"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "include", Err: err})
 		}
 		return
 	}
@@ -10445,6 +10817,19 @@ func (siw *ServerInterfaceWrapper) WebhooksList(w http.ResponseWriter, r *http.R
 		return
 	}
 
+	// ------------- Optional query parameter "include" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "include", r.URL.Query(), &params.Include, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "include"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "include", Err: err})
+		}
+		return
+	}
+
 	// ------------- Optional query parameter "application_id" -------------
 
 	err = runtime.BindQueryParameterWithOptions("form", true, false, "application_id", r.URL.Query(), &params.ApplicationId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
@@ -10601,6 +10986,19 @@ func (siw *ServerInterfaceWrapper) WebhooksListDeliveries(w http.ResponseWriter,
 			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
 		} else {
 			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "include" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "include", r.URL.Query(), &params.Include, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "include"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "include", Err: err})
 		}
 		return
 	}

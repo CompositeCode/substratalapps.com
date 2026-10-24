@@ -176,6 +176,10 @@ func (s *Server) ApiKeysList(w http.ResponseWriter, r *http.Request, params gen.
 		if err != nil {
 			return err
 		}
+		total, err := c.listTotal("api_keys k", where, args)
+		if err != nil {
+			return err
+		}
 		if pos != nil {
 			where = append(where, "(k.created_at, k.id) < (:ps::timestamptz, :pi)")
 			args["ps"], args["pi"] = pos.Sort, pos.ID
@@ -186,7 +190,7 @@ func (s *Server) ApiKeysList(w http.ResponseWriter, r *http.Request, params gen.
 		}
 		return c.OK(httpx.Paginate(c.s.Cursors, rows, lim, filters, func(k apiKey) (string, string) {
 			return httpx.TimeKey(k.CreatedAt), k.ID
-		}))
+		}).WithTotal(total))
 	})
 }
 

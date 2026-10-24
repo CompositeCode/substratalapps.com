@@ -130,7 +130,7 @@ func (s *Server) OrganizationsList(w http.ResponseWriter, r *http.Request, param
 		admin := c.can("organizations.manage")
 		if !admin {
 			if !c.p.IsUser() {
-				return c.OK(httpx.List[organization]{Data: []organization{}})
+				return emptyList[organization](c)
 			}
 			where = append(where, "o.id in (select organization_id from organization_memberships where user_id = :me)")
 			args["me"] = c.p.UserID
@@ -143,6 +143,10 @@ func (s *Server) OrganizationsList(w http.ResponseWriter, r *http.Request, param
 				where = append(where, "lower(o.name) like :q")
 				args["q"] = strings.ToLower(escapeLike(*params.Q)) + "%"
 			}
+		}
+		total, err := c.listTotal("organizations o", where, args)
+		if err != nil {
+			return err
 		}
 		if pos != nil {
 			where = append(where, "(o.created_at, o.id) < (:ps::timestamptz, :pi)")
@@ -183,7 +187,7 @@ func (s *Server) OrganizationsList(w http.ResponseWriter, r *http.Request, param
 			}
 			out = append(out, obj)
 		}
-		page := httpx.Paginate(c.s.Cursors, out, lim, filters, func(x organization) (string, string) { return "", "" })
+		page := httpx.Paginate(c.s.Cursors, out, lim, filters, func(x organization) (string, string) { return "", "" }).WithTotal(total)
 		if page.Page.HasMore {
 			last := rows[lim-1]
 			cur := c.s.Cursors.Encode(httpx.TimeKey(last.CreatedAt), last.ID, filters)
@@ -388,6 +392,10 @@ func (s *Server) OrganizationsListMembers(w http.ResponseWriter, r *http.Request
 			where = append(where, "(lower(u.email::text) like :q or (m.status = 'active' and lower(p.display_name) like :q))")
 			args["q"] = strings.ToLower(escapeLike(*params.Q)) + "%"
 		}
+		total, err := c.listTotal("organization_memberships m join users u on u.id = m.user_id left join profiles p on p.user_id = m.user_id", where, args)
+		if err != nil {
+			return err
+		}
 		if pos != nil {
 			where = append(where, "(m.invited_at, m.user_id) < (:ps::timestamptz, :pi)")
 			args["ps"], args["pi"] = pos.Sort, pos.ID
@@ -399,7 +407,7 @@ func (s *Server) OrganizationsListMembers(w http.ResponseWriter, r *http.Request
 		}
 		return c.OK(httpx.Paginate(c.s.Cursors, rows, lim, filters, func(x member) (string, string) {
 			return httpx.TimeKey(x.InvitedAt), x.UserID
-		}))
+		}).WithTotal(total))
 	})
 }
 

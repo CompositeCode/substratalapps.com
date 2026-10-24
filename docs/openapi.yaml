@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Substratal Apps — Platform API
-  version: "1.0.0-draft.10"
+  version: "1.0.0-draft.11"
   summary: >-
     User accounts, auth, roles, per-app entitlements (the on/off access
     switch), profiles, settings, organizations, tenancy, subscription billing,
@@ -710,6 +710,7 @@ paths:
         - $ref: "#/components/parameters/ApiVersion"
         - $ref: "#/components/parameters/Limit"
         - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Include"
         - { name: status, in: query, description: "deleted is allowed for users.manage only", schema: { type: string, enum: [active, invited, suspended, deleted] } }
         - { name: email, in: query, schema: { type: string, format: email } }
         - { name: q, in: query, schema: { type: string, minLength: 3 } }
@@ -1129,6 +1130,7 @@ paths:
         - $ref: "#/components/parameters/ApiVersion"
         - $ref: "#/components/parameters/Limit"
         - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Include"
         - { name: visibility, in: query, schema: { $ref: "#/components/schemas/ApplicationVisibility" } }
         - { name: review_status, in: query, schema: { $ref: "#/components/schemas/ApplicationReviewStatus" } }
         - { name: access_tier, in: query, schema: { $ref: "#/components/schemas/ApplicationAccessTier" } }
@@ -1238,6 +1240,7 @@ paths:
         - $ref: "#/components/parameters/ApiVersion"
         - $ref: "#/components/parameters/Limit"
         - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Include"
         - { name: application_id, in: query, schema: { type: string } }
         - { name: status, in: query, schema: { $ref: "#/components/schemas/EntitlementStatus" } }
         - { name: source, in: query, schema: { $ref: "#/components/schemas/EntitlementSource" } }
@@ -1292,6 +1295,7 @@ paths:
         - $ref: "#/components/parameters/ApiVersion"
         - $ref: "#/components/parameters/Limit"
         - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Include"
         - { name: application_id, in: query, schema: { type: string } }
         - { name: status, in: query, schema: { $ref: "#/components/schemas/EntitlementStatus" } }
         - { name: user_id, in: query, schema: { type: string } }
@@ -1410,6 +1414,7 @@ paths:
         - $ref: "#/components/parameters/ApiVersion"
         - $ref: "#/components/parameters/Limit"
         - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Include"
         - { name: scope, in: query, description: "'platform' or an application_id", schema: { type: string } }
       responses:
         "400": { $ref: "#/components/responses/BadRequest" }
@@ -1596,6 +1601,7 @@ paths:
         - $ref: "#/components/parameters/ApiVersion"
         - $ref: "#/components/parameters/Limit"
         - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Include"
         - { name: status, in: query, schema: { type: string, enum: [active, suspended] } }
         - { name: q, in: query, schema: { type: string } }
       responses:
@@ -1691,6 +1697,7 @@ paths:
         - $ref: "#/components/parameters/ApiVersion"
         - $ref: "#/components/parameters/Limit"
         - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Include"
         - { name: role, in: query, schema: { $ref: "#/components/schemas/OrganizationMemberRole" } }
         - { name: membership_status, in: query, schema: { $ref: "#/components/schemas/OrganizationMembershipStatus" } }
         - { name: q, in: query, schema: { type: string } }
@@ -2280,6 +2287,7 @@ paths:
         - $ref: "#/components/parameters/ApiVersion"
         - $ref: "#/components/parameters/Limit"
         - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Include"
         - { name: target_user_id, in: query, schema: { type: string } }
         - { name: target_type, in: query, schema: { $ref: "#/components/schemas/AuditTargetType" } }
         - { name: target_id, in: query, schema: { type: string } }
@@ -2389,6 +2397,7 @@ paths:
         - $ref: "#/components/parameters/ApiVersion"
         - $ref: "#/components/parameters/Limit"
         - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Include"
         - { name: application_id, in: query, schema: { type: string } }
       responses:
         "400": { $ref: "#/components/responses/BadRequest" }
@@ -2546,6 +2555,7 @@ paths:
         - $ref: "#/components/parameters/ApiVersion"
         - $ref: "#/components/parameters/Limit"
         - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Include"
         - { name: event_id, in: query, schema: { type: string } }
         - { name: status, in: query, schema: { type: string, enum: [pending, succeeded, failed] } }
         - { name: since, in: query, schema: { type: string, format: date-time } }
@@ -3007,6 +3017,7 @@ paths:
         - $ref: "#/components/parameters/ApiVersion"
         - $ref: "#/components/parameters/Limit"
         - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Include"
         - { name: scope, in: query, schema: { type: string } }
         - { name: mode, in: query, schema: { type: string, enum: [live, test] } }
         - { name: intended_use, in: query, schema: { type: string, enum: [service, agent] } }
@@ -3153,6 +3164,14 @@ components:
       name: cursor
       in: query
       schema: { type: string }
+    Include:
+      name: include
+      in: query
+      description: >-
+        `total` adds `page.total` and `page.total_capped`: the number of rows
+        matching the current filters across every page, counted up to 10,000
+        (Conventions → Pagination). Omitted unless requested.
+      schema: { type: string, enum: [total] }
     IdempotencyKey:
       name: Idempotency-Key
       in: header
@@ -3265,6 +3284,16 @@ components:
       properties:
         next_cursor: { type: [string, "null"] }
         has_more: { type: boolean }
+        total:
+          type: integer
+          minimum: 0
+          maximum: 10000
+          description: >-
+            Only with `include=total`. Rows matching the current filters across
+            every page, ignoring `cursor`; 10000 when capped.
+        total_capped:
+          type: boolean
+          description: Only with `include=total`. True when there are more than 10,000 matching rows.
 
     PageEnvelope:
       type: object

@@ -108,6 +108,14 @@ List endpoints take `limit` (default 25, max 100) and `cursor`, and return:
 
 Pass `next_cursor` back as `cursor` to get the next page. `has_more: false` means `next_cursor` is `null` and there's nothing further. Cursors are opaque and valid for 24 hours; an expired or tampered cursor returns `400 invalid_cursor`. A cursor is only valid with the same filters it was issued under.
 
+**Counts (`include=total`).** Lists don't count their rows unless asked. Add `?include=total` and `page` also carries `total`, the number of rows matching the current filters across every page, and `total_capped`:
+
+```json
+"page": { "next_cursor": "eyJpZCI6Im9yZ18wMUoi...", "has_more": true, "total": 1204, "total_capped": false }
+```
+
+The count stops at 10,000 so it can never become an expensive full scan: above that, `total` is `10000` and `total_capped` is `true` (show "10,000+"). It counts the rows the caller can see under the filters, ignoring `cursor`, so every page of the same list reports the same total. A cursor works with or without `include=total`, and the parameter isn't part of the filters a cursor is bound to. Any other `include` value is `422 validation_failed` (`enum_mismatch`). Without the parameter, `total` and `total_capped` are absent. Supported on: `GET /users`, `/entitlements`, `/users/{id}/entitlements`, `/applications`, `/organizations`, `/organizations/{id}/members`, `/audit-events`, `/webhooks`, `/webhooks/{id}/deliveries`, `/api-keys`, and `/roles`.
+
 **Ordering:** unless a page says otherwise, lists are ordered newest first by `created_at`, with ties broken by `id`. Audit Events are ordered by `timestamp`, newest first. There's no caller-selectable sort.
 
 ## Filtering

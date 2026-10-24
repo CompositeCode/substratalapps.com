@@ -46,7 +46,7 @@ func (s *Server) UsersList(w http.ResponseWriter, r *http.Request, params gen.Us
 		if params.Status != nil {
 			st := string(*params.Status)
 			if st == "deleted" && !c.can("users.manage") {
-				return c.OK(httpx.List[userRow]{Data: []userRow{}})
+				return emptyList[userRow](c)
 			}
 			where = append(where, "u.status = :status")
 			args["status"] = st
@@ -107,12 +107,16 @@ func (s *Server) UsersList(w http.ResponseWriter, r *http.Request, params gen.Us
 			where = append(where, "u.created_at < :cb::timestamptz")
 			args["cb"] = db.Time(*params.CreatedBefore)
 		}
+		// The system account is internal; it's never listed.
+		where = append(where, "u.id <> 'usr_01JAG0SYSTEM00000000000000'")
+		total, err := c.listTotal("users u", where, args)
+		if err != nil {
+			return err
+		}
 		if pos != nil {
 			where = append(where, "(u.created_at, u.id) < (:ps::timestamptz, :pi)")
 			args["ps"], args["pi"] = pos.Sort, pos.ID
 		}
-		// The system account is internal; it's never listed.
-		where = append(where, "u.id <> 'usr_01JAG0SYSTEM00000000000000'")
 		raw, err := c.q.Query(c.ctx, userRowSQL+" where "+strings.Join(where, " and ")+
 			" order by u.created_at desc, u.id desc limit :lim", args)
 		if err != nil {
@@ -128,7 +132,7 @@ func (s *Server) UsersList(w http.ResponseWriter, r *http.Request, params gen.Us
 		}
 		return c.OK(httpx.Paginate(c.s.Cursors, rows, lim, filters, func(u userRow) (string, string) {
 			return httpx.TimeKey(u.CreatedAt), u.ID
-		}))
+		}).WithTotal(total))
 	})
 }
 

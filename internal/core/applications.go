@@ -143,7 +143,7 @@ func (s *Server) ApplicationsList(w http.ResponseWriter, r *http.Request, params
 		}
 		if params.Owned != nil && *params.Owned {
 			if !c.p.IsUser() {
-				return c.OK(httpx.List[appSummary]{Data: []appSummary{}})
+				return emptyList[appSummary](c)
 			}
 			where = append(where, `(a.owner_user_id = :me or a.owner_organization_id in (select organization_id
 				from organization_memberships where user_id = :me and role = 'org_admin' and status = 'active'))`)
@@ -174,6 +174,19 @@ func (s *Server) ApplicationsList(w http.ResponseWriter, r *http.Request, params
 		if queue {
 			order, cmp = "a.created_at asc, a.id asc", ">"
 		}
+		// Visibility is decided per row in Go, so the count is too.
+		var total *int64
+		if want, err := httpx.WantTotal(c.r); err != nil {
+			return err
+		} else if want {
+			rows, err := db.All[appRow](c.ctx, c.q, `select to_jsonb(a) from applications a where `+strings.Join(where, " and "), args)
+			if err != nil {
+				return err
+			}
+			if total, err = visibleTotal(rows, c.appVisible); err != nil {
+				return err
+			}
+		}
 		if pos != nil {
 			where = append(where, "(a.created_at, a.id) "+cmp+" (:ps::timestamptz, :pi)")
 			args["ps"], args["pi"] = pos.Sort, pos.ID
@@ -197,7 +210,7 @@ func (s *Server) ApplicationsList(w http.ResponseWriter, r *http.Request, params
 				break
 			}
 		}
-		page := httpx.Paginate(c.s.Cursors, out, lim, filters, func(x appSummary) (string, string) { return "", "" })
+		page := httpx.Paginate(c.s.Cursors, out, lim, filters, func(x appSummary) (string, string) { return "", "" }).WithTotal(total)
 		if page.Page.HasMore {
 			last := keys[lim-1]
 			cur := c.s.Cursors.Encode(httpx.TimeKey(last.CreatedAt), last.ID, filters)
