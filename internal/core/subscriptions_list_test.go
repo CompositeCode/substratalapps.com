@@ -135,6 +135,38 @@ func TestListSubscriptions(t *testing.T) {
 	if got := subscriptionIDs(t, p2); !sameIDs(got, aliceSub) || p2.JSON()["page"].(map[string]any)["has_more"] != false {
 		t.Fatalf("page 2 = %v", p2.Body)
 	}
+	e.Get("/subscriptions?subscriber_type=bogus", billing.Token).ExpectErr(422, "validation_failed")
+	nine := "/subscriptions?status=active"
+	for range 8 {
+		nine += "&status=active"
+	}
+	e.Get(nine, billing.Token).ExpectErr(422, "validation_failed")
+
+	// An app-scoped key never lists subscriptions.
+	app := e.App(system, nil)
+	appKey := e.Post("/api-keys", e.Admin, map[string]any{"name": "backend", "scope": app,
+		"permissions": []string{"users.list"}}).Expect(201).Str("secret")
+	e.Get("/subscriptions", appKey).ExpectErr(403, "forbidden")
+
+	// A deleted User's subscription is listed without their email, unless
+	// the caller also holds users.manage.
+	e.Delete("/users/"+alice.ID, e.Admin).Expect(204)
+	emailOf := func(token string) any {
+		for _, x := range e.Get("/subscriptions?subscriber_type=user", token).Expect(200).JSON()["data"].([]any) {
+			if item := x.(map[string]any); item["id"] == aliceSub {
+				return item["user_email"]
+			}
+		}
+		t.Fatal("deleted User's subscription isn't listed")
+		return nil
+	}
+	if got := emailOf(billing.Token); got != nil {
+		t.Fatalf("billing.manage sees a deleted User's email: %v", got)
+	}
+	if got := emailOf(e.Admin); got != alice.Email {
+		t.Fatalf("users.manage email = %v", got)
+	}
+
 	// A cursor is bound to its filters.
 	e.Get("/subscriptions?limit=2&status=active&cursor="+page["next_cursor"].(string), billing.Token).ExpectErr(400, "invalid_cursor")
 }

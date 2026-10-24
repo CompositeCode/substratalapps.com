@@ -104,11 +104,11 @@ GET /subscriptions?status=past_due&status=unpaid
 }
 ```
 
-Every User's and Organization's subscription, for `billing.manage` only. Anyone else, including org admins and the subscribers themselves, gets `403`. Each item is the [Subscription object](#the-subscription-object) plus the subscriber for display: `user_email` on an individual subscription, `organization_name` on an Organization's, and `null` for the other. Results are in the caller's mode, most recently updated first, and [cursor-paginated](../conventions/#pagination). This is what the API already stores. Revenue, invoices, and payment attempts stay in Stripe.
+Every User's and Organization's subscription, for `billing.manage` only. Anyone else, including org admins and the subscribers themselves, gets `403`. Each item is the [Subscription object](#the-subscription-object) plus the subscriber for display: `user_email` on an individual subscription, `organization_name` on an Organization's, and `null` for the other. A deleted User's subscription is still listed, but `user_email` is `null` unless the caller also holds `users.manage`. Results are in the caller's mode, most recently updated first, and [cursor-paginated](../conventions/#pagination). This is what the API already stores. Revenue, invoices, and payment attempts stay in Stripe.
 
 | Filter | Meaning |
 |---|---|
-| `status` | Any of these statuses. Repeatable (`?status=past_due&status=unpaid`). |
+| `status` | Any of these statuses. Repeatable (`?status=past_due&status=unpaid`), up to 8. An abandoned Checkout leaves an `incomplete` row, so a console usually filters by status. |
 | `subscriber_type` | `user` or `organization`. |
 | `cancel_at_period_end` | `true` for subscriptions set to end at the period's close, `false` for the rest. |
 | `current_period_end_before` | ISO 8601. Subscriptions whose current period ends before this time. |

@@ -488,8 +488,15 @@ func (s *Server) BillingListSubscriptions(w http.ResponseWriter, r *http.Request
 			return err
 		}
 		where := []string{"true"}
-		args := db.Args{"lim": int64(lim + 1)}
+		// A deleted User doesn't exist to callers without users.manage, so
+		// their email isn't shown (Users → deletion).
+		args := db.Args{"lim": int64(lim + 1), "deleted": c.can("users.manage")}
 		if params.Status != nil && len(*params.Status) > 0 {
+			if len(*params.Status) > 8 {
+				var f httpx.Fields
+				f.Add("status", "too_many").Max = ip(8)
+				return f.Err()
+			}
 			statuses := make([]string, 0, len(*params.Status))
 			for _, st := range *params.Status {
 				if !st.Valid() {
@@ -526,7 +533,9 @@ func (s *Server) BillingListSubscriptions(w http.ResponseWriter, r *http.Request
 			where = append(where, "(s.updated_at, s.id) < (:ps::timestamptz, :pi)")
 			args["ps"], args["pi"] = pos.Sort, pos.ID
 		}
-		rows, err := db.All[subscriptionListRow](c.ctx, c.q, `select to_jsonb(s) || jsonb_build_object('user_email', u.email, 'organization_name', o.name)
+		rows, err := db.All[subscriptionListRow](c.ctx, c.q, `select to_jsonb(s) || jsonb_build_object(
+				'user_email', case when u.status <> 'deleted' or :deleted::boolean then u.email end,
+				'organization_name', o.name)
 			from subscriptions s
 			left join users u on u.id = s.user_id
 			left join organizations o on o.id = s.organization_id
@@ -536,8 +545,11 @@ func (s *Server) BillingListSubscriptions(w http.ResponseWriter, r *http.Request
 			return err
 		}
 		items := make([]subscriptionListItem, 0, len(rows))
-		for _, row := range rows {
-			obj, err := c.subscriptionObject(row.subscriptionRow)
+		for i, row := range rows {
+			obj := subscription{ID: row.ID, UpdatedAt: row.UpdatedAt}
+			if i < lim { // the extra row only signals has_more; skip its member count
+				obj, err = c.subscriptionObject(row.subscriptionRow)
+			}
 			if err != nil {
 				return err
 			}

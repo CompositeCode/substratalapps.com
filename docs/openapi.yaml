@@ -2084,6 +2084,7 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/SubscriptionPage" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "422": { $ref: "#/components/responses/Unprocessable" }
 
   /users/{id}/subscription:
     parameters:
