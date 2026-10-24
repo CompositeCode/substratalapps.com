@@ -12,6 +12,10 @@ What's changed in this specification over time. Every decision is written into t
 
 ---
 
+## 2026-10-23 — Abandoned Checkouts expire
+
+A first Checkout that's never completed no longer leaves its subscription `incomplete` forever. When Stripe expires the Checkout session (`checkout.session.expired`, about 24 hours later), the row becomes `incomplete_expired`, Stripe's own status for a first payment that never completed, and `subscription.status_changed` is written. A row Stripe has already linked to a subscription is left alone, and so is one whose subscriber has a newer Checkout still open. The subscriber can check out again as before. The Stripe webhook endpoint needs the new event added; see [infra/README.md → Webhook handling](https://github.com/CompositeCode/substratalapps.com/blob/main/infra/README.md#webhook-handling). No API or schema change.
+
 ## 2026-10-23 — Optional counts on list responses
 
 Console tables can show "1,204 users" for their current filters without paging everything ([#53](https://github.com/CompositeCode/substratalapps.com/issues/53)). `openapi.yaml` is now at `1.0.0-draft.11`. No new operations, and no migration.

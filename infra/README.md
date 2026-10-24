@@ -192,6 +192,7 @@ Not versioned by `Substratal-Version`, the same reasoning as the MCP server's `/
 | Stripe event | Effect |
 |---|---|
 | `checkout.session.completed` | Find the row from `client_reference_id`, link `stripe_subscription_id`, then run the sync below. |
+| `checkout.session.expired` | An abandoned first Checkout: if the row is still `incomplete` with no Stripe subscription linked, and the Customer has no other open Checkout for it, set `incomplete_expired` and write `subscription.status_changed`. Otherwise nothing. Without this, an abandoned Checkout's row would stay `incomplete` forever, because Stripe never creates a subscription for it. |
 | `customer.subscription.created` / `.updated` / `.deleted` | **Subscription sync:** set `status`, `current_period_start`/`_end`, and `cancel_at_period_end`, writing `subscription.status_changed` on a change. In the same transaction, reconcile the subscriber's platform-managed Entitlements: grant `source: subscription` rows while the status is `active`/`trialing`/`past_due`, end them otherwise. `access.granted` / `access.revoked` fire for every User whose access changed. |
 | `invoice.payment_failed` | Sync, which sets `past_due`. Coverage continues while Stripe Smart Retries (about 3 weeks) runs; only a later `unpaid` or `canceled` ends it. |
 | `invoice.paid` | Sync, which clears `past_due`. |
