@@ -2,6 +2,10 @@
 # scripts/docs-build.rb on main's GitHub build; each entry has a frozen
 # static copy at <version>/ on this branch, served at /versions/<version>/.
 versions:
+- version: 1.7.11
+  released: '2026-10-24'
+  commit: f3e2e9a357676f9d02d4e4e04379671492508d7b
+  summary: 'Merge pull request #72 from CompositeCode/fix/checkout-session-expired'
 - version: 1.7.10
   released: '2026-10-24'
   commit: 7c13dadd8167bf403a5ab1b4a8e436dbf4929f0f
