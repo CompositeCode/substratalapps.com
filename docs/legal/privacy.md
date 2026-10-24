@@ -19,7 +19,7 @@ permalink: /legal/privacy/
 
 ## 1. Who we are and what this covers
 
-Composite Code LLC, a Washington limited liability company, is the **controller** of personal information processed to run Substratal: the platform API at `api.substratalapps.com`, the Substratal Hub apps (web at `dashboard.substratalapps.com`, macOS, Windows, Linux, iOS and Android), Substratal's own applications, and this site.
+Composite Code LLC, a Washington limited liability company, is the **controller** of personal information processed to run Substratal: the platform API at `api.substratalapps.com`, the Substratal Hub apps (web at `hub.substratalapps.com`, macOS, Windows, Linux, iOS and Android), Substratal's own applications, and this site.
 
 When a **developer's own Application** or an **Organization** uses Substratal to manage its users, that developer or Organization decides why and how its users' data is used, and we process that data on its behalf as a **processor** under the [Data Processing Addendum](../dpa/). That Application's or Organization's own privacy policy then applies too.
 

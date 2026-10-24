@@ -12,7 +12,7 @@ permalink: /legal/cookies/
 **Effective October 23, 2026.** Substratal uses only what's strictly necessary to run the Service. There are no advertising, analytics, or cross-site tracking cookies, so there's nothing to opt in or out of.
 {: .fs-5 .fw-300 }
 
-## Web Hub (`dashboard.substratalapps.com`)
+## Web Hub (`hub.substratalapps.com`)
 
 | Name | Type | Purpose | Lifetime |
 |---|---|---|---|

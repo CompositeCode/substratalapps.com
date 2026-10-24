@@ -25,7 +25,7 @@ We'll acknowledge your report within **3 business days**, keep you updated, and 
 ## In scope
 
 - `api.substratalapps.com`, including its MCP server
-- `dashboard.substratalapps.com` and the Substratal Hub apps
+- `hub.substratalapps.com` and the Substratal Hub apps
 - Source code in the `CompositeCode/substratalapps*` repositories
 
 ## Safe harbor

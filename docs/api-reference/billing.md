@@ -159,8 +159,8 @@ Changes which members the subscription covers. Only `member_scope` and `member_o
 // Request (the Organization form also accepts member_scope and member_overrides)
 {
   "plan": "standard",
-  "success_url": "https://dashboard.substratalapps.com/billing?checkout=success",
-  "cancel_url": "https://dashboard.substratalapps.com/billing?checkout=cancelled",
+  "success_url": "https://hub.substratalapps.com/billing?checkout=success",
+  "cancel_url": "https://hub.substratalapps.com/billing?checkout=cancelled",
   "member_scope": "all_members"
 }
 ```
@@ -186,7 +186,7 @@ Changes which members the subscription covers. Only `member_scope` and `member_o
 
 ```json
 // Request
-{ "return_url": "https://dashboard.substratalapps.com/billing" }
+{ "return_url": "https://hub.substratalapps.com/billing" }
 ```
 ```json
 // Response — 201

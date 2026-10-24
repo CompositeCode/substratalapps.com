@@ -9,7 +9,7 @@ permalink: /legal/eula/
 # End User License Agreement
 {: .no_toc }
 
-**Effective October 23, 2026.** This End User License Agreement ("EULA") is between you and **Composite Code LLC** ("we", "us") and covers the **Substratal Hub** apps: the web app (PWA) at `dashboard.substratalapps.com`, and the apps for macOS, Windows, Linux, iOS/iPadOS and Android (each an "**App**").
+**Effective October 23, 2026.** This End User License Agreement ("EULA") is between you and **Composite Code LLC** ("we", "us") and covers the **Substratal Hub** apps: the web app (PWA) at `hub.substratalapps.com`, and the apps for macOS, Windows, Linux, iOS/iPadOS and Android (each an "**App**").
 {: .fs-5 .fw-300 }
 
 1. TOC
