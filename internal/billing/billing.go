@@ -109,8 +109,6 @@ func (c *Client) CheckoutSession(ctx context.Context, in core.CheckoutInput) (st
 	return sess.URL, time.Unix(sess.ExpiresAt, 0), nil
 }
 
-// PortalSession opens the Customer Portal (configured in Stripe without
-// plan switching).
 // OpenCheckout reports whether the Customer still has an open Checkout for
 // our subscription id, so an older session expiring doesn't mark the row
 // abandoned while a newer one can still complete.
@@ -127,6 +125,8 @@ func (c *Client) OpenCheckout(ctx context.Context, customerID, subscriptionID st
 	return false, nil
 }
 
+// PortalSession opens the Customer Portal (configured in Stripe without
+// plan switching).
 func (c *Client) PortalSession(ctx context.Context, customerID, returnURL string) (string, time.Time, error) {
 	sess, err := c.sc.V1BillingPortalSessions.Create(ctx, &stripe.BillingPortalSessionCreateParams{
 		Customer: stripe.String(customerID), ReturnURL: stripe.String(returnURL),

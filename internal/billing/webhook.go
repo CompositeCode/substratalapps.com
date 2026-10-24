@@ -81,9 +81,11 @@ func (h *Webhook) Process(ctx context.Context, ev stripe.Event) error {
 			return h.Core.MarkStripeEventProcessed(ctx, ev.ID, "")
 		}
 		if s.Customer != nil && s.Customer.ID != "" {
+			// Best effort: a failed check must not leave the event stuck, and a
+			// wrong expiry heals when the newer Checkout's events arrive.
 			open, err := h.Stripe.OpenCheckout(ctx, s.Customer.ID, s.ClientReferenceID)
 			if err != nil {
-				return err
+				h.Log.Warn("stripe: open checkout check failed; expiring anyway", "event", ev.ID, "err", err)
 			}
 			if open {
 				return h.Core.MarkStripeEventProcessed(ctx, ev.ID, s.ClientReferenceID)
