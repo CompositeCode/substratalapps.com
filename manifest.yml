@@ -2,6 +2,10 @@
 # scripts/docs-build.rb on main's GitHub build; each entry has a frozen
 # static copy at <version>/ on this branch, served at /versions/<version>/.
 versions:
+- version: 1.7.14
+  released: '2026-10-24'
+  commit: 61143a756a9694b05bf68925ae3ffa40cb069f29
+  summary: 'Merge pull request #76 from CompositeCode/deploy/hub-dashboard-url'
 - version: 1.7.13
   released: '2026-10-24'
   commit: ddb68944a798a2b97e5d10d0005f3c44c5ede347
