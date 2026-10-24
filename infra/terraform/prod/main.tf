@@ -496,11 +496,16 @@ module "mail_forward" {
     FORWARD_TO     = coalesce(var.contact_forward_to, var.alarm_email)
     FORWARD_FROM   = "forward@${var.mail_domain}"
   }
-  policy_statements = concat(local.email, [{
+  # A forward is a raw message, which SES authorizes as SendRawEmail.
+  policy_statements = [{
+    Effect   = "Allow"
+    Action   = ["ses:SendEmail", "ses:SendRawEmail"]
+    Resource = aws_sesv2_email_identity.mail.arn
+    }, {
     Effect   = "Allow"
     Action   = ["s3:GetObject"]
     Resource = "${aws_s3_bucket.inbound_mail.arn}/inbound/*"
-  }])
+  }]
 }
 
 resource "aws_lambda_event_source_mapping" "webhooks" {
