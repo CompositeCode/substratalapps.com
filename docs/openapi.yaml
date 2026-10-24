@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Substratal Apps — Platform API
-  version: "1.0.0-draft.9"
+  version: "1.0.0-draft.10"
   summary: >-
     User accounts, auth, roles, per-app entitlements (the on/off access
     switch), profiles, settings, organizations, tenancy, subscription billing,
@@ -2053,6 +2053,38 @@ paths:
 
   # ───────────────────────────── Billing ─────────────────────────────
 
+  /subscriptions:
+    get:
+      operationId: billing.listSubscriptions
+      tags: [Billing]
+      summary: List every subscriber's subscription (billing.manage)
+      description: >-
+        Requires billing.manage. Every User's and Organization's subscription in the caller's mode,
+        most recently updated first, with the subscriber's email or name for display. Revenue and
+        invoices stay in Stripe.
+      x-substratal-phase: phase2
+      parameters:
+        - $ref: "#/components/parameters/ApiVersion"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Cursor"
+        - name: status
+          in: query
+          description: "Subscriptions in any of these statuses. Repeatable."
+          style: form
+          explode: true
+          schema: { type: array, items: { $ref: "#/components/schemas/SubscriptionStatus" }, maxItems: 8 }
+        - { name: subscriber_type, in: query, schema: { type: string, enum: [user, organization] } }
+        - { name: cancel_at_period_end, in: query, schema: { type: boolean } }
+        - { name: current_period_end_before, in: query, description: "Subscriptions whose current period ends before this time.", schema: { type: string, format: date-time } }
+      responses:
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "200":
+          description: A page of subscriptions
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SubscriptionPage" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
   /users/{id}/subscription:
     parameters:
       - $ref: "#/components/parameters/UserIdOrMe"
@@ -3843,6 +3875,21 @@ components:
         test_mode: { type: boolean }
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
+
+    SubscriptionListItem:
+      allOf:
+        - $ref: "#/components/schemas/Subscription"
+        - type: object
+          properties:
+            user_email: { type: [string, "null"], format: email, description: "Individual subscriptions: the User's email, for display." }
+            organization_name: { type: [string, "null"], description: "Organization subscriptions: the Organization's name, for display." }
+
+    SubscriptionPage:
+      allOf:
+        - $ref: "#/components/schemas/PageEnvelope"
+        - type: object
+          properties:
+            data: { type: array, items: { $ref: "#/components/schemas/SubscriptionListItem" } }
 
     UserSubscription:
       type: object

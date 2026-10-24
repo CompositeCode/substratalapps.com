@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/CompositeCode/substratalapps.com/internal/api/gen"
@@ -457,6 +458,94 @@ func (s *Server) BillingGetUserSubscription(w http.ResponseWriter, r *http.Reque
 			return err
 		}
 		return c.OK(map[string]any{"user_id": uid, "plan": u.Plan, "plan_sources": u.PlanSources, "subscription": obj})
+	})
+}
+
+// ── GET /subscriptions ─────────────────────────────────────────────────
+
+// subscriptionListItem is a Subscription plus its subscriber, for display.
+type subscriptionListItem struct {
+	subscription
+	UserEmail        *string `json:"user_email"`
+	OrganizationName *string `json:"organization_name"`
+}
+
+type subscriptionListRow struct {
+	subscriptionRow
+	UserEmail        *string `json:"user_email"`
+	OrganizationName *string `json:"organization_name"`
+}
+
+func (s *Server) BillingListSubscriptions(w http.ResponseWriter, r *http.Request, params gen.BillingListSubscriptionsParams) {
+	s.serve(w, r, opts{op: "billing.listSubscriptions"}, func(c *Call) error {
+		if err := c.require("billing.manage"); err != nil {
+			return err
+		}
+		lim := httpx.Limit(params.Limit)
+		filters := httpx.Filters(c.r)
+		pos, err := c.s.Cursors.Decode(deref(params.Cursor), filters)
+		if err != nil {
+			return err
+		}
+		where := []string{"true"}
+		args := db.Args{"lim": int64(lim + 1)}
+		if params.Status != nil && len(*params.Status) > 0 {
+			statuses := make([]string, 0, len(*params.Status))
+			for _, st := range *params.Status {
+				if !st.Valid() {
+					var f httpx.Fields
+					f.Enum("status", "active", "trialing", "past_due", "canceled", "unpaid", "incomplete", "incomplete_expired", "paused")
+					return f.Err()
+				}
+				statuses = append(statuses, string(st))
+			}
+			where = append(where, "s.status = any(:statuses::text[])")
+			args["statuses"] = db.TextArray(statuses)
+		}
+		if params.SubscriberType != nil {
+			switch *params.SubscriberType {
+			case gen.BillingListSubscriptionsParamsSubscriberTypeUser:
+				where = append(where, "s.user_id is not null")
+			case gen.BillingListSubscriptionsParamsSubscriberTypeOrganization:
+				where = append(where, "s.organization_id is not null")
+			default:
+				var f httpx.Fields
+				f.Enum("subscriber_type", "user", "organization")
+				return f.Err()
+			}
+		}
+		if params.CancelAtPeriodEnd != nil {
+			where = append(where, "s.cancel_at_period_end = :cape")
+			args["cape"] = *params.CancelAtPeriodEnd
+		}
+		if params.CurrentPeriodEndBefore != nil {
+			where = append(where, "s.current_period_end < :cpeb::timestamptz")
+			args["cpeb"] = db.Time(*params.CurrentPeriodEndBefore)
+		}
+		if pos != nil {
+			where = append(where, "(s.updated_at, s.id) < (:ps::timestamptz, :pi)")
+			args["ps"], args["pi"] = pos.Sort, pos.ID
+		}
+		rows, err := db.All[subscriptionListRow](c.ctx, c.q, `select to_jsonb(s) || jsonb_build_object('user_email', u.email, 'organization_name', o.name)
+			from subscriptions s
+			left join users u on u.id = s.user_id
+			left join organizations o on o.id = s.organization_id
+			where `+strings.Join(where, " and ")+`
+			order by s.updated_at desc, s.id desc limit :lim`, args)
+		if err != nil {
+			return err
+		}
+		items := make([]subscriptionListItem, 0, len(rows))
+		for _, row := range rows {
+			obj, err := c.subscriptionObject(row.subscriptionRow)
+			if err != nil {
+				return err
+			}
+			items = append(items, subscriptionListItem{subscription: obj, UserEmail: row.UserEmail, OrganizationName: row.OrganizationName})
+		}
+		return c.OK(httpx.Paginate(c.s.Cursors, items, lim, filters, func(i subscriptionListItem) (string, string) {
+			return httpx.TimeKey(i.UpdatedAt), i.ID
+		}))
 	})
 }
 
